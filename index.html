@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>ChatGPT 提示詞產生器</title>
+  <!-- 載入 Google Fonts 提供更美觀的字型 -->
+  <link href="https://fonts.googleapis.com/css?family=Noto+Sans+TC&display=swap" rel="stylesheet">
+  <style>
+    /* 整體背景與字型設定 */
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    /* 主容器設定 */
+    .container {
+      width: 90%;
+      max-width: 800px;
+      margin: 30px auto;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    h1, h2 {
+      color: #333;
+      text-align: center;
+    }
+    /* 輸入區群組 */
+    .input-group {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .input-group input[type="text"] {
+      width: 70%;
+      padding: 10px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 4px 0 0 4px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    .input-group input[type="text"]:focus {
+      border-color: #007BFF;
+    }
+    .input-group button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background-color: #007BFF;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 0 4px 4px 0;
+      transition: background-color 0.3s;
+    }
+    .input-group button:hover {
+      background-color: #0056b3;
+    }
+    /* 按鈕區域 */
+    #topicButtons, #actionButtons {
+      margin: 20px 0;
+      text-align: center;
+    }
+    #topicButtons button,
+    #actionButtons button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+    /* 主題按鈕樣式 */
+    #topicButtons button {
+      background-color: #f0f0f0;
+      color: #333;
+    }
+    #topicButtons button:hover {
+      background-color: #e0e0e0;
+      transform: scale(1.05);
+    }
+    /* 套用按鈕樣式 */
+    #actionButtons button {
+      background-color: #d0eaff;
+      color: #007BFF;
+    }
+    #actionButtons button:hover {
+      background-color: #a8d1ff;
+      transform: scale(1.05);
+    }
+    /* 提示詞輸入區 */
+    #outputArea {
+      width: 100%;
+      height: 150px;
+      padding: 10px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      resize: vertical;
+    }
+    /* 複製按鈕 */
+    #copyBtn {
+      margin-top: 10px;
+      display: block;
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #copyBtn:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ChatGPT 提示詞產生器</h1>
+  
+    <!-- 使用者輸入區 -->
+    <div class="input-group">
+      <input type="text" id="inputText" placeholder="例如：化學物質風險溝通">
+      <button id="addTopicBtn">新增按鈕</button>
+    </div>
+  
+    <!-- 主題按鈕區：動態新增按鈕 -->
+    <div id="topicButtons">
+      <h2>主題按鈕區</h2>
+    </div>
+  
+    <!-- 套用按鈕區 -->
+    <div id="actionButtons">
+      <h2>套用按鈕區</h2>
+      <!-- 詳細版按鈕：模板內的 "OOOO" 將會替換為提示詞區目前的文字 -->
+      <button class="btn-action" id="detailedBtn">詳細版</button>
+    </div>
+  
+    <!-- 提示詞顯示區 -->
+    <div>
+      <h2>提示詞區</h2>
+      <textarea id="outputArea" placeholder="提示詞顯示區，可複製或修改文字"></textarea>
+      <button id="copyBtn">複製提示詞</button>
+    </div>
+  </div>
+  
+  <script>
+    // 取得網頁上的元素
+    const inputText = document.getElementById('inputText');
+    const addTopicBtn = document.getElementById('addTopicBtn');
+    const topicButtonsDiv = document.getElementById('topicButtons');
+    const detailedBtn = document.getElementById('detailedBtn');
+    const outputArea = document.getElementById('outputArea');
+    const copyBtn = document.getElementById('copyBtn');
+  
+    // 新增主題按鈕：當按下「新增按鈕」時將輸入內容產生按鈕
+    addTopicBtn.addEventListener('click', function() {
+      const text = inputText.value.trim();
+      if (text !== '') {
+        const newBtn = document.createElement('button');
+        newBtn.textContent = text;
+        newBtn.className = 'btn-topic';
+        // 點擊此按鈕時，將文字顯示在提示詞區
+        newBtn.addEventListener('click', function() {
+          outputArea.value = text;
+        });
+        topicButtonsDiv.appendChild(newBtn);
+        inputText.value = '';
+      }
+    });
+  
+    // 詳細版按鈕：將模板中的 "OOOO" 替換成提示詞區目前的文字
+    detailedBtn.addEventListener('click', function() {
+      const template = "請就政府推動OOOO政策，以5000字詳細說明現況、挑戰、行動方案及預期效益。";
+      const currentText = outputArea.value.trim();
+      if (currentText !== '') {
+        const result = template.replace("OOOO", currentText);
+        outputArea.value = result;
+      } else {
+        alert("請先選擇或輸入主題文字！");
+      }
+    });
+  
+    // 複製提示詞：將提示詞區的內容複製到剪貼簿
+    copyBtn.addEventListener('click', function() {
+      outputArea.select();
+      document.execCommand('copy');
+      alert("提示詞已複製到剪貼簿！");
+    });
+  </script>
+</body>
+</html>
