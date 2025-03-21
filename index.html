@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>ChatGPT 提示詞產生器</title>
+  <title>ChatGPT 提示詞產生器（Firebase 版）</title>
   <!-- 載入 Google Fonts 提供更美觀的字型 -->
   <link href="https://fonts.googleapis.com/css?family=Noto+Sans+TC&display=swap" rel="stylesheet">
   <style>
@@ -122,7 +122,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>ChatGPT 提示詞產生器</h1>
+    <h1>ChatGPT 提示詞產生器（Firebase 版）</h1>
   
     <!-- 使用者輸入區 -->
     <div class="input-group">
@@ -133,6 +133,7 @@
     <!-- 主題按鈕區：動態新增按鈕 -->
     <div id="topicButtons">
       <h2>主題按鈕區</h2>
+      <!-- 這裡會由 JavaScript 動態產生按鈕 -->
     </div>
   
     <!-- 套用按鈕區 -->
@@ -150,32 +151,85 @@
     </div>
   </div>
   
+  <!-- Firebase JS SDK（App 與 Firestore）-->
+  <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js"></script>
+
   <script>
-    // 取得網頁上的元素
+    /********************
+     * 第 1 步：Firebase 初始化
+     ********************/
+    // 將此物件內容替換為你在 Firebase 後台「專案設定」中的參數
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // 初始化 Firebase App
+    const app = firebase.initializeApp(firebaseConfig);
+    // 取得 Firestore 服務
+    const db = firebase.firestore();
+
+    /********************
+     * 第 2 步：前端元素抓取
+     ********************/
     const inputText = document.getElementById('inputText');
     const addTopicBtn = document.getElementById('addTopicBtn');
     const topicButtonsDiv = document.getElementById('topicButtons');
     const detailedBtn = document.getElementById('detailedBtn');
     const outputArea = document.getElementById('outputArea');
     const copyBtn = document.getElementById('copyBtn');
-  
-    // 新增主題按鈕：當按下「新增按鈕」時將輸入內容產生按鈕
-    addTopicBtn.addEventListener('click', function() {
+
+    /************************************************
+     * 第 3 步：上傳資料到 Firestore（新增主題按鈕）
+     ************************************************/
+    addTopicBtn.addEventListener('click', async function() {
       const text = inputText.value.trim();
       if (text !== '') {
-        const newBtn = document.createElement('button');
-        newBtn.textContent = text;
-        newBtn.className = 'btn-topic';
-        // 點擊此按鈕時，將文字顯示在提示詞區
-        newBtn.addEventListener('click', function() {
-          outputArea.value = text;
-        });
-        topicButtonsDiv.appendChild(newBtn);
-        inputText.value = '';
+        try {
+          // 新增一筆資料到 "topics" 集合
+          await db.collection('topics').add({
+            name: text,
+            createdAt: new Date() // 紀錄建立時間
+          });
+          // 新增完成後清空輸入框
+          inputText.value = '';
+        } catch (error) {
+          console.error('新增主題失敗：', error);
+        }
       }
     });
-  
-    // 詳細版按鈕：將模板中的 "OOOO" 替換成提示詞區目前的文字
+
+    /************************************************
+     * 第 4 步：即時監聽 Firestore 資料，顯示所有主題按鈕
+     ************************************************/
+    db.collection('topics')
+      .orderBy('createdAt', 'asc') // 依照建立時間排序
+      .onSnapshot(snapshot => {
+        // 先清空按鈕區
+        topicButtonsDiv.innerHTML = '<h2>主題按鈕區</h2>';
+        // 逐筆讀取 Firestore 中的文件資料
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const newBtn = document.createElement('button');
+          newBtn.textContent = data.name;
+          // 按下此按鈕時，將文字顯示在提示詞區
+          newBtn.addEventListener('click', function() {
+            outputArea.value = data.name;
+          });
+          topicButtonsDiv.appendChild(newBtn);
+        });
+      }, error => {
+        console.error('讀取資料失敗：', error);
+      });
+
+    /************************************************
+     * 第 5 步：套用按鈕 - 將 "OOOO" 替換為提示詞區文字
+     ************************************************/
     detailedBtn.addEventListener('click', function() {
       const template = "請就政府推動OOOO政策，以5000字詳細說明現況、挑戰、行動方案及預期效益。";
       const currentText = outputArea.value.trim();
@@ -186,8 +240,10 @@
         alert("請先選擇或輸入主題文字！");
       }
     });
-  
-    // 複製提示詞：將提示詞區的內容複製到剪貼簿
+
+    /************************************************
+     * 第 6 步：複製提示詞
+     ************************************************/
     copyBtn.addEventListener('click', function() {
       outputArea.select();
       document.execCommand('copy');
