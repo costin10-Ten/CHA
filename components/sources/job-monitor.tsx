@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { kickWorker } from "@/lib/jobs/client";
 import {
   JOB_STATUS_CLASS,
   JOB_STATUS_LABEL,
@@ -43,6 +44,13 @@ export function JobMonitor({
 
     if (!data) return;
     setJobs(data);
+
+    // 解析完成後會接著排入抽取工作，這裡順手觸發 worker，
+    // 不必等 Supabase Cron 的下一輪。
+    if (data.some((job) => job.status === "pending" || job.status === "retrying")) {
+      void kickWorker();
+      return;
+    }
 
     if (data.every((job) => isTerminalJobStatus(job.status))) {
       router.refresh();

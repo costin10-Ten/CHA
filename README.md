@@ -41,7 +41,7 @@ OpenAI／Anthropic 等模型 API（測試一律使用 Mock Provider）
 | ----- | ------------------------------------------------------------------- | ------- |
 | 1     | Next.js 專案、Supabase 結構、Auth、profiles、RLS、CI、首頁與登入頁  | ✅ 完成 |
 | 2     | 文字／檔案／網址匯入、Storage 直傳、processing_jobs、文件解析與版本 | ✅ 完成 |
-| 3     | Edge Function 抽取候選事實、Mock Provider、JSON Schema、品質檢查    | ⏳ 待辦 |
+| 3     | Edge Function 抽取候選事實、Mock Provider、JSON Schema、品質檢查    | ✅ 完成 |
 | 4     | 單人審核介面（核定、修正、駁回、拆分、合併）、review_records        | ⏳ 待辦 |
 | 5     | 正式事實庫、實體與關聯、版本管理、pgvector 增量索引                 | ⏳ 待辦 |
 | 6     | 混合搜尋、證據包、AI 問答、引用來源                                 | ⏳ 待辦 |
@@ -209,6 +209,51 @@ select cron.schedule(
 Edge Function 需要 `CRON_SECRET`（`supabase secrets set CRON_SECRET=...`，或在
 Dashboard → Edge Functions → Secrets 設定）。未設定排程也能運作，只是失敗的工作
 不會自動重試。
+
+## 候選事實抽取
+
+文件解析完成後會自動排入 `extract_facts` 工作，由 Edge Function `extract-facts` 處理：
+
+```text
+現行版本的段落（每次 6 段）
+  → 依 §8.2 的 JSON Schema 要求模型輸出
+  → 解析回應（容錯：去除程式碼區塊、丟棄缺欄位的項目）
+  → 自動品質檢查
+  → 寫入 candidate_facts（含品質標記與分數）
+  → 記錄 model_runs 用量與 prompt_versions 版本
+```
+
+### 自動品質檢查
+
+| 檢查                       | 標記                         | 處置                   |
+| -------------------------- | ---------------------------- | ---------------------- |
+| 沒有原文片段               | `missing_quote`              | 直接丟棄，不進核定流程 |
+| 片段不存在於原文           | `quote_not_in_source`        | 直接丟棄               |
+| 數字或單位與原文不符       | `number_mismatch`            | 標記待審               |
+| 以指代詞開頭（主詞不完整） | `incomplete_subject`         | 標記待審               |
+| 一句包含多個命題           | `multi_proposition`          | 標記待審               |
+| 條件或限制遺失             | `condition_lost`             | 標記待審               |
+| 可能性被改寫成確定語氣     | `certainty_escalated`        | 標記待審               |
+| 疑似推論而非原文陳述       | `inference_suspected`        | 標記待審               |
+| 疑似重複／疑似矛盾         | `duplicate`／`contradiction` | 標記待審               |
+
+品質分數由標記扣分而來，`/review` 可依來源、狀態、風險等級、知識類型與標記篩選。
+
+### 模型設定
+
+Edge Function 讀取這些 secrets（Dashboard → Edge Functions → Secrets 或
+`supabase secrets set`）：
+
+```env
+LLM_PROVIDER=mock        # mock | openai | anthropic
+LLM_MODEL=               # 留空使用各 provider 預設值
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+LLM_BASE_URL=            # 指向 OpenAI 相容服務時才需要
+```
+
+未設定時使用 Mock Provider：不呼叫任何外部 API，把段落逐句轉成候選事實，
+可完整跑過抽取、品質檢查與審核流程。單元測試與 CI 一律走這條路徑。
 
 ## 資料權限
 

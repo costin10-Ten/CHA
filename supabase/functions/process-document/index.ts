@@ -309,6 +309,17 @@ async function processParseJob(job: {
     })
     .eq("id", source.id);
 
+  // 解析完成後接著排入候選事實抽取（Phase 3）。
+  const { error: chainError } = await admin.from("processing_jobs").insert({
+    owner_id: source.owner_id,
+    job_type: "extract_facts",
+    source_id: source.id,
+    payload: { source_version_id: version.id },
+  });
+  if (chainError) {
+    throw new Error(`建立事實抽取工作失敗：${chainError.message}`);
+  }
+
   return {
     unchanged: false,
     version: nextVersion,

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { deleteSource, reparseSource } from "@/app/sources/actions";
+import { deleteSource, extractFacts, reparseSource } from "@/app/sources/actions";
 import { Button } from "@/components/ui/button";
 import { kickWorker } from "@/lib/jobs/client";
 
@@ -15,6 +15,17 @@ export function SourceActions({ sourceId }: { sourceId: string }) {
   function handleReparse() {
     startTransition(async () => {
       const result = await reparseSource(sourceId);
+      setMessage(result.status === "idle" ? null : result.message);
+      if (result.status === "success") {
+        await kickWorker();
+        router.refresh();
+      }
+    });
+  }
+
+  function handleExtract() {
+    startTransition(async () => {
+      const result = await extractFacts(sourceId);
       setMessage(result.status === "idle" ? null : result.message);
       if (result.status === "success") {
         await kickWorker();
@@ -47,6 +58,14 @@ export function SourceActions({ sourceId }: { sourceId: string }) {
         disabled={pending}
       >
         {pending ? "處理中…" : "重新解析"}
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleExtract}
+        disabled={pending}
+      >
+        抽取候選事實
       </Button>
       <Button
         variant="destructive"

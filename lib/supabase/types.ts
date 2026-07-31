@@ -22,6 +22,21 @@ export type JobType =
 export type JobStatus =
   "pending" | "processing" | "completed" | "failed" | "retrying" | "cancelled";
 
+export type KnowledgeType =
+  "substance" | "concept" | "policy" | "event" | "topic" | "other";
+export type RiskLevel = "low" | "medium" | "high";
+export type CandidateStatus =
+  "pending" | "approved" | "rejected" | "needs_fix" | "merged" | "split";
+
+export type FactConditions = {
+  population?: string | null;
+  exposure_route?: string | null;
+  dose?: string | null;
+  duration?: string | null;
+  location?: string | null;
+  timeframe?: string | null;
+};
+
 export type ProfileRow = {
   id: string;
   owner_id: string;
@@ -107,6 +122,67 @@ export type ProcessingJobRow = {
   updated_at: string;
 };
 
+export type PromptVersionRow = {
+  id: string;
+  owner_id: string;
+  name: string;
+  version: number;
+  purpose: string;
+  template: string;
+  checksum: string;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ModelRunRow = {
+  id: string;
+  owner_id: string;
+  job_id: string | null;
+  source_id: string | null;
+  prompt_version_id: string | null;
+  purpose: string;
+  provider: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  latency_ms: number;
+  status: string;
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CandidateFactRow = {
+  id: string;
+  owner_id: string;
+  source_id: string;
+  source_version_id: string;
+  document_chunk_id: string | null;
+  statement: string;
+  subject: string | null;
+  predicate: string | null;
+  object: string | null;
+  knowledge_type: KnowledgeType;
+  conditions: FactConditions;
+  source_quote: string;
+  source_paragraph_id: string;
+  risk_level: RiskLevel;
+  confidence: number;
+  status: CandidateStatus;
+  quality_flags: string[];
+  quality_score: number;
+  duplicate_of: string | null;
+  contradicts: string[];
+  statement_hash: string;
+  prompt_version_id: string | null;
+  model_run_id: string | null;
+  extraction_batch: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type Insertable<T, Required extends keyof T> = Partial<Omit<T, Required>> &
   Pick<T, Required>;
 
@@ -155,6 +231,39 @@ export type Database = {
         Update: Partial<ProcessingJobRow>;
         Relationships: [];
       };
+      prompt_versions: {
+        Row: PromptVersionRow;
+        Insert: Insertable<
+          PromptVersionRow,
+          "owner_id" | "name" | "purpose" | "template" | "checksum"
+        >;
+        Update: Partial<PromptVersionRow>;
+        Relationships: [];
+      };
+      model_runs: {
+        Row: ModelRunRow;
+        Insert: Insertable<
+          ModelRunRow,
+          "owner_id" | "purpose" | "provider" | "model"
+        >;
+        Update: Partial<ModelRunRow>;
+        Relationships: [];
+      };
+      candidate_facts: {
+        Row: CandidateFactRow;
+        Insert: Insertable<
+          CandidateFactRow,
+          | "owner_id"
+          | "source_id"
+          | "source_version_id"
+          | "statement"
+          | "source_quote"
+          | "source_paragraph_id"
+          | "statement_hash"
+        >;
+        Update: Partial<CandidateFactRow>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -179,12 +288,25 @@ export type Database = {
         Args: { p_job_id: string; p_progress: number };
         Returns: undefined;
       };
+      upsert_prompt_version: {
+        Args: {
+          p_owner: string;
+          p_name: string;
+          p_purpose: string;
+          p_template: string;
+          p_checksum: string;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       source_type: SourceType;
       source_status: SourceStatus;
       job_type: JobType;
       job_status: JobStatus;
+      knowledge_type: KnowledgeType;
+      risk_level: RiskLevel;
+      candidate_status: CandidateStatus;
     };
     CompositeTypes: Record<never, never>;
   };

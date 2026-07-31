@@ -20,6 +20,7 @@ import {
   formatBytes,
   formatDateTime,
 } from "@/lib/jobs/labels";
+import { getCandidateStats } from "@/lib/facts/queries";
 import {
   getSource,
   listChunks,
@@ -46,7 +47,11 @@ export default async function SourceDetailPage({
   const source = await getSource(id);
   if (!source) notFound();
 
-  const [versions, jobs] = await Promise.all([listVersions(id), listJobs(id)]);
+  const [versions, jobs, candidateStats] = await Promise.all([
+    listVersions(id),
+    listJobs(id),
+    getCandidateStats(id),
+  ]);
   const currentVersion = versions.find((version) => version.is_current) ?? null;
   const chunks = currentVersion
     ? await listChunks(currentVersion.id, CHUNK_PREVIEW_LIMIT)
@@ -158,6 +163,27 @@ export default async function SourceDetailPage({
                   {source.last_error}
                 </p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>候選事實</CardTitle>
+              <CardDescription>解析完成後系統會自動排入抽取工作。</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <dl className="space-y-2 text-sm">
+                <Row label="候選總數">{candidateStats.total}</Row>
+                <Row label="待審核">{candidateStats.pending}</Row>
+                <Row label="高風險">{candidateStats.highRisk}</Row>
+                <Row label="有品質標記">{candidateStats.flagged}</Row>
+              </dl>
+              <Link
+                href={`/review?source=${source.id}`}
+                className="mt-3 inline-block text-sm text-blue-700 underline"
+              >
+                前往審核這份文件的候選事實
+              </Link>
             </CardContent>
           </Card>
 

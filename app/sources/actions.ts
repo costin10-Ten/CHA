@@ -263,6 +263,42 @@ export async function finalizeUpload(
   }
 }
 
+/** 手動排入候選事實抽取（解析完成後系統也會自動排一次）。 */
+export async function extractFacts(sourceId: string): Promise<ImportActionResult> {
+  try {
+    const user = await requireUser();
+    const supabase = await createClient();
+
+    const { data: version } = await supabase
+      .from("source_versions")
+      .select("id")
+      .eq("source_id", sourceId)
+      .eq("is_current", true)
+      .maybeSingle();
+
+    if (!version) {
+      return { status: "error", message: "來源尚未解析完成，沒有可抽取的版本" };
+    }
+
+    const { error } = await supabase.from("processing_jobs").insert({
+      owner_id: user.id,
+      job_type: "extract_facts",
+      source_id: sourceId,
+      payload: { source_version_id: version.id },
+    });
+
+    if (error) throw new Error(`建立抽取工作失敗：${error.message}`);
+
+    revalidatePath(`/sources/${sourceId}`);
+    return { status: "success", message: "已排入候選事實抽取工作。", sourceId };
+  } catch (cause) {
+    return {
+      status: "error",
+      message: cause instanceof Error ? cause.message : "建立抽取工作失敗",
+    };
+  }
+}
+
 /** 重新解析：抓取最新內容並在內容變動時建立新版本。 */
 export async function reparseSource(sourceId: string): Promise<ImportActionResult> {
   try {

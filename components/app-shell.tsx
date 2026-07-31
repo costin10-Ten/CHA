@@ -5,6 +5,7 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/sources", label: "來源" },
+  { href: "/review", label: "候選事實" },
 ];
 
 /** 登入後頁面的共用外框：導覽列 + 內容區。 */
