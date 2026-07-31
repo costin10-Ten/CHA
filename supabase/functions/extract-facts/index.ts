@@ -87,6 +87,7 @@ async function processExtractionJob(job: {
   id: string;
   owner_id: string;
   source_id: string | null;
+  payload?: Record<string, unknown>;
 }): Promise<Record<string, unknown>> {
   if (!job.source_id) throw new Error("工作缺少 source_id");
 
@@ -120,10 +121,16 @@ async function processExtractionJob(job: {
 
   if (chunkError) throw new Error(`讀取段落失敗：${chunkError.message}`);
 
+  // 審核介面的「重新抽取本段」只會帶入指定段落。
+  const onlyParagraphs = Array.isArray(job.payload?.paragraph_ids)
+    ? new Set((job.payload.paragraph_ids as unknown[]).map(String))
+    : null;
+
   const usable = (chunks ?? []).filter(
     (chunk: ChunkRow) =>
       EXTRACTABLE_BLOCK_TYPES.includes(chunk.block_type) &&
-      chunk.text.trim().length >= MIN_PARAGRAPH_LENGTH,
+      chunk.text.trim().length >= MIN_PARAGRAPH_LENGTH &&
+      (!onlyParagraphs || onlyParagraphs.has(chunk.paragraph_id)),
   ) as ChunkRow[];
 
   if (usable.length === 0) {
@@ -312,6 +319,7 @@ Deno.serve(async (req: Request) => {
     id: string;
     owner_id: string;
     source_id: string | null;
+    payload?: Record<string, unknown>;
   }[];
 
   const results: Record<string, unknown>[] = [];

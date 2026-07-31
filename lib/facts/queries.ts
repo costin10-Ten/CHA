@@ -3,7 +3,9 @@ import type {
   CandidateFactRow,
   CandidateStatus,
   KnowledgeType,
+  ReviewRecordRow,
   RiskLevel,
+  SimilarCandidate,
   SourceRow,
 } from "@/lib/supabase/types";
 
@@ -112,4 +114,80 @@ export async function getParagraphTexts(
 
   if (error) throw new Error(`讀取原文失敗：${error.message}`);
   return new Map((data ?? []).map((chunk) => [chunk.paragraph_id, chunk.text]));
+}
+
+export async function getCandidateFact(
+  id: string,
+): Promise<CandidateFactRow | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("candidate_facts")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(`讀取候選事實失敗：${error.message}`);
+  return data;
+}
+
+/** 取回段落前後文，讓審核時能判斷事實是否超出原文。 */
+export async function getParagraphContext(
+  sourceVersionId: string,
+  paragraphId: string,
+  radius = 1,
+): Promise<{ paragraph_id: string; text: string; block_type: string }[]> {
+  const supabase = await createClient();
+
+  const { data: target } = await supabase
+    .from("document_chunks")
+    .select("position")
+    .eq("source_version_id", sourceVersionId)
+    .eq("paragraph_id", paragraphId)
+    .maybeSingle();
+
+  if (!target) return [];
+
+  const { data, error } = await supabase
+    .from("document_chunks")
+    .select("paragraph_id, text, block_type")
+    .eq("source_version_id", sourceVersionId)
+    .gte("position", Math.max(0, target.position - radius))
+    .lte("position", target.position + radius)
+    .order("position", { ascending: true });
+
+  if (error) throw new Error(`讀取前後文失敗：${error.message}`);
+  return data ?? [];
+}
+
+export async function listReviewRecords(
+  candidateFactId: string,
+): Promise<ReviewRecordRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("review_records")
+    .select("*")
+    .eq("candidate_fact_id", candidateFactId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(`讀取審核紀錄失敗：${error.message}`);
+  return data ?? [];
+}
+
+/** 以三元組相似度找出相似的既有事實，避免重複核定。 */
+export async function findSimilarCandidates(
+  ownerId: string,
+  statement: string,
+  excludeId: string,
+): Promise<SimilarCandidate[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("find_similar_candidates", {
+    p_owner: ownerId,
+    p_statement: statement,
+    p_exclude: excludeId,
+    p_limit: 5,
+  });
+
+  // 相似度查詢失敗不應擋住審核流程。
+  if (error) return [];
+  return data ?? [];
 }
