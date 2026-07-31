@@ -166,6 +166,24 @@ tests/
    `https://<你的網域>/auth/callback` 與 Preview 網域
 4. 後續 Phase 的 Edge Functions 以 `npm run functions:deploy` 部署
 
+### 不安裝任何工具的純網頁流程
+
+不想在本機 clone repo 或安裝 CLI 時，migration 可由 GitHub Actions 代為套用
+（`.github/workflows/db-migrate.yml`）。在 GitHub → Settings →
+Secrets and variables → Actions 建立三個 Repository Secret：
+
+| Secret                  | 取得位置                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| `SUPABASE_ACCESS_TOKEN` | https://supabase.com/dashboard/account/tokens → Generate new token                                |
+| `SUPABASE_PROJECT_ID`   | 專案 ref，即 `https://<ref>.supabase.co` 的 `<ref>`                                               |
+| `SUPABASE_DB_PASSWORD`  | 建立專案時設定的資料庫密碼（忘記可在 Project Settings → Database → Reset database password 重設） |
+
+設定後，只要 `supabase/migrations/` 有變動並推上分支就會自動套用；
+也可在 Actions → Supabase Migrations → Run workflow 手動執行。
+
+首次套用（workflow 尚未進入 main 之前）可改用 Supabase Dashboard →
+SQL Editor → New query，貼上 `supabase/migrations/` 內的 SQL 執行，效果相同。
+
 ## 分支
 
 ```text
