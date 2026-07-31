@@ -189,6 +189,88 @@ export type CandidateFactRow = {
   updated_at: string;
 };
 
+export type FactStatus = "draft" | "active" | "inactive" | "superseded";
+
+export type KnowledgeFactRow = {
+  id: string;
+  owner_id: string;
+  source_id: string;
+  source_version_id: string;
+  candidate_fact_id: string | null;
+  source_paragraph_id: string;
+  source_quote: string;
+  statement: string;
+  subject: string | null;
+  predicate: string | null;
+  object: string | null;
+  knowledge_type: KnowledgeType;
+  conditions: FactConditions;
+  risk_level: RiskLevel;
+  tags: string[];
+  status: FactStatus;
+  version: number;
+  supersedes: string | null;
+  superseded_by: string | null;
+  statement_hash: string;
+  approved_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FactVersionRow = {
+  id: string;
+  owner_id: string;
+  knowledge_fact_id: string;
+  version: number;
+  statement: string;
+  conditions: FactConditions;
+  risk_level: RiskLevel;
+  source_quote: string;
+  change_note: string | null;
+  changed_fields: Json;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EntityRow = {
+  id: string;
+  owner_id: string;
+  name: string;
+  normalized_name: string;
+  entity_type: KnowledgeType;
+  aliases: string[];
+  description: string | null;
+  fact_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RelationRow = {
+  id: string;
+  owner_id: string;
+  subject_entity_id: string;
+  object_entity_id: string | null;
+  predicate: string;
+  knowledge_fact_id: string | null;
+  confidence: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EmbeddingRecordRow = {
+  id: string;
+  owner_id: string;
+  knowledge_fact_id: string;
+  fact_version: number;
+  embedding: number[] | null;
+  embedding_model: string;
+  embedding_version: string;
+  content_hash: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ReviewActionType =
   | "approve"
   | "approve_with_edit"
@@ -289,6 +371,58 @@ export type Database = {
         Update: Partial<ModelRunRow>;
         Relationships: [];
       };
+      knowledge_facts: {
+        Row: KnowledgeFactRow;
+        Insert: Insertable<
+          KnowledgeFactRow,
+          | "owner_id"
+          | "source_id"
+          | "source_version_id"
+          | "source_paragraph_id"
+          | "source_quote"
+          | "statement"
+          | "statement_hash"
+        >;
+        Update: Partial<KnowledgeFactRow>;
+        Relationships: [];
+      };
+      fact_versions: {
+        Row: FactVersionRow;
+        Insert: Insertable<
+          FactVersionRow,
+          | "owner_id"
+          | "knowledge_fact_id"
+          | "version"
+          | "statement"
+          | "source_quote"
+        >;
+        Update: Partial<FactVersionRow>;
+        Relationships: [];
+      };
+      entities: {
+        Row: EntityRow;
+        Insert: Insertable<EntityRow, "owner_id" | "name" | "normalized_name">;
+        Update: Partial<EntityRow>;
+        Relationships: [];
+      };
+      relations: {
+        Row: RelationRow;
+        Insert: Insertable<
+          RelationRow,
+          "owner_id" | "subject_entity_id" | "predicate"
+        >;
+        Update: Partial<RelationRow>;
+        Relationships: [];
+      };
+      embedding_records: {
+        Row: EmbeddingRecordRow;
+        Insert: Insertable<
+          EmbeddingRecordRow,
+          "owner_id" | "knowledge_fact_id" | "embedding_model" | "content_hash"
+        >;
+        Update: Partial<EmbeddingRecordRow>;
+        Relationships: [];
+      };
       review_records: {
         Row: ReviewRecordRow;
         Insert: Insertable<ReviewRecordRow, "owner_id" | "action">;
@@ -343,6 +477,28 @@ export type Database = {
         };
         Returns: SimilarCandidate[];
       };
+      promote_candidate_fact: {
+        Args: { p_candidate_id: string };
+        Returns: string;
+      };
+      revise_knowledge_fact: {
+        Args: {
+          p_fact_id: string;
+          p_statement: string;
+          p_conditions?: Json | null;
+          p_risk_level?: RiskLevel | null;
+          p_note?: string | null;
+        };
+        Returns: string;
+      };
+      set_knowledge_fact_status: {
+        Args: { p_fact_id: string; p_status: FactStatus };
+        Returns: undefined;
+      };
+      upsert_entity: {
+        Args: { p_owner: string; p_name: string; p_type?: KnowledgeType };
+        Returns: string;
+      };
       requeue_stale_jobs: {
         Args: { p_timeout_minutes?: number };
         Returns: number;
@@ -367,6 +523,7 @@ export type Database = {
       risk_level: RiskLevel;
       candidate_status: CandidateStatus;
       review_action: ReviewActionType;
+      fact_status: FactStatus;
     };
     CompositeTypes: Record<never, never>;
   };

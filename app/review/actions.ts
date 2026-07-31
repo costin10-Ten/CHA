@@ -73,6 +73,18 @@ async function recordReview(log: ReviewLog): Promise<void> {
   if (error) throw new Error(`寫入審核紀錄失敗：${error.message}`);
 }
 
+/**
+ * 核定後立即寫入正式事實庫。
+ * 失敗不回滾核定狀態，只把原因回報給使用者（可在 /knowledge 重試）。
+ */
+async function promoteApproved(candidateId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("promote_candidate_fact", {
+    p_candidate_id: candidateId,
+  });
+  return error ? error.message : null;
+}
+
 function revalidateReview(sourceId?: string | null) {
   revalidatePath("/review");
   revalidatePath("/dashboard");
@@ -122,8 +134,19 @@ async function applySimpleAction(
       note,
     });
 
+    const promoteError = action === "approve" ? await promoteApproved(id) : null;
+
     revalidateReview(fact.source_id);
-    return { status: "success", message: "已更新審核狀態。" };
+    revalidatePath("/knowledge");
+
+    return {
+      status: "success",
+      message: promoteError
+        ? `已核定，但寫入正式事實庫失敗：${promoteError}`
+        : action === "approve"
+          ? "已核定並寫入正式事實庫。"
+          : "已更新審核狀態。",
+    };
   } catch (cause) {
     return toResult(cause);
   }
@@ -263,8 +286,17 @@ export async function approveWithEdit(
       changes: changes as Json,
     });
 
+    const promoteError = await promoteApproved(id);
+
     revalidateReview(fact.source_id);
-    return { status: "success", message: "已修正並核定。" };
+    revalidatePath("/knowledge");
+
+    return {
+      status: "success",
+      message: promoteError
+        ? `已修正並核定，但寫入正式事實庫失敗：${promoteError}`
+        : "已修正並核定，已寫入正式事實庫。",
+    };
   } catch (cause) {
     return toResult(cause);
   }
@@ -514,6 +546,13 @@ export async function batchReview(
         toStatus,
         note: note ?? "批次操作",
       });
+    }
+
+    if (action === "approve") {
+      for (const fact of allowed) {
+        await promoteApproved(fact.id);
+      }
+      revalidatePath("/knowledge");
     }
 
     revalidateReview(allowed[0]?.source_id);
