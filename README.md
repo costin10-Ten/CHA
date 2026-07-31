@@ -43,7 +43,7 @@ OpenAI／Anthropic 等模型 API（測試一律使用 Mock Provider）
 | 2     | 文字／檔案／網址匯入、Storage 直傳、processing_jobs、文件解析與版本 | ✅ 完成 |
 | 3     | Edge Function 抽取候選事實、Mock Provider、JSON Schema、品質檢查    | ✅ 完成 |
 | 4     | 單人審核介面（核定、修正、駁回、拆分、合併）、review_records        | ✅ 完成 |
-| 5     | 正式事實庫、實體與關聯、版本管理、pgvector 增量索引                 | ⏳ 待辦 |
+| 5     | 正式事實庫、實體與關聯、版本管理、pgvector 增量索引                 | ✅ 完成 |
 | 6     | 混合搜尋、證據包、AI 問答、引用來源                                 | ⏳ 待辦 |
 | 7     | 逐句驗證、綠黃紅標示、紅色句子阻擋                                  | ⏳ 待辦 |
 | 8     | 風險溝通素材、匯出與備份、更新與排程                                | ⏳ 待辦 |
@@ -278,6 +278,48 @@ LLM_BASE_URL=            # 指向 OpenAI 相容服務時才需要
 
 每一個動作都會寫入 `review_records`：動作類型、前後狀態、變更欄位的 from/to、
 備註與關聯 ID，審核歷程完全可追溯。
+
+## 正式事實與版本
+
+候選事實核定後會立即寫入 `knowledge_facts`，並同時完成三件事：
+建立 `fact_versions` 快照、整理主體與客體成 `entities` 與 `relations`、
+排入只針對這一筆的向量工作。
+
+```text
+核定候選事實
+  → promote_candidate_fact（拒絕沒有原文片段或未核定的事實）
+  → knowledge_facts（status=active, version=1）
+  → fact_versions 快照 + entities/relations
+  → processing_jobs（generate_embeddings，payload 只帶這一筆的 id）
+```
+
+修改正式事實時：
+
+```text
+revise_knowledge_fact
+  → 舊版 status=superseded、superseded_by 指向新版
+  → 新版 version+1、supersedes 指向舊版
+  → 只把「這一筆」的舊向量 is_active=false
+  → 只為新版排入一筆向量工作
+```
+
+舊版本永遠保留、可查閱，但不會出現在搜尋結果中（向量索引是
+`where is_active` 的部分索引）。停用事實時其向量一併退出搜尋。
+`tests/unit/knowledge-migration.test.ts` 會檢查這些規則沒有被改壞，
+包括「沒有任何一次性刪除全部向量的語句」。
+
+### 向量
+
+| 項目     | 值                                                                       |
+| -------- | ------------------------------------------------------------------------ |
+| 維度     | 1536（與 `embedding_records.embedding` 欄位一致）                        |
+| 索引     | HNSW + cosine，只涵蓋 `is_active` 的向量                                 |
+| Provider | `EMBEDDING_PROVIDER`（預設跟隨 `LLM_PROVIDER`）：mock 或 openai          |
+| 每筆保存 | knowledge_fact_id、fact_version、model、version、content_hash、is_active |
+
+Mock embedding 以字元 bigram 雜湊產生確定性向量：不具語意，但同樣文字得到
+同樣向量、用字重疊的句子相似度較高，足以在不呼叫付費 API 的情況下驗證
+索引與增量更新。
 
 ## 資料權限
 

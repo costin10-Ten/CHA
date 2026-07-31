@@ -2,8 +2,12 @@
 
 import { createClient } from "@/lib/supabase/client";
 
-/** 目前部署的背景 worker。順序即處理順序：先解析文件，再抽取候選事實。 */
-export const WORKER_FUNCTIONS = ["process-document", "extract-facts"] as const;
+/** 目前部署的背景 worker。順序即處理順序：解析文件 → 抽取候選事實 → 產生向量。 */
+export const WORKER_FUNCTIONS = [
+  "process-document",
+  "extract-facts",
+  "generate-embeddings",
+] as const;
 
 /**
  * 觸發 Edge Function 立即處理待辦工作。
