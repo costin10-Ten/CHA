@@ -343,6 +343,10 @@ export type Database = {
         };
         Returns: SimilarCandidate[];
       };
+      requeue_stale_jobs: {
+        Args: { p_timeout_minutes?: number };
+        Returns: number;
+      };
       upsert_prompt_version: {
         Args: {
           p_owner: string;
