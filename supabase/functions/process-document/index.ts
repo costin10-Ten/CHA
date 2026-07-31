@@ -15,6 +15,8 @@
 // 解析邏輯與單元測試共用 ../_shared 內的程式碼，不重複實作。
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+
+import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { extractText, getDocumentProxy } from "npm:unpdf@1";
 
 import {
@@ -36,13 +38,6 @@ const MAX_FETCH_BYTES = 5_000_000;
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
 
 /** 解析呼叫者身分：cron secret 或使用者 JWT。 */
 async function resolveCaller(
@@ -331,14 +326,20 @@ async function processParseJob(job: {
 }
 
 Deno.serve(async (req: Request) => {
+  const preflight = handlePreflight(req);
+  if (preflight) return preflight;
+
   if (req.method !== "POST") {
-    return json({ error: "只接受 POST" }, 405);
+    return jsonResponse({ error: "只接受 POST" }, 405);
   }
 
   const caller = await resolveCaller(req);
   if (caller.mode === "denied") {
-    return json({ error: "未授權" }, 401);
+    return jsonResponse({ error: "未授權" }, 401);
   }
+
+  // 先把卡在 processing 的逾時工作放回佇列，避免函式中斷後永遠卡住。
+  await admin.rpc("requeue_stale_jobs", { p_timeout_minutes: 5 });
 
   const { data: jobs, error } = await admin.rpc("claim_processing_jobs", {
     p_job_types: ["parse_document"],
@@ -348,7 +349,7 @@ Deno.serve(async (req: Request) => {
   });
 
   if (error) {
-    return json({ error: `認領工作失敗：${error.message}` }, 500);
+    return jsonResponse({ error: `認領工作失敗：${error.message}` }, 500);
   }
 
   const claimed = (jobs ?? []) as {
@@ -388,5 +389,5 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  return json({ claimed: claimed.length, results });
+  return jsonResponse({ claimed: claimed.length, results });
 });

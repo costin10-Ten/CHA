@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
-import { Badge } from "@/components/ui/badge";
+import { ReviewList } from "@/components/review/review-list";
 import {
   Card,
   CardContent,
@@ -12,11 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  CANDIDATE_STATUS_CLASS,
   CANDIDATE_STATUS_LABEL,
-  CONDITION_LABEL,
   KNOWLEDGE_TYPE_LABEL,
-  RISK_LEVEL_CLASS,
   RISK_LEVEL_LABEL,
   qualityFlagLabel,
 } from "@/lib/facts/labels";
@@ -25,7 +22,6 @@ import {
   listCandidateFacts,
   listSourceOptions,
 } from "@/lib/facts/queries";
-import { formatDateTime } from "@/lib/jobs/labels";
 import { getCurrentUser } from "@/lib/supabase/server";
 import type {
   CandidateStatus,
@@ -199,80 +195,7 @@ export default async function ReviewPage({
             </CardContent>
           </Card>
         ) : (
-          <ul className="space-y-4">
-            {facts.map((fact) => (
-              <li key={fact.id}>
-                <Card>
-                  <CardContent className="space-y-3 pt-6">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge className={CANDIDATE_STATUS_CLASS[fact.status]}>
-                        {CANDIDATE_STATUS_LABEL[fact.status]}
-                      </Badge>
-                      <Badge className={RISK_LEVEL_CLASS[fact.risk_level]}>
-                        {RISK_LEVEL_LABEL[fact.risk_level]}
-                      </Badge>
-                      <Badge className="bg-slate-100 text-slate-700">
-                        {KNOWLEDGE_TYPE_LABEL[fact.knowledge_type]}
-                      </Badge>
-                      <span className="font-mono text-xs text-slate-500">
-                        {fact.source_paragraph_id}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        品質分數 {fact.quality_score}
-                      </span>
-                      <span className="ml-auto text-xs text-slate-400">
-                        {formatDateTime(fact.created_at)}
-                      </span>
-                    </div>
-
-                    <p className="text-sm font-medium text-slate-900">
-                      {fact.statement}
-                    </p>
-
-                    <blockquote className="border-l-2 border-slate-300 pl-3 text-sm text-slate-600">
-                      {fact.source_quote}
-                    </blockquote>
-
-                    {Object.entries(fact.conditions ?? {}).some(
-                      ([, value]) => value,
-                    ) && (
-                      <div className="flex flex-wrap gap-2 text-xs text-slate-600">
-                        {Object.entries(fact.conditions ?? {})
-                          .filter(([, value]) => value)
-                          .map(([key, value]) => (
-                            <span
-                              key={key}
-                              className="rounded bg-slate-100 px-2 py-0.5"
-                            >
-                              {CONDITION_LABEL[key] ?? key}：{value}
-                            </span>
-                          ))}
-                      </div>
-                    )}
-
-                    {fact.quality_flags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {fact.quality_flags.map((flag) => (
-                          <Badge key={flag} className="bg-amber-100 text-amber-900">
-                            {qualityFlagLabel(flag)}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="text-xs text-slate-500">
-                      <Link
-                        href={`/sources/${fact.source_id}`}
-                        className="underline hover:text-slate-800"
-                      >
-                        檢視來源文件
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              </li>
-            ))}
-          </ul>
+          <ReviewList facts={facts} />
         )}
       </div>
     </AppShell>

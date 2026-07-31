@@ -179,8 +179,48 @@ export type CandidateFactRow = {
   prompt_version_id: string | null;
   model_run_id: string | null;
   extraction_batch: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  edited: boolean;
+  parent_fact_id: string | null;
+  merged_into: string | null;
+  original_statement: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type ReviewActionType =
+  | "approve"
+  | "approve_with_edit"
+  | "reject"
+  | "needs_fix"
+  | "split"
+  | "merge"
+  | "reextract"
+  | "reopen";
+
+export type ReviewRecordRow = {
+  id: string;
+  owner_id: string;
+  candidate_fact_id: string | null;
+  source_id: string | null;
+  action: ReviewActionType;
+  from_status: CandidateStatus | null;
+  to_status: CandidateStatus | null;
+  note: string | null;
+  changes: Json;
+  related_ids: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type SimilarCandidate = {
+  id: string;
+  statement: string;
+  status: CandidateStatus;
+  source_id: string;
+  source_paragraph_id: string;
+  similarity: number;
 };
 
 type Insertable<T, Required extends keyof T> = Partial<Omit<T, Required>> &
@@ -249,6 +289,12 @@ export type Database = {
         Update: Partial<ModelRunRow>;
         Relationships: [];
       };
+      review_records: {
+        Row: ReviewRecordRow;
+        Insert: Insertable<ReviewRecordRow, "owner_id" | "action">;
+        Update: Partial<ReviewRecordRow>;
+        Relationships: [];
+      };
       candidate_facts: {
         Row: CandidateFactRow;
         Insert: Insertable<
@@ -288,6 +334,19 @@ export type Database = {
         Args: { p_job_id: string; p_progress: number };
         Returns: undefined;
       };
+      find_similar_candidates: {
+        Args: {
+          p_owner: string;
+          p_statement: string;
+          p_exclude?: string | null;
+          p_limit?: number;
+        };
+        Returns: SimilarCandidate[];
+      };
+      requeue_stale_jobs: {
+        Args: { p_timeout_minutes?: number };
+        Returns: number;
+      };
       upsert_prompt_version: {
         Args: {
           p_owner: string;
@@ -307,6 +366,7 @@ export type Database = {
       knowledge_type: KnowledgeType;
       risk_level: RiskLevel;
       candidate_status: CandidateStatus;
+      review_action: ReviewActionType;
     };
     CompositeTypes: Record<never, never>;
   };
