@@ -40,7 +40,7 @@ OpenAI／Anthropic 等模型 API（測試一律使用 Mock Provider）
 | Phase | 內容                                                                | 狀態    |
 | ----- | ------------------------------------------------------------------- | ------- |
 | 1     | Next.js 專案、Supabase 結構、Auth、profiles、RLS、CI、首頁與登入頁  | ✅ 完成 |
-| 2     | 文字／檔案／網址匯入、Storage 直傳、processing_jobs、文件解析與版本 | ⏳ 待辦 |
+| 2     | 文字／檔案／網址匯入、Storage 直傳、processing_jobs、文件解析與版本 | ✅ 完成 |
 | 3     | Edge Function 抽取候選事實、Mock Provider、JSON Schema、品質檢查    | ⏳ 待辦 |
 | 4     | 單人審核介面（核定、修正、駁回、拆分、合併）、review_records        | ⏳ 待辦 |
 | 5     | 正式事實庫、實體與關聯、版本管理、pgvector 增量索引                 | ⏳ 待辦 |
@@ -123,21 +123,92 @@ app/                Next.js App Router 頁面與 Route Handlers
   auth/callback/    Supabase Email／Magic Link 導回處理
   dashboard/        登入後首頁
   login/            登入頁與 Server Actions
-components/         UI 元件（ui/ 為基礎元件，auth/ 為登入相關）
+  sources/          來源匯入、清單、詳情與 Server Actions
+components/
+  ui/               基礎 UI 元件
+  auth/             登入與登出
+  sources/          匯入表單、工作進度、來源操作
 lib/
   auth/             登入表單 schema 與錯誤訊息
+  jobs/             工作狀態標籤與觸發 Edge Function
+  sources/          匯入驗證 schema 與資料查詢
   supabase/         browser／server／admin client 與 middleware
   env.ts            環境變數集中驗證
   profile.ts        profiles 讀寫
 supabase/
   migrations/       資料庫結構與 RLS policy（全部納入版控）
+  functions/
+    _shared/        解析管線（純 TypeScript，Deno 與 Vitest 共用同一份程式碼）
+    process-document/  文件解析 worker
   seed.sql          本機示範資料
   config.toml       Supabase CLI 設定
 tests/
   unit/             Vitest
   e2e/              Playwright
-.github/workflows/  CI
+.github/workflows/  CI 與 Supabase migration／Edge Function 部署
 ```
+
+## 匯入與處理流程
+
+```text
+瀏覽器
+  ├─ 貼入文字 → Server Action 建立 source 並保存原文到 Storage
+  ├─ 上傳檔案 → Server Action 只發 signed upload URL，檔案由瀏覽器直傳 Storage
+  └─ 輸入網址 → Server Action 建立 source（抓取交給 worker）
+        ↓
+processing_jobs 建立一筆 parse_document 工作
+        ↓
+Edge Function process-document
+  claim_processing_jobs（FOR UPDATE SKIP LOCKED）
+  → 讀 Storage／抓網頁 → 清除導覽列與廣告 → 切段落並編號 P-001…
+  → 內容雜湊未變則不建立新版本
+  → 建立 source_versions（舊版自動失去 is_current）與 document_chunks
+  → complete／fail（失敗以 30s、60s、120s 指數退避重試，最多 3 次）
+        ↓
+前端輪詢 processing_jobs 顯示進度
+```
+
+檔案內容從不經過應用伺服器；重的解析工作也不在使用者的請求中執行。
+
+### Storage 路徑
+
+```text
+sources/{owner_id}/{source_id}/original.<ext>     上傳或貼入的原始內容
+sources/{owner_id}/{source_id}/raw.html           網址來源抓取到的原始 HTML
+sources/{owner_id}/{source_id}/parsed-v{n}.json   每一版的解析結果
+```
+
+Storage RLS 以路徑第一層（owner_id）判斷，使用者只能存取自己的資料夾。
+
+### 背景工作排程
+
+Edge Function 有兩種觸發方式：
+
+1. 前端匯入完成後以使用者 JWT 呼叫，立即處理該使用者的工作
+2. Supabase Cron 定期呼叫，負責重試與排程更新
+
+排程需在 Supabase SQL Editor 執行一次（把網址與密鑰換成你的值）：
+
+```sql
+select cron.schedule(
+  'process-documents',
+  '* * * * *',
+  $$
+  select net.http_post(
+    url := 'https://<your-ref>.supabase.co/functions/v1/process-document',
+    headers := jsonb_build_object(
+      'content-type', 'application/json',
+      'x-cron-secret', '<你的 CRON_SECRET>'
+    ),
+    body := '{}'::jsonb
+  );
+  $$
+);
+```
+
+Edge Function 需要 `CRON_SECRET`（`supabase secrets set CRON_SECRET=...`，或在
+Dashboard → Edge Functions → Secrets 設定）。未設定排程也能運作，只是失敗的工作
+不會自動重試。
 
 ## 資料權限
 
@@ -195,6 +266,19 @@ fix/*       修正
 
 ## CI
 
-GitHub Actions（`.github/workflows/ci.yml`）在 push 與 PR 時執行：
-`npm ci` → lint → format check → typecheck → unit tests → build → Playwright smoke test。
-CI 使用 placeholder Supabase 變數與 `LLM_PROVIDER=mock`，不會呼叫付費 API。
+- `.github/workflows/ci.yml`：push 與 PR 時執行 `npm ci` → lint → format check →
+  typecheck → unit tests → build → Playwright smoke test。使用 placeholder
+  Supabase 變數與 `LLM_PROVIDER=mock`，不會呼叫付費 API。
+- `.github/workflows/db-migrate.yml`：`supabase/migrations/` 或
+  `supabase/functions/` 有變動時，自動執行 `supabase db push` 與
+  `supabase functions deploy`。
+
+## 設計取捨
+
+- **佇列**：`processing_jobs` 資料表搭配 `claim_processing_jobs`
+  （`FOR UPDATE SKIP LOCKED`）作為佇列。工作狀態、重試次數、錯誤與模型用量都是
+  查得到的資料列，前端可直接輪詢；要改用 Supabase Queues 時只需替換派工方式，
+  資料模型不變。
+- **解析程式碼**：`supabase/functions/_shared/` 只使用 Web 標準 API，
+  Deno（Edge Function）與 Vitest（單元測試）執行的是同一份檔案，
+  避免兩套實作長期漂移。PDF 文字抽取需要 npm 套件，因此留在 Edge Function 內。

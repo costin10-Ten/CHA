@@ -19,6 +19,7 @@ on:
     branches: [main, develop, "claude/**", "feature/**"]
     paths:
       - "supabase/migrations/**"
+      - "supabase/functions/**"
       - ".github/workflows/db-migrate.yml"
   workflow_dispatch:
 
@@ -64,3 +65,7 @@ jobs:
 
       - name: Verify
         run: supabase migration list --password "$SUPABASE_DB_PASSWORD"
+
+      # Edge Functions 與 migration 一起部署，資料表與 worker 版本才會一致。
+      - name: Deploy Edge Functions
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"

@@ -35,3 +35,10 @@ test("未登入時受保護路徑導回登入頁", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/login\?redirectTo=%2Fdashboard/);
 });
+
+test("未登入時來源頁同樣受保護", async ({ page }) => {
+  await page.goto("/sources");
+
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fsources/);
+  await expect(page.getByLabel("電子郵件")).toBeVisible();
+});
