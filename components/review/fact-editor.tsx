@@ -149,7 +149,7 @@ export function FactEditor({ fact }: { fact: CandidateFactRow }) {
                 event.target.value as CandidateFactRow["knowledge_type"],
               )
             }
-            className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"
+            className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900"
           >
             {Object.entries(KNOWLEDGE_TYPE_LABEL).map(([value, label]) => (
               <option key={value} value={value}>
@@ -166,7 +166,7 @@ export function FactEditor({ fact }: { fact: CandidateFactRow }) {
             onChange={(event) =>
               setRiskLevel(event.target.value as CandidateFactRow["risk_level"])
             }
-            className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"
+            className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900"
           >
             {Object.entries(RISK_LEVEL_LABEL).map(([value, label]) => (
               <option key={value} value={value}>

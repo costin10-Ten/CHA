@@ -271,6 +271,86 @@ export type EmbeddingRecordRow = {
   updated_at: string;
 };
 
+export type AnswerStatus = "draft" | "verified" | "blocked" | "failed";
+export type SentenceVerdict = "supported" | "partial" | "unsupported";
+
+export type SearchResultRow = {
+  id: string;
+  statement: string;
+  subject: string | null;
+  predicate: string | null;
+  object: string | null;
+  conditions: FactConditions;
+  knowledge_type: KnowledgeType;
+  risk_level: RiskLevel;
+  version: number;
+  source_id: string;
+  source_paragraph_id: string;
+  source_quote: string;
+  keyword_rank: number;
+  vector_similarity: number;
+  combined_score: number;
+};
+
+export type AnswerSessionRow = {
+  id: string;
+  owner_id: string;
+  question: string;
+  answer: string | null;
+  status: AnswerStatus;
+  insufficient_evidence: boolean;
+  evidence_count: number;
+  provider: string | null;
+  model: string | null;
+  prompt_version_id: string | null;
+  model_run_id: string | null;
+  filters: Json;
+  error: string | null;
+  verified_at: string | null;
+  supported_count: number;
+  partial_count: number;
+  unsupported_count: number;
+  publishable: boolean;
+  published_answer: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AnswerEvidenceRow = {
+  id: string;
+  owner_id: string;
+  answer_session_id: string;
+  knowledge_fact_id: string;
+  knowledge_ref: string;
+  rank: number;
+  keyword_rank: number;
+  vector_similarity: number;
+  combined_score: number;
+  statement: string;
+  conditions: FactConditions;
+  source_title: string | null;
+  source_url: string | null;
+  source_locator: string | null;
+  fact_version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AnswerSentenceRow = {
+  id: string;
+  owner_id: string;
+  answer_session_id: string;
+  position: number;
+  sentence: string;
+  verdict: SentenceVerdict | null;
+  supporting_fact_ids: string[];
+  supporting_refs: string[];
+  similarity: number;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ReviewActionType =
   | "approve"
   | "approve_with_edit"
@@ -423,6 +503,35 @@ export type Database = {
         Update: Partial<EmbeddingRecordRow>;
         Relationships: [];
       };
+      answer_sessions: {
+        Row: AnswerSessionRow;
+        Insert: Insertable<AnswerSessionRow, "owner_id" | "question">;
+        Update: Partial<AnswerSessionRow>;
+        Relationships: [];
+      };
+      answer_evidence: {
+        Row: AnswerEvidenceRow;
+        Insert: Insertable<
+          AnswerEvidenceRow,
+          | "owner_id"
+          | "answer_session_id"
+          | "knowledge_fact_id"
+          | "knowledge_ref"
+          | "rank"
+          | "statement"
+        >;
+        Update: Partial<AnswerEvidenceRow>;
+        Relationships: [];
+      };
+      answer_sentences: {
+        Row: AnswerSentenceRow;
+        Insert: Insertable<
+          AnswerSentenceRow,
+          "owner_id" | "answer_session_id" | "position" | "sentence"
+        >;
+        Update: Partial<AnswerSentenceRow>;
+        Relationships: [];
+      };
       review_records: {
         Row: ReviewRecordRow;
         Insert: Insertable<ReviewRecordRow, "owner_id" | "action">;
@@ -477,6 +586,27 @@ export type Database = {
         };
         Returns: SimilarCandidate[];
       };
+      apply_answer_verification: {
+        Args: {
+          p_session_id: string;
+          p_sentences: Json;
+          p_published_answer: string;
+        };
+        Returns: undefined;
+      };
+      search_knowledge_facts: {
+        Args: {
+          p_query?: string;
+          p_embedding?: string | null;
+          p_source_id?: string | null;
+          p_knowledge_type?: KnowledgeType | null;
+          p_risk_level?: RiskLevel | null;
+          p_entity_id?: string | null;
+          p_limit?: number;
+          p_min_score?: number;
+        };
+        Returns: SearchResultRow[];
+      };
       promote_candidate_fact: {
         Args: { p_candidate_id: string };
         Returns: string;
@@ -524,6 +654,8 @@ export type Database = {
       candidate_status: CandidateStatus;
       review_action: ReviewActionType;
       fact_status: FactStatus;
+      answer_status: AnswerStatus;
+      sentence_verdict: SentenceVerdict;
     };
     CompositeTypes: Record<never, never>;
   };
