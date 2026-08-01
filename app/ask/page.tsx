@@ -1,0 +1,171 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { AppShell } from "@/components/app-shell";
+import { AskForm } from "@/components/ask/ask-form";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { listAnswerEvidence, listAnswerSessions } from "@/lib/answering/queries";
+import { formatDateTime } from "@/lib/jobs/labels";
+import { getCurrentUser } from "@/lib/supabase/server";
+
+export const metadata: Metadata = { title: "AI 問答" };
+export const dynamic = "force-dynamic";
+
+export default async function AskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?redirectTo=/ask");
+
+  const params = await searchParams;
+  const sessions = await listAnswerSessions(10);
+  const latest = sessions[0];
+  const evidence = latest ? await listAnswerEvidence(latest.id) : [];
+
+  return (
+    <AppShell
+      title="AI 問答"
+      description="回答只能使用核定事實。每一段都標註知識編號，可回溯到原文段落。"
+    >
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>提問</CardTitle>
+            <CardDescription>
+              系統會先用混合搜尋取出相關的核定事實組成證據包，再交給模型作答。
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AskForm defaultQuestion={params.q ?? ""} />
+          </CardContent>
+        </Card>
+
+        {latest && (
+          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+            <Card>
+              <CardHeader>
+                <CardTitle>{latest.question}</CardTitle>
+                <CardDescription>
+                  {formatDateTime(latest.created_at)}．{latest.provider ?? "—"}／
+                  {latest.model ?? "—"}． 使用 {latest.evidence_count} 筆核定事實
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {latest.insufficient_evidence && (
+                  <p className="rounded border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">
+                    這個回答已標示為「證據不足」——系統不會用模型自身知識補足。
+                  </p>
+                )}
+
+                {latest.error && (
+                  <p className="rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+                    {latest.error}
+                  </p>
+                )}
+
+                <div className="space-y-3 text-sm whitespace-pre-wrap text-slate-800">
+                  {latest.answer ?? "（尚無回答）"}
+                </div>
+
+                <p className="border-t border-slate-100 pt-3 text-xs text-slate-500">
+                  逐句驗證與綠黃紅標示會在 Phase 7 加入；目前已先把回答拆句保存。
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>證據包</CardTitle>
+                <CardDescription>送進模型的全部內容。</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {evidence.length === 0 ? (
+                  <p className="text-sm text-slate-500">沒有找到相關的核定事實。</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {evidence.map((item) => (
+                      <li
+                        key={item.id}
+                        className="rounded border border-slate-200 p-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge className="bg-slate-900 font-mono text-white">
+                            {item.knowledge_ref}
+                          </Badge>
+                          <span className="text-xs text-slate-500">
+                            分數 {item.combined_score.toFixed(2)}
+                          </span>
+                        </div>
+                        <Link
+                          href={`/knowledge/${item.knowledge_fact_id}`}
+                          className="mt-1 block text-sm text-slate-800 hover:underline"
+                        >
+                          {item.statement}
+                        </Link>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {item.source_title ?? "未知來源"}．
+                          {item.source_locator ?? "—"}．v{item.fact_version}
+                        </p>
+                        {item.source_url && (
+                          <a
+                            href={item.source_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs text-blue-700 underline"
+                          >
+                            開啟原文
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {sessions.length > 1 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>最近的問答</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm">
+                {sessions.slice(1).map((session) => (
+                  <li
+                    key={session.id}
+                    className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2 last:border-0"
+                  >
+                    <span className="truncate text-slate-800">
+                      {session.question}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2 text-xs text-slate-500">
+                      {session.insufficient_evidence && (
+                        <Badge className="bg-amber-100 text-amber-900">
+                          資料不足
+                        </Badge>
+                      )}
+                      <span>{session.evidence_count} 筆證據</span>
+                      <span>{formatDateTime(session.created_at)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </AppShell>
+  );
+}

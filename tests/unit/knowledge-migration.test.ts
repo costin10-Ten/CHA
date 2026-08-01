@@ -83,3 +83,37 @@ describe("正式事實的來源約束", () => {
     expect(table).toMatch(/source_quote text not null/);
   });
 });
+
+describe("混合搜尋的安全限制", () => {
+  const search = sql.slice(sql.indexOf("function public.search_knowledge_facts"));
+
+  it("一律限制 owner_id 為目前使用者", () => {
+    expect(search).toContain("f.owner_id = (select auth.uid())");
+  });
+
+  it("只搜尋現行事實", () => {
+    expect(search).toContain("f.status = 'active'");
+  });
+
+  it("向量只取現行向量", () => {
+    expect(search).toMatch(/where e\.knowledge_fact_id = b\.id\s+and e\.is_active/);
+  });
+
+  it("同時具備關鍵字、全文與向量三種比對", () => {
+    expect(search).toContain("ilike");
+    expect(search).toContain("ts_rank_cd");
+    expect(search).toContain("extensions.similarity");
+    expect(search).toContain("<=>");
+  });
+
+  it("支援文件、類型、風險與實體篩選", () => {
+    for (const filter of [
+      "p_source_id is null or f.source_id = p_source_id",
+      "p_knowledge_type is null or f.knowledge_type = p_knowledge_type",
+      "p_risk_level is null or f.risk_level = p_risk_level",
+      "p_entity_id is null",
+    ]) {
+      expect(search).toContain(filter);
+    }
+  });
+});

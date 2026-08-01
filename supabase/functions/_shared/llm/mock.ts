@@ -23,7 +23,9 @@ export class MockProvider implements LlmProvider {
       .map((message) => message.content)
       .join("\n");
 
-    const text = JSON.stringify({ facts: buildMockFacts(userContent) });
+    const text = isAnswerPrompt(userContent)
+      ? buildMockAnswer(userContent)
+      : JSON.stringify({ facts: buildMockFacts(userContent) });
 
     return {
       text,
@@ -34,6 +36,43 @@ export class MockProvider implements LlmProvider {
       latencyMs: Math.max(1, Date.now() - started),
     };
   }
+}
+
+/** 問答提示詞由 answering.ts 產生，內容一定包含證據包標題。 */
+export function isAnswerPrompt(prompt: string): boolean {
+  return prompt.includes("證據包（只能使用這些事實）");
+}
+
+/**
+ * Mock 回答：直接引用證據包裡的事實並標註知識編號。
+ * 不會捏造內容，因此可以用來驗證引用、逐句驗證與阻擋機制。
+ */
+export function buildMockAnswer(prompt: string): string {
+  const start = prompt.indexOf("{");
+  const end = prompt.lastIndexOf("}");
+  if (start === -1 || end === -1) {
+    return "現有核定事實不足以回答這個問題。";
+  }
+
+  let pack: { facts?: { knowledge_id?: string; statement?: string }[] };
+  try {
+    pack = JSON.parse(prompt.slice(start, end + 1));
+  } catch {
+    return "現有核定事實不足以回答這個問題。";
+  }
+
+  const facts = (pack.facts ?? []).filter(
+    (fact) => fact.statement && fact.knowledge_id,
+  );
+
+  if (facts.length === 0) {
+    return "現有核定事實不足以回答這個問題，知識庫中沒有相關的核定事實。";
+  }
+
+  return facts
+    .slice(0, 5)
+    .map((fact) => `${fact.statement} [${fact.knowledge_id}]`)
+    .join("\n\n");
 }
 
 interface MockParagraph {
