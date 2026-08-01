@@ -98,7 +98,7 @@ export default async function SearchPage({
                 name="q"
                 defaultValue={query}
                 placeholder="例如：甲基汞 孕婦 攝取"
-                className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400"
               />
 
               <div className="grid gap-3 sm:grid-cols-5">
@@ -256,7 +256,7 @@ function Select({
       <select
         name={name}
         defaultValue={value ?? ""}
-        className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"
+        className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900"
       >
         {children}
       </select>

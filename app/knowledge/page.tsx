@@ -104,7 +104,7 @@ export default async function KnowledgePage({
                 <select
                   name="status"
                   defaultValue={status}
-                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"
+                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900"
                 >
                   {STATUS_VALUES.map((value) => (
                     <option key={value} value={value}>
@@ -121,7 +121,7 @@ export default async function KnowledgePage({
                 <select
                   name="risk"
                   defaultValue={params.risk ?? ""}
-                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm"
+                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900"
                 >
                   <option value="">全部</option>
                   {(["low", "medium", "high"] as RiskLevel[]).map((value) => (
@@ -140,7 +140,7 @@ export default async function KnowledgePage({
                   name="q"
                   defaultValue={params.q ?? ""}
                   placeholder="在事實敘述中搜尋"
-                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400"
                 />
               </label>
 
