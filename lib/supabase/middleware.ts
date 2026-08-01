@@ -17,6 +17,7 @@ const PROTECTED_PREFIXES = [
   "/verify",
   "/generate",
   "/export",
+  "/import",
   "/history",
   "/settings",
 ];

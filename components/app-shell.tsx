@@ -5,6 +5,7 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/sources", label: "來源" },
+  { href: "/import", label: "匯入包" },
   { href: "/review", label: "候選事實" },
   { href: "/knowledge", label: "正式事實" },
   { href: "/entities", label: "實體" },

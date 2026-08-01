@@ -130,6 +130,7 @@ app/                Next.js App Router 頁面與 Route Handlers
   verify/           逐句驗證
   generate/         風險溝通素材產製與草稿
   export/           匯出頁與待選事實包回填
+  import/           文章包匯入（外部整理好的一篇文章）
   api/export/       匯出下載（JSON／CSV／Markdown）
   settings/prompts/ 提示詞版本與抽取回報統計
 components/
@@ -166,6 +167,7 @@ supabase/
   seed.sql          本機示範資料
   config.toml       Supabase CLI 設定
 docs/
+  ARTICLE-PACK.md   文章包匯入格式
   BACKUP.md         備份與還原操作
   BACKLOG.md        使用者提出的需求追蹤
 tests/
@@ -479,6 +481,23 @@ Podcast 逐字稿、60 秒短影音腳本、3 分鐘短影音腳本、圖卡文�
 ```
 
 **回填永遠不會直接核定**，仍然要人工逐筆確認。
+
+## 匯入外部整理好的文章
+
+在對話或其他工具中整理好的一篇文章，可以連同段落、候選事實、審核紀錄與正式事實
+一次匯入（`/import`）。格式與驗證規則見 [`docs/ARTICLE-PACK.md`](docs/ARTICLE-PACK.md)。
+
+匯入前一定先驗證，沒通過就不寫入任何一筆。最重要的一條規則：
+
+> 檔案必須自帶原文。`document_chunks[].text` 與 `candidate_facts[].source_quote`
+> 不能是佔位符，而且引句必須真的出現在該段落的文字中。
+
+匯入端無法從網址自動還原「是原文的哪一段、哪一句」——網頁改版、段落編號規則不同
+都會對不上，猜錯就等於偽造引用。指向資料庫產生值的綁定佔位符
+（`$auth.uid()`、`$candidate_facts[C001].id` 等）則會在匯入時解析。
+
+正式事實一律由候選事實經 `promote_candidate_fact` 產生；預設全部以「待審核」匯入，
+要沿用檔案中的人工核定結果必須明確勾選。
 
 ## 抽取問題回報
 
