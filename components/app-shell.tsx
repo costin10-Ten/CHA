@@ -12,6 +12,9 @@ const NAV = [
   { href: "/search", label: "搜尋" },
   { href: "/ask", label: "問答" },
   { href: "/verify", label: "驗證" },
+  { href: "/generate", label: "素材" },
+  { href: "/export", label: "匯出" },
+  { href: "/settings/prompts", label: "提示詞" },
 ];
 
 /** 登入後頁面的共用外框：導覽列 + 內容區。 */
@@ -29,8 +32,8 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
-          <nav className="flex items-center gap-1">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+          <nav className="flex flex-wrap items-center gap-1">
             {NAV.map((item) => (
               <Link
                 key={item.href}

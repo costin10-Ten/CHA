@@ -351,6 +351,82 @@ export type AnswerSentenceRow = {
   updated_at: string;
 };
 
+export type DraftType =
+  | "faq"
+  | "explainer"
+  | "article"
+  | "podcast_outline"
+  | "podcast_script"
+  | "video_60s"
+  | "video_3min"
+  | "card_text"
+  | "media_qa"
+  | "social_post";
+
+export type DraftStatus = "draft" | "edited" | "final" | "blocked";
+
+export type FeedbackType =
+  | "beyond_source"
+  | "condition_lost"
+  | "number_error"
+  | "certainty_escalated"
+  | "wrong_subject"
+  | "bad_sentence_split"
+  | "quote_mismatch"
+  | "other";
+
+export type CommunicationDraftRow = {
+  id: string;
+  owner_id: string;
+  draft_type: DraftType;
+  title: string;
+  body: string;
+  edited_body: string | null;
+  audience: string;
+  tone: string;
+  status: DraftStatus;
+  knowledge_fact_ids: string[];
+  knowledge_refs: string[];
+  provider: string | null;
+  model: string | null;
+  prompt_version_id: string | null;
+  model_run_id: string | null;
+  verified_at: string | null;
+  supported_count: number;
+  partial_count: number;
+  unsupported_count: number;
+  publishable: boolean;
+  verification: Json;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExtractionFeedbackRow = {
+  id: string;
+  owner_id: string;
+  candidate_fact_id: string | null;
+  source_id: string | null;
+  prompt_version_id: string | null;
+  model_run_id: string | null;
+  feedback_type: FeedbackType;
+  description: string | null;
+  statement_snapshot: string | null;
+  quote_snapshot: string | null;
+  paragraph_snapshot: string | null;
+  resolved: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PromptFeedbackStat = {
+  prompt_version_id: string;
+  prompt_name: string;
+  prompt_version: number;
+  feedback_count: number;
+  unresolved_count: number;
+  top_issue: FeedbackType | null;
+};
+
 export type ReviewActionType =
   | "approve"
   | "approve_with_edit"
@@ -359,7 +435,8 @@ export type ReviewActionType =
   | "split"
   | "merge"
   | "reextract"
-  | "reopen";
+  | "reopen"
+  | "external_correction";
 
 export type ReviewRecordRow = {
   id: string;
@@ -532,6 +609,21 @@ export type Database = {
         Update: Partial<AnswerSentenceRow>;
         Relationships: [];
       };
+      communication_drafts: {
+        Row: CommunicationDraftRow;
+        Insert: Insertable<
+          CommunicationDraftRow,
+          "owner_id" | "draft_type" | "title" | "body"
+        >;
+        Update: Partial<CommunicationDraftRow>;
+        Relationships: [];
+      };
+      extraction_feedback: {
+        Row: ExtractionFeedbackRow;
+        Insert: Insertable<ExtractionFeedbackRow, "owner_id" | "feedback_type">;
+        Update: Partial<ExtractionFeedbackRow>;
+        Relationships: [];
+      };
       review_records: {
         Row: ReviewRecordRow;
         Insert: Insertable<ReviewRecordRow, "owner_id" | "action">;
@@ -585,6 +677,14 @@ export type Database = {
           p_limit?: number;
         };
         Returns: SimilarCandidate[];
+      };
+      prompt_feedback_stats: {
+        Args: { p_owner?: string | null };
+        Returns: PromptFeedbackStat[];
+      };
+      enqueue_scheduled_updates: {
+        Args: { p_max_age_hours?: number; p_owner?: string | null };
+        Returns: number;
       };
       apply_answer_verification: {
         Args: {
@@ -656,6 +756,9 @@ export type Database = {
       fact_status: FactStatus;
       answer_status: AnswerStatus;
       sentence_verdict: SentenceVerdict;
+      draft_type: DraftType;
+      draft_status: DraftStatus;
+      feedback_type: FeedbackType;
     };
     CompositeTypes: Record<never, never>;
   };

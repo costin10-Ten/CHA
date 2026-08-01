@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import {
   approveCandidate,
@@ -12,6 +12,7 @@ import {
   rejectCandidate,
   type ReviewResult,
 } from "@/app/review/actions";
+import { FeedbackButton } from "@/components/review/feedback-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +37,7 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
   const [result, setResult] = useState<ReviewResult>({ status: "idle" });
   const [mergeOpen, setMergeOpen] = useState(false);
   const [mergeStatement, setMergeStatement] = useState("");
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   function toggle(id: string) {
     setSelected((current) => {
@@ -48,6 +50,11 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
 
   function selectBatchApprovable() {
     setSelected(new Set(facts.filter(isBatchApprovable).map((fact) => fact.id)));
+  }
+
+  /** 全選只作用於目前畫面上的清單（已套用篩選與筆數上限）。 */
+  function toggleAll(checked: boolean) {
+    setSelected(checked ? new Set(facts.map((fact) => fact.id)) : new Set());
   }
 
   function run(work: () => Promise<ReviewResult>, clearSelection = true) {
@@ -66,11 +73,34 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
   const selectedIds = [...selected];
   const batchApprovableCount = facts.filter(isBatchApprovable).length;
 
+  const allSelected = facts.length > 0 && selected.size === facts.length;
+  const someSelected = selected.size > 0 && !allSelected;
+
+  // indeterminate 只能用 DOM property 設定，沒有對應的 React 屬性。
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected;
+  }, [someSelected]);
+
   return (
     <div className="space-y-4">
       <Card>
         <CardContent className="flex flex-wrap items-center gap-2 pt-6">
-          <span className="text-sm text-slate-600">已選取 {selected.size} 筆</span>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              ref={selectAllRef}
+              type="checkbox"
+              aria-label="全選本頁候選事實"
+              checked={allSelected}
+              onChange={(event) => toggleAll(event.target.checked)}
+              disabled={pending || facts.length === 0}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            全選
+          </label>
+
+          <span className="text-sm text-slate-600">
+            已選取 {selected.size} 筆（本頁共 {facts.length} 筆）
+          </span>
 
           <Button
             variant="outline"
@@ -262,6 +292,7 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
                   >
                     標記待確認
                   </Button>
+                  <FeedbackButton candidateFactId={fact.id} />
                   <Link
                     href={`/review/${fact.id}`}
                     className="text-sm text-blue-700 underline"
