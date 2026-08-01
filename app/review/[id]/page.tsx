@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { FactEditor } from "@/components/review/fact-editor";
+import { FeedbackButton } from "@/components/review/feedback-button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -94,8 +95,14 @@ export default async function ReviewDetailPage({
                 </div>
               )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <FactEditor fact={fact} />
+              <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+                <span className="text-xs text-slate-500">
+                  AI 抽錯了？回報原因可用來改進提示詞：
+                </span>
+                <FeedbackButton candidateFactId={fact.id} />
+              </div>
             </CardContent>
           </Card>
         </div>

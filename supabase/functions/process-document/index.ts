@@ -305,11 +305,24 @@ async function processParseJob(job: {
     .eq("id", source.id);
 
   // 解析完成後接著排入候選事實抽取（Phase 3）。
+  //
+  // 這不是第一版時只抽新增與修改的段落（工作單第 16 節第 4 點）：
+  // 未變動的段落已經有候選事實，重抽只會製造重複並多花 API 費用。
+  const isFirstVersion = previousBlocks.length === 0;
+  const affected = [...diff.added, ...diff.changed];
+
   const { error: chainError } = await admin.from("processing_jobs").insert({
     owner_id: source.owner_id,
     job_type: "extract_facts",
     source_id: source.id,
-    payload: { source_version_id: version.id },
+    payload: isFirstVersion
+      ? { source_version_id: version.id }
+      : {
+          source_version_id: version.id,
+          paragraph_ids: affected,
+          incremental: true,
+          removed_paragraph_ids: diff.removed,
+        },
   });
   if (chainError) {
     throw new Error(`建立事實抽取工作失敗：${chainError.message}`);

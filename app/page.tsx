@@ -64,12 +64,26 @@ export default async function HomePage() {
 
         {!configured && (
           <div className="mt-8 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-            <p className="font-medium">尚未連接 Supabase</p>
-            <p className="mt-1">
-              請依 README 建立 Supabase 專案，複製 <code>.env.example</code> 為{" "}
-              <code>.env.local</code> 並填入環境變數，再執行{" "}
-              <code>npm run db:push</code> 套用 migration。
+            <p className="font-medium">這個部署環境沒有讀到 Supabase 環境變數</p>
+            <p className="mt-2">
+              需要 <code>NEXT_PUBLIC_SUPABASE_URL</code> 與{" "}
+              <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code>。
             </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>
+                <span className="font-medium">在 Vercel</span>：Settings →
+                Environment Variables，確認每個變數的{" "}
+                <span className="font-medium">Environments</span> 同時勾選
+                Production、Preview、Development。 只勾 Production 時，Preview
+                的網址（<code>xxx-projects.vercel.app</code>
+                ）讀不到值，需要登入的頁面就會失敗。改完要{" "}
+                <span className="font-medium">重新部署</span>才會生效。
+              </li>
+              <li>
+                <span className="font-medium">在本機</span>：複製{" "}
+                <code>.env.example</code> 為 <code>.env.local</code> 並填入值。
+              </li>
+            </ul>
           </div>
         )}
 

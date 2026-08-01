@@ -49,7 +49,10 @@ describe("向量增量更新規則", () => {
   });
 
   it("修改後只為新版本排入一筆向量工作", () => {
-    const revise = sql.slice(sql.indexOf("revise_knowledge_fact"));
+    // 只看 revise_knowledge_fact 這一個函式的內容，
+    // 否則後面 migration 裡其他函式排入的工作也會被算進來。
+    const start = sql.indexOf("function public.revise_knowledge_fact");
+    const revise = sql.slice(start, sql.indexOf("$$;", start));
     const jobInserts = revise.match(/insert into public\.processing_jobs/g) ?? [];
     expect(jobInserts.length).toBe(1);
     expect(revise).toContain("'knowledge_fact_id', v_new_id");

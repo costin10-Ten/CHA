@@ -23,9 +23,11 @@ export class MockProvider implements LlmProvider {
       .map((message) => message.content)
       .join("\n");
 
-    const text = isAnswerPrompt(userContent)
-      ? buildMockAnswer(userContent)
-      : JSON.stringify({ facts: buildMockFacts(userContent) });
+    const text = isGenerationPrompt(userContent)
+      ? buildMockDraft(userContent)
+      : isAnswerPrompt(userContent)
+        ? buildMockAnswer(userContent)
+        : JSON.stringify({ facts: buildMockFacts(userContent) });
 
     return {
       text,
@@ -35,6 +37,51 @@ export class MockProvider implements LlmProvider {
       outputTokens: estimateTokens(text),
       latencyMs: Math.max(1, Date.now() - started),
     };
+  }
+}
+
+/** 素材產製提示詞由 generation.ts 產生。 */
+export function isGenerationPrompt(prompt: string): boolean {
+  return prompt.includes("可用的核定事實（只能使用這些）");
+}
+
+/**
+ * Mock 素材：依體裁排版並逐項引用核定事實，同樣不捏造內容。
+ * 目的是讓產製、驗證與阻擋整條路徑都能在不呼叫付費 API 的情況下驗證。
+ */
+export function buildMockDraft(prompt: string): string {
+  const facts = parseFactsFromPrompt(prompt);
+  const genre = /^體裁：(.+)$/m.exec(prompt)?.[1]?.trim() ?? "素材";
+  const topic = /^主題：(.+)$/m.exec(prompt)?.[1]?.trim() ?? "";
+
+  if (facts.length === 0) {
+    return `現有核定事實不足以完成這份${genre}。請先匯入相關來源並核定事實。`;
+  }
+
+  const lines = facts
+    .slice(0, 8)
+    .map((fact, index) => `${index + 1}. ${fact.statement} [${fact.knowledge_id}]`);
+
+  return [`${genre}：${topic}`.trim(), "", ...lines].join("\n");
+}
+
+function parseFactsFromPrompt(
+  prompt: string,
+): { knowledge_id: string; statement: string }[] {
+  const start = prompt.indexOf("{");
+  const end = prompt.lastIndexOf("}");
+  if (start === -1 || end === -1) return [];
+
+  try {
+    const pack = JSON.parse(prompt.slice(start, end + 1)) as {
+      facts?: { knowledge_id?: string; statement?: string }[];
+    };
+    return (pack.facts ?? []).filter(
+      (fact): fact is { knowledge_id: string; statement: string } =>
+        Boolean(fact.knowledge_id && fact.statement),
+    );
+  } catch {
+    return [];
   }
 }
 

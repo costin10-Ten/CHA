@@ -16,9 +16,13 @@ const PROTECTED_PREFIXES = [
   "/ask",
   "/verify",
   "/generate",
+  "/export",
+  "/import",
   "/history",
   "/settings",
 ];
+// 注意：/api/export 不放在這裡。API 由 Route Handler 自行回 401，
+// 走 middleware 會導向登入頁的 HTML，對下載請求沒有意義。
 
 export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(
@@ -32,8 +36,19 @@ export function isProtectedPath(pathname: string): boolean {
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  // 尚未設定 Supabase 時不阻擋，讓首頁能顯示設定指引。
+  // 尚未設定 Supabase 時：需要登入的路徑導回首頁看設定指引。
+  //
+  // 這種情況最常見於 Vercel 只把環境變數加到 Production，
+  // Preview Deployment 沒有值。若放行，頁面會在讀取登入狀態時整頁失敗，
+  // 使用者只看得到一組 Digest。導回首頁至少說得出原因。
   if (!isSupabaseConfigured()) {
+    if (isProtectedPath(request.nextUrl.pathname)) {
+      const home = request.nextUrl.clone();
+      home.pathname = "/";
+      home.search = "";
+      home.searchParams.set("setup", "required");
+      return NextResponse.redirect(home);
+    }
     return response;
   }
 

@@ -46,8 +46,8 @@ OpenAI／Anthropic 等模型 API（測試一律使用 Mock Provider）
 | 5     | 正式事實庫、實體與關聯、版本管理、pgvector 增量索引                 | ✅ 完成 |
 | 6     | 混合搜尋、證據包、AI 問答、引用來源                                 | ✅ 完成 |
 | 7     | 逐句驗證、綠黃紅標示、紅色句子阻擋                                  | ✅ 完成 |
-| 8     | 風險溝通素材、匯出與備份、更新與排程                                | ⏳ 待辦 |
-| 9     | UI 整理、效能、完整測試、部署文件、Production 驗證                  | ⏳ 待辦 |
+| 8     | 風險溝通素材、匯出與備份、增量更新與排程                            | ✅ 完成 |
+| 9     | UI 整理、完整頁面、示範資料、部署文件、Production 驗證              | ✅ 完成 |
 
 ## 本機開發
 
@@ -124,24 +124,58 @@ app/                Next.js App Router 頁面與 Route Handlers
   dashboard/        登入後首頁
   login/            登入頁與 Server Actions
   sources/          來源匯入、清單、詳情與 Server Actions
+  review/           候選事實審核與抽取問題回報
+  knowledge/        正式事實與版本
+  search/ ask/      混合搜尋與 AI 問答
+  verify/           逐句驗證
+  generate/         風險溝通素材產製與草稿
+  export/           匯出頁與待選事實包回填
+  import/           文章包匯入與示範資料
+  history/          背景工作、審核、模型呼叫與回報的時間線
+  settings/         模型與用量、提示詞與回報、帳號與資料
+  api/export/       匯出下載（JSON／CSV／Markdown）
 components/
   ui/               基礎 UI 元件
   auth/             登入與登出
   sources/          匯入表單、工作進度、來源操作
+  review/           審核清單、單筆編輯、回報抽取問題
+  generate/         素材表單與草稿編輯
+  export/           待選事實包回填
+  import/           文章包匯入與示範資料載入
+  settings/         子導覽與回報處理狀態
 lib/
   auth/             登入表單 schema 與錯誤訊息
   jobs/             工作狀態標籤與觸發 Edge Function
   sources/          匯入驗證 schema 與資料查詢
+  facts/            候選事實查詢、審核規則與標籤
+  knowledge/        正式事實、實體、關聯查詢
+  retrieval/        混合搜尋
+  answering/        問答紀錄查詢
+  generate/         素材查詢與標籤
+  export/           匯出格式（純函式，可單元測試）與查詢
+  settings/         提示詞、回報與模型用量查詢
+  dashboard/        Dashboard 統計與 API 用量
+  history/          處理歷程時間線
+  demo/             示範資料（自行撰寫，走一般匯入路徑）
   supabase/         browser／server／admin client 與 middleware
   env.ts            環境變數集中驗證
   profile.ts        profiles 讀寫
 supabase/
   migrations/       資料庫結構與 RLS policy（全部納入版控）
   functions/
-    _shared/        解析管線（純 TypeScript，Deno 與 Vitest 共用同一份程式碼）
-    process-document/  文件解析 worker
+    _shared/        解析、抽取、問答、驗證、產製與匯出包
+                    （純 TypeScript，Deno 與 Vitest 共用同一份程式碼）
+    process-document/    文件解析 worker
+    extract-facts/       候選事實抽取 worker
+    generate-embeddings/ 向量產生 worker
+    scheduled-update/    排程更新 worker
   seed.sql          本機示範資料
   config.toml       Supabase CLI 設定
+docs/
+  ARTICLE-PACK.md   文章包匯入格式
+  BACKUP.md         備份與還原操作
+  DEPLOY.md         部署設定與上線檢查清單
+  BACKLOG.md        使用者提出的需求追蹤
 tests/
   unit/             Vitest
   e2e/              Playwright
@@ -388,6 +422,137 @@ Mock Provider 在問答模式下只會引用證據包中的事實並附上知識
 條件比對是逐詞比對而非「有沒有條件詞」：事實寫「孕婦」、回答只寫「每週」
 仍會被標記為條件未保留。
 
+## 風險溝通素材產製
+
+`/generate` 用核定事實產製十種素材：FAQ、科普短文、長篇文章、Podcast 訪綱、
+Podcast 逐字稿、60 秒短影音腳本、3 分鐘短影音腳本、圖卡文字架構、媒體問答、社群貼文。
+
+```text
+主題 → 混合搜尋取出核定事實 → 證據包 → 依體裁撰稿
+     → 立即逐句驗證 → 有紅色句子就標記為 blocked
+```
+
+每份素材保存工作單第 15 節要求的全部欄位：使用的知識 ID 與知識編號、
+目標受眾、語氣、模型、提示詞版本、生成日期、驗證結果，以及使用者修改後的版本
+（`edited_body`，原始產出保留在 `body` 供比對）。
+
+**所有產出預設為草稿**。定稿按鈕在 `publishable = false` 時不可按，
+`finalizeDraft` 也會再檢查一次，不是只靠前端隱藏。
+
+### 素材的逐句驗證與問答有何不同
+
+素材有體裁結構：小標、題號、秒數、「旁白：」這類文字不是事實主張，
+拿去比對核定事實一定找不到支持，會讓每一份草稿都被誤判為阻擋。
+
+因此 `verifyDraftBody` 會先辨識體裁結構並標記為 `structural`，不計入綠黃紅統計。
+判定結構的條件刻意只認**明確可辨識**的形式（Markdown 標題記號、章節名、
+純標籤、第一行的標題），**不用長度判斷**——圖卡文字這類體裁的內容本來就很短，
+用長度會讓真正的短句事實主張被當成結構而略過驗證。
+
+## 匯出與備份
+
+`/export` 提供工作單第 17 節要求的全部匯出：
+
+| 內容             | 格式                | 說明                                |
+| ---------------- | ------------------- | ----------------------------------- |
+| 正式事實         | JSON／CSV／Markdown | 只含現行版本，每筆附原文片段與段落  |
+| 事實與來源對照表 | JSON／CSV／Markdown | 稽核用：事實 ↔ 文件 ↔ 段落 ↔ 原文句 |
+| 單篇文件與其事實 | JSON／Markdown／CSV | 含該版全部段落                      |
+| 待選事實包       | JSON                | 給其他 LLM 校正（見下節）           |
+
+匯出走 Route Handler `/api/export`，以使用者 session 查詢，RLS 保證只匯得到自己的資料。
+格式轉換寫在 `lib/export/serialize.ts`，是不碰資料庫的純函式，完整單元測試。
+
+資料庫備份、Storage 檔案備份與還原步驟見 [`docs/BACKUP.md`](docs/BACKUP.md)。
+
+### 待選事實包與回填
+
+匯出包自帶說明，讓沒有本專案脈絡的模型也能正確處理：
+
+- **欄位說明**：每個欄位的意義、允許值、可否修改。
+  `source_quote`、`source_paragraph_id`、`id` 等來源欄位標記為不可修改
+- **校正目標**：不聳動、部會權責正確、科學正確性，各附具體檢查項目
+  （例如食品標示屬衛福部食藥署、農藥殘留屬農業部、排放屬環境部；
+  數值單位不得改動；相關性不得寫成因果）
+- **回填格式**：範例 JSON 與規則
+
+回填時的檢查：
+
+```text
+貼上／上傳 JSON → 解析與格式驗證 → 以 id 比對回原本的候選事實
+  → 檢查不可修改欄位有沒有被動過（動過就整筆拒絕）
+  → 重新執行 checkFactQuality（原文找不到依據就拒絕）
+  → 寫回候選事實，狀態維持「待審核」
+  → 寫一筆 external_correction 審核紀錄
+```
+
+**回填永遠不會直接核定**，仍然要人工逐筆確認。
+
+## 匯入外部整理好的文章
+
+在對話或其他工具中整理好的一篇文章，可以連同段落、候選事實、審核紀錄與正式事實
+一次匯入（`/import`）。格式與驗證規則見 [`docs/ARTICLE-PACK.md`](docs/ARTICLE-PACK.md)。
+
+匯入前一定先驗證，沒通過就不寫入任何一筆。最重要的一條規則：
+
+> 檔案必須自帶原文。`document_chunks[].text` 與 `candidate_facts[].source_quote`
+> 不能是佔位符，而且引句必須真的出現在該段落的文字中。
+
+匯入端無法從網址自動還原「是原文的哪一段、哪一句」——網頁改版、段落編號規則不同
+都會對不上，猜錯就等於偽造引用。指向資料庫產生值的綁定佔位符
+（`$auth.uid()`、`$candidate_facts[C001].id` 等）則會在匯入時解析。
+
+正式事實一律由候選事實經 `promote_candidate_fact` 產生；預設全部以「待審核」匯入，
+要沿用檔案中的人工核定結果必須明確勾選。
+
+## 抽取問題回報
+
+審核時除了駁回，還可以按「回報抽取問題」記錄 AI 錯在哪裡，用來改進提示詞。
+記錄內容包含當時的 `prompt_version_id`、`model_run_id`，以及敘述、原文片段、
+段落全文的快照——候選事實日後被修改也看得到問題現場。
+
+`/settings/prompts` 顯示每一版提示詞的回報數、未處理數與最常見的問題類型。
+這與 `review_records` 分開：那是審核歷程，這是模型品質回饋。
+
+## 增量更新與排程
+
+重新匯入或排程重抓時（工作單第 16 節）：
+
+```text
+重新抓取 → 計算內容雜湊
+  雜湊相同 → 不建立新版本，也不重抽事實
+  雜湊不同 → 建立新版本 → diffVersions 找出 added／changed／removed
+           → 只為 added 與 changed 的段落排入抽取
+           → 未變動段落的既有事實與向量完全不動
+```
+
+第一次解析才會全文抽取；之後一律只處理受影響段落。
+
+Edge Function `scheduled-update` 負責決定哪些來源該重新檢查：
+
+- Cron 以 `x-cron-secret` 呼叫 → 檢查所有使用者的網址來源
+- 使用者以 JWT 呼叫 → 只檢查自己的來源
+
+它本身不抓網頁也不呼叫模型，只呼叫 `enqueue_scheduled_updates` 排入
+`parse_document` 工作，並順手把卡住的工作放回佇列。
+
+```sql
+select cron.schedule(
+  'scheduled-update',
+  '0 3 * * *',
+  $$
+  select net.http_post(
+    url := 'https://<your-ref>.supabase.co/functions/v1/scheduled-update',
+    headers := jsonb_build_object(
+      'content-type', 'application/json',
+      'x-cron-secret', '<你的 CRON_SECRET>'
+    ),
+    body := '{"max_age_hours": 168}'::jsonb
+  );
+  $$
+);
+```
+
 ## 資料權限
 
 即使只有單一使用者，仍實作完整 Auth 與 RLS：
@@ -396,6 +561,16 @@ Mock Provider 在問答模式下只會引用證據包中的事實並附上知識
 - 每張表 `enable row level security`，policy 以 `auth.uid() = owner_id` 判斷
 - 新使用者註冊時由 `handle_new_user` trigger 自動建立 profile
 - 任何情況都不得以關閉 RLS 解決權限錯誤（單元測試會檢查 migration 是否出現 `disable row level security`）
+
+## 示範資料
+
+`/import` 的「載入示範資料」會匯入三篇自行撰寫的短文（氫氟酸、汞、蘇丹紅），
+每篇 12 筆候選事實（6 核定、2 待修正、2 駁回、2 待審核）與 3 份素材草稿。
+
+被駁回的兩筆刻意做成真實會發生的抽取錯誤——把「部分」寫成「都」、
+把第 3 類分類寫成「吃到就會得癌症」——用來檢查審核與驗證規則有沒有在運作。
+
+示範資料走的是與一般匯入完全相同的驗證與匯入路徑，不是特例插入。
 
 ## 部署
 
@@ -432,6 +607,9 @@ Secrets and variables → Actions 建立三個 Repository Secret：
 
 首次套用（workflow 尚未進入 main 之前）可改用 Supabase Dashboard →
 SQL Editor → New query，貼上 `supabase/migrations/` 內的 SQL 執行，效果相同。
+
+詳細的環境變數、Cron 設定與上線檢查清單見
+[`docs/DEPLOY.md`](docs/DEPLOY.md)。
 
 ## 分支
 
