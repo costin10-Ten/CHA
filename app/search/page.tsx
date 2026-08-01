@@ -56,6 +56,8 @@ export default async function SearchPage({
   const query = params.q?.trim() ?? "";
   const useVector = params.mode !== "keyword";
 
+  let searchError: string | null = null;
+
   const [results, sources, entities] = await Promise.all([
     searchKnowledgeFacts({
       query,
@@ -69,9 +71,12 @@ export default async function SearchPage({
       entityId: params.entity || undefined,
       useVector,
       limit: 30,
+    }).catch((cause: unknown) => {
+      searchError = cause instanceof Error ? cause.message : "搜尋失敗";
+      return [];
     }),
-    listSourceOptions(),
-    listEntities(100),
+    listSourceOptions().catch(() => []),
+    listEntities(100).catch(() => []),
   ]);
 
   return (
@@ -164,6 +169,18 @@ export default async function SearchPage({
             </form>
           </CardContent>
         </Card>
+
+        {searchError && (
+          <div className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <p className="font-medium">搜尋功能無法使用</p>
+            <p className="mt-1">{searchError}</p>
+            <p className="mt-2 text-xs">
+              最常見的原因是資料庫尚未套用 Phase 6 的 migration （
+              <code>search_knowledge_facts</code> 函式）。 請確認 GitHub Actions 的
+              Supabase Migrations 已成功執行。
+            </p>
+          </div>
+        )}
 
         <p className="text-sm text-slate-600">
           找到 {results.length} 筆現行核定事實

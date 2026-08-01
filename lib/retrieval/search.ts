@@ -70,6 +70,55 @@ export async function searchKnowledgeFacts(
     p_limit: filters.limit ?? 20,
   });
 
-  if (error) throw new Error(`搜尋失敗：${error.message}`);
-  return data ?? [];
+  if (!error) return data ?? [];
+
+  // RPC 不存在或失敗時（例如 migration 尚未套用）退回純資料表查詢，
+  // 讓搜尋降級成關鍵字比對而不是整頁失效。
+  const fallback = await keywordOnlySearch(filters);
+  if (fallback) return fallback;
+
+  throw new Error(`搜尋失敗：${error.message}`);
+}
+
+/** 不依賴任何自訂函式的關鍵字搜尋，作為降級方案。 */
+async function keywordOnlySearch(
+  filters: SearchFilters,
+): Promise<SearchResultRow[] | null> {
+  const supabase = await createClient();
+  const query = filters.query?.trim() ?? "";
+
+  let request = supabase
+    .from("knowledge_facts")
+    .select("*")
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(filters.limit ?? 20);
+
+  if (query) request = request.ilike("statement", `%${query}%`);
+  if (filters.sourceId) request = request.eq("source_id", filters.sourceId);
+  if (filters.knowledgeType) {
+    request = request.eq("knowledge_type", filters.knowledgeType);
+  }
+  if (filters.riskLevel) request = request.eq("risk_level", filters.riskLevel);
+
+  const { data, error } = await request;
+  if (error) return null;
+
+  return (data ?? []).map((fact) => ({
+    id: fact.id,
+    statement: fact.statement,
+    subject: fact.subject,
+    predicate: fact.predicate,
+    object: fact.object,
+    conditions: fact.conditions,
+    knowledge_type: fact.knowledge_type,
+    risk_level: fact.risk_level,
+    version: fact.version,
+    source_id: fact.source_id,
+    source_paragraph_id: fact.source_paragraph_id,
+    source_quote: fact.source_quote,
+    keyword_rank: query ? 1 : 0,
+    vector_similarity: 0,
+    combined_score: query ? 1 : 0,
+  }));
 }

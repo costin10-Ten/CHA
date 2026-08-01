@@ -28,9 +28,17 @@ export default async function AskPage({
   if (!user) redirect("/login?redirectTo=/ask");
 
   const params = await searchParams;
-  const sessions = await listAnswerSessions(10);
+
+  let loadError: string | null = null;
+  const sessions = await listAnswerSessions(10).catch((cause: unknown) => {
+    loadError = cause instanceof Error ? cause.message : "讀取問答紀錄失敗";
+    return [];
+  });
+
   const latest = sessions[0];
-  const evidence = latest ? await listAnswerEvidence(latest.id) : [];
+  const evidence = latest
+    ? await listAnswerEvidence(latest.id).catch(() => [])
+    : [];
 
   return (
     <AppShell
@@ -38,6 +46,18 @@ export default async function AskPage({
       description="回答只能使用核定事實。每一段都標註知識編號，可回溯到原文段落。"
     >
       <div className="space-y-6">
+        {loadError && (
+          <div className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <p className="font-medium">問答功能無法使用</p>
+            <p className="mt-1">{loadError}</p>
+            <p className="mt-2 text-xs">
+              最常見的原因是資料庫尚未套用 Phase 6 的 migration （
+              <code>answer_sessions</code> 等資料表）。 請確認 GitHub Actions 的
+              Supabase Migrations 已成功執行。
+            </p>
+          </div>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>提問</CardTitle>
