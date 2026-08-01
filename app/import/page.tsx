@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { ArticlePackImport } from "@/components/import/article-pack-import";
+import { SourceWithPack } from "@/components/import/source-with-pack";
 import { DemoLoader } from "@/components/import/demo-loader";
 import {
   Card,
@@ -12,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { listAttachableSources } from "@/app/import/attach-actions";
 import { getCurrentUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "匯入文章包" };
@@ -62,6 +64,8 @@ export default async function ImportPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?redirectTo=/import");
 
+  const existing = await listAttachableSources().catch(() => []);
+
   return (
     <AppShell
       title="匯入文章包"
@@ -70,9 +74,22 @@ export default async function ImportPage() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>上傳或貼上</CardTitle>
+            <CardTitle>原文 + 事實包（建議）</CardTitle>
             <CardDescription>
-              匯入前會先驗證。驗證只看結構與內容，不會寫入任何資料。
+              原文用檔案、網址或貼上文字提供，系統解析成段落後，
+              再用內容比對找出每一筆事實對應到哪一段。事實包因此不需要自帶原文。
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SourceWithPack existing={existing} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>只有事實包（事實包自帶原文）</CardTitle>
+            <CardDescription>
+              事實包裡已經含有段落原文時用這個。匯入前會先驗證，驗證不會寫入任何資料。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -98,7 +115,8 @@ export default async function ImportPage() {
           <CardHeader>
             <CardTitle>只有一個硬性要求</CardTitle>
             <CardDescription>
-              每一筆事實都要找得到原文。其他欄位不合就自動補，補不了只跳過那一筆。
+              每一筆事實都要找得到原文——原文可以另外上傳，也可以寫在事實包裡。
+              其他欄位不合就自動補，補不了只跳過那一筆。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-slate-700">
