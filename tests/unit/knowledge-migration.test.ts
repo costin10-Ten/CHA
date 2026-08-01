@@ -117,3 +117,16 @@ describe("混合搜尋的安全限制", () => {
     }
   });
 });
+
+describe("search_path 為空的函式必須限定擴充運算子", () => {
+  it("pgvector 的 <=> 一律以 operator(extensions.<=>) 呼叫", () => {
+    // search_path = '' 時未限定的擴充運算子會出現
+    // 42883 operator does not exist: extensions.vector <=> extensions.vector
+    const unqualified = sql
+      .split("\n")
+      .filter((line) => line.includes("<=>") && !line.trim().startsWith("--"))
+      .filter((line) => !line.includes("operator(extensions.<=>)"));
+
+    expect(unqualified).toEqual([]);
+  });
+});

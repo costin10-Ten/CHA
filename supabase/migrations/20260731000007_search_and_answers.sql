@@ -216,11 +216,13 @@ as $$
         when p_embedding is null then 0
         else coalesce(
           (
-            select (1 - (e.embedding <=> p_embedding))::real
+            -- 函式設了 search_path = ''，pgvector 的 <=> 運算子必須明確指定 schema，
+            -- 否則會出現 42883 operator does not exist。
+            select (1 - (e.embedding operator(extensions.<=>) p_embedding))::real
             from public.embedding_records e
             where e.knowledge_fact_id = b.id
               and e.is_active
-            order by e.embedding <=> p_embedding
+            order by e.embedding operator(extensions.<=>) p_embedding
             limit 1
           ),
           0
