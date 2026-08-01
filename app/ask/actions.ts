@@ -16,6 +16,7 @@ import {
 } from "@shared/answering.ts";
 import { createProvider } from "@shared/llm/factory.ts";
 
+import { verifyAnswerSession } from "@/app/verify/actions";
 import { searchKnowledgeFacts } from "@/lib/retrieval/search";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import type {
@@ -242,7 +243,7 @@ export async function askQuestion(
       })
       .eq("id", session.id);
 
-    // 7. 先拆句保存，Phase 7 的逐句驗證會填入判定結果
+    // 7. 拆句後立刻執行逐句驗證，綠黃紅判定與發布稿一次產生
     const sentences = splitAnswerSentences(answer);
     if (sentences.length > 0) {
       await supabase.from("answer_sentences").insert(
@@ -253,9 +254,12 @@ export async function askQuestion(
           sentence,
         })),
       );
+
+      await verifyAnswerSession(session.id);
     }
 
     revalidatePath("/ask");
+    revalidatePath("/verify");
     return {
       status: "success",
       sessionId: session.id,

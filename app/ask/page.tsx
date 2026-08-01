@@ -97,9 +97,34 @@ export default async function AskPage({
                   {latest.answer ?? "（尚無回答）"}
                 </div>
 
-                <p className="border-t border-slate-100 pt-3 text-xs text-slate-500">
-                  逐句驗證與綠黃紅標示會在 Phase 7 加入；目前已先把回答拆句保存。
-                </p>
+                {latest.verified_at && (
+                  <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                    {latest.publishable ? (
+                      <Badge className="bg-emerald-100 text-emerald-800">
+                        可發布
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-red-100 text-red-800">
+                        有紅色句子，發布稿已阻擋
+                      </Badge>
+                    )}
+                    <span className="text-xs text-emerald-700">
+                      綠 {latest.supported_count}
+                    </span>
+                    <span className="text-xs text-amber-700">
+                      黃 {latest.partial_count}
+                    </span>
+                    <span className="text-xs text-red-700">
+                      紅 {latest.unsupported_count}
+                    </span>
+                    <Link
+                      href={`/verify/${latest.id}`}
+                      className="ml-auto text-sm text-blue-700 underline"
+                    >
+                      檢視逐句驗證
+                    </Link>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

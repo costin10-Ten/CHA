@@ -11,6 +11,7 @@ const NAV = [
   { href: "/relations", label: "關聯" },
   { href: "/search", label: "搜尋" },
   { href: "/ask", label: "問答" },
+  { href: "/verify", label: "驗證" },
 ];
 
 /** 登入後頁面的共用外框：導覽列 + 內容區。 */

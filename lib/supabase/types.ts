@@ -306,6 +306,12 @@ export type AnswerSessionRow = {
   model_run_id: string | null;
   filters: Json;
   error: string | null;
+  verified_at: string | null;
+  supported_count: number;
+  partial_count: number;
+  unsupported_count: number;
+  publishable: boolean;
+  published_answer: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -338,6 +344,8 @@ export type AnswerSentenceRow = {
   sentence: string;
   verdict: SentenceVerdict | null;
   supporting_fact_ids: string[];
+  supporting_refs: string[];
+  similarity: number;
   note: string | null;
   created_at: string;
   updated_at: string;
@@ -577,6 +585,14 @@ export type Database = {
           p_limit?: number;
         };
         Returns: SimilarCandidate[];
+      };
+      apply_answer_verification: {
+        Args: {
+          p_session_id: string;
+          p_sentences: Json;
+          p_published_answer: string;
+        };
+        Returns: undefined;
       };
       search_knowledge_facts: {
         Args: {
