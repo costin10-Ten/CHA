@@ -1,139 +1,177 @@
-# 文章包格式（CHA-database-aligned-export）
+# 文章包格式
 
-在對話或其他工具中整理好一篇文章後，用這個格式交付，於 `/import` 上傳即可匯入。
+在對話或其他工具中整理好文章後，用這個格式交付，於 `/import` 上傳即可匯入。
 
-匯入前一定會先驗證。驗證只看檔案，不寫入任何資料；沒通過就不會匯入任何一筆。
+原則是**寬進嚴審**：能自動補的欄位系統都會補，補不了的只跳過那一筆，
+其餘照常匯入。唯一不放寬的是**可回溯性**——每一筆事實都要有真正的原文可對照。
 
 ---
 
-## 1. 唯一不能退讓的規則：檔案必須自帶原文
+## 1. 最小可用格式
 
-以下三個欄位**必須是真正的文字**，不能是 `$resolve_…` 這類佔位符：
+只要這樣就能匯入：
 
-| 欄位                             | 內容                                 |
-| -------------------------------- | ------------------------------------ |
-| `document_chunks[].text`         | 該段落的實際文字                     |
-| `candidate_facts[].source_quote` | 段落中支持該事實的**連續**原文片段   |
-| `knowledge_facts[].source_quote` | 同上（可省略，匯入時取候選事實的值） |
+```json
+{
+  "source": { "title": "文章標題", "url": "https://example.gov.tw/article" },
+  "facts": [
+    {
+      "statement": "一句一事的事實敘述。",
+      "paragraph_id": "P-004",
+      "paragraph_text": "這一段的完整原文，讓事實有東西可以對照。",
+      "quote": "段落中支持這句話的片段"
+    }
+  ]
+}
+```
 
-原因：匯入端無法從網址自動還原「是原文的哪一段、哪一句」。
-網頁改版、段落編號規則不同都會對不上，猜錯就等於偽造引用。
-而整個系統的前提是「每一筆事實都能回溯到原文片段」——
-沒有原文，品質檢查、逐句驗證與素材產製全部失去意義。
+沒有 `document_chunks`、沒有 `ref`、沒有 `knowledge_facts` 都可以。
+系統會自動補：段落、編號（C001、C002…）、雜湊、字元位置、預設狀態（待審核）。
 
-驗證會逐筆比對 `source_quote` 是否真的出現在對應段落的 `text` 中
-（忽略空白與標點形式差異）。對不上就擋下。
+---
 
-### 版權考量
+## 2. 唯一的硬性要求
+
+**每一筆事實都要找得到原文。** 兩種方式擇一：
+
+| 方式             | 寫法                                                 |
+| ---------------- | ---------------------------------------------------- |
+| 事實自帶原文     | 在該筆事實加 `paragraph_text`                        |
+| 統一放在段落清單 | 在 `document_chunks` 提供該 `paragraph_id` 的 `text` |
+
+兩者都沒有的事實會被**跳過那一筆**（其餘照常匯入）。整篇都沒有才會整篇跳過。
+
+原因：匯入端無法從網址自動還原「是原文的哪一段」。網頁改版、段落編號規則不同
+都會對不上，猜錯就等於偽造引用。
 
 只需要提供**有事實引用到的段落**，不需要重製整篇文章。
-一篇文章通常只有幾段會產生事實，這是可回溯性的最小必要內容。
 
 ---
 
-## 2. 允許的佔位符
+## 3. 引句對不上會怎樣（重要）
 
-指向「由資料庫或匯入流程產生的值」的佔位符是合法的，匯入時會解析：
+引句（`quote` / `source_quote`）**不再是必填**，對不上原文也**不會擋下匯入**：
 
-| 佔位符                            | 解析成                 |
-| --------------------------------- | ---------------------- |
-| `$auth.uid()`                     | 登入使用者的 UUID      |
-| `$import_time` / `$approval_time` | 伺服器時間             |
-| `$sources[0].id`                  | 新建立的來源 UUID      |
-| `$source_versions[0].id`          | 新建立的版本 UUID      |
-| `$document_chunks[P-004].id`      | 依 `paragraph_id` 解析 |
-| `$candidate_facts[C001].id`       | 依 `ref` 解析          |
+| 情況                       | 系統的處理                                         |
+| -------------------------- | -------------------------------------------------- |
+| 引句是段落的連續片段       | 照用                                               |
+| 引句用刪節號串接多段       | 每一段都要在原文中，例如 `"甲…乙"`                 |
+| 引句缺漏、是佔位符、對不上 | **改用整段原文當引句**，並強制把狀態設回「待審核」 |
 
-`$resolve_source_paragraph(...)`、`$resolve_quote(...)`、
-`$resolve_paragraph_hash(...)` 這類**內容**佔位符一律擋下（見上一節）。
+被退回的事實會加上 `quote_not_verified` 標記、品質分數降為 60，
+**即使檔案寫 `approved` 也不會變成正式事實**——它會出現在候選事實頁等你確認。
 
----
-
-## 3. 由系統計算、不必提供的欄位
-
-| 欄位                             | 說明                                         |
-| -------------------------------- | -------------------------------------------- |
-| `content_hash`、`statement_hash` | 一律重算，才能與其他匯入路徑用同一套規則去重 |
-| `char_start`、`char_end`         | 沒給就依段落順序推算                         |
-| `id`、`owner_id`、各種時間戳     | 由資料庫產生                                 |
-| `source_versions[].chunk_count`  | 依實際段落數覆寫                             |
-
-給了也不會用，不必為了湊欄位而編造。
+這是唯一保留的嚴格處：引句抓得不準可以匯入，但不會自動變成官方知識。
 
 ---
 
-## 4. 結構
+## 4. 系統會自動處理的事
+
+### 欄位別名（都接受）
+
+| 意義     | 可用的欄位名                                                     |
+| -------- | ---------------------------------------------------------------- |
+| 文章     | `source`／`sources[0]`／頂層 `title`                             |
+| 網址     | `origin_url`／`url`／`網址`                                      |
+| 事實清單 | `facts`／`candidate_facts`／`candidates`／`事實`                 |
+| 事實敘述 | `statement`／`fact`／`sentence`／`text`／`敘述`／`事實`          |
+| 段落編號 | `source_paragraph_id`／`paragraph_id`／`paragraph`／`段落`       |
+| 段落原文 | `paragraph_text`／`source_paragraph_text`／`context`／`段落原文` |
+| 引句     | `source_quote`／`quote`／`evidence`／`原文片段`                  |
+| 段落清單 | `document_chunks`／`chunks`／`paragraphs`／`段落`                |
+| 段落文字 | `text`／`paragraph_text`／`content`／`body`／`原文`              |
+| 審核狀態 | `status`／`decision`／`審核狀態`／`人工決定`                     |
+| 審核理由 | `review_note`／`note`／`理由`／`審核意見`                        |
+| 正式事實 | `knowledge_facts`／`final_facts`／`正式事實`                     |
+| 審核紀錄 | `review_records`／`reviews`／`審核紀錄`                          |
+
+### 列舉值（中文直接寫沒問題）
+
+| 欄位             | 接受的寫法                                               | 對不上時     |
+| ---------------- | -------------------------------------------------------- | ------------ |
+| `knowledge_type` | `物質`／`概念`／`法規`／`政策`／`事件`／`主題`／英文原值 | → `other`    |
+| `risk_level`     | `低`／`中`／`高`／`低風險`…／英文原值                    | → `medium`   |
+| `status`         | `核定`／`駁回`／`待修正`／`待審核`／`待查證`…／英文原值  | → `pending`  |
+| `action`         | `核定`／`修正後核定`／`駁回`／`待確認`…／英文原值        | → 依狀態推導 |
+
+對不上時會回落到安全的預設值，並在匯入畫面列出「已自動處理」。
+
+### 段落編號
+
+`P-004`、`P004`、`4`、`第4段` 都會正規化成 `P-004`，段落清單與事實兩邊寫法不同也對得上。
+
+### 不用給的欄位
+
+`id`、`owner_id`、時間戳、`content_hash`、`statement_hash`、`char_start`、
+`char_end`、`chunk_count` —— 全部由系統產生或重算。給了也會被覆蓋，不必為了湊欄位而編造。
+
+`$auth.uid()`、`$sources[0].id`、`$candidate_facts[C001].id` 這類**綁定佔位符**
+仍然可以用，匯入時會解析成實際 UUID。
+
+---
+
+## 5. 一個檔案放多篇
+
+```json
+{
+  "articles": [
+    { "source": { "title": "第一篇" }, "facts": [] },
+    { "source": { "title": "第二篇" }, "facts": [] }
+  ]
+}
+```
+
+其中一篇有問題只跳過那一篇。
+
+---
+
+## 6. 完整格式（所有欄位都可選，除了標題與事實）
 
 ```jsonc
 {
   "export_meta": {
-    "format": "CHA-database-aligned-export",
-    "format_version": 2,
-    "document_id": "DOC-001",
-    "human_review": "completed", // 人工審核完成才寫 completed
+    "human_review": "completed", // 人工審核完成才寫；寫了會預先勾選「沿用核定結果」
   },
 
-  "sources": [
-    // 一個檔案剛好一篇文章
-    {
-      "title": "文章標題",
-      "source_type": "url", // text | file | url
-      "origin_url": "https://example.gov.tw/article",
-      "mime_type": "text/html",
-      "byte_size": 12345,
-    },
-  ],
-
-  "source_versions": [
-    { "version": 1, "parser_version": "chat-workflow/1.0", "char_count": 1288 },
-  ],
+  "source": {
+    "title": "文章標題", // 必填
+    "url": "https://example.gov.tw/article",
+    "source_type": "url", // text | file | url，預設 url
+  },
 
   "document_chunks": [
     {
-      "paragraph_id": "P-004", // 事實回溯原文的定位依據，同一版本內唯一
-      "position": 4, // 排序用，建議用文章中的實際順序
-      "block_type": "paragraph",
+      "paragraph_id": "P-004",
+      "position": 4, // 排序用，不給就照出現順序
       "heading_path": ["小節標題"],
-      "text": "這一段的實際文字。", // 必填，不可為佔位符
+      "text": "這一段的實際文字。",
     },
   ],
 
-  "candidate_facts": [
+  "facts": [
     {
-      "ref": "C001", // 檔案內的識別碼，供其他表參照
-      "statement": "一句一事的候選事實。",
-      "subject": "主體",
+      "ref": "C001", // 不給就自動編號
+      "statement": "一句一事的事實敘述。", // 必填
+      "subject": "主體", // 有給才會建立實體與關聯
       "predicate": "關係",
       "object": "客體",
-      "knowledge_type": "substance", // substance|concept|policy|event|topic|other
-      "risk_level": "medium", // low|medium|high
-      "conditions": {
-        "population": null,
-        "exposure_route": null,
-        "dose": null,
-        "duration": null,
-        "location": null,
-        "timeframe": null,
-      },
-      "source_paragraph_id": "P-004",
-      "source_quote": "段落中支持這句話的連續片段", // 必填，必須在該段落中找得到
-      "status": "approved", // pending|approved|rejected|needs_fix|merged|split
-      "confidence": 0.78,
-      "quality_flags": ["inference_suspected"],
-      "quality_score": 85,
-      "review_note": "AI 審核意見",
-      "edited": true,
+      "knowledge_type": "物質",
+      "risk_level": "中",
+      "conditions": { "population": "孕婦", "dose": null },
+      "paragraph_id": "P-004",
+      "paragraph_text": "…", // 沒寫 document_chunks 時用這個
+      "quote": "段落中支持這句話的片段",
+      "status": "核定",
+      "review_note": "核定理由或 AI 審核意見",
       "original_statement": "修正前的敘述",
+      "quality_flags": ["condition_lost"],
     },
   ],
 
   "review_records": [
     {
-      "candidate_fact_id": "$candidate_facts[C001].id",
-      "action": "approve_with_edit", // approve|approve_with_edit|reject|needs_fix|
-      // split|merge|reextract|reopen|external_correction
-      "from_status": "pending",
-      "to_status": "approved",
+      "candidate_fact_id": "C001", // 也可寫 $candidate_facts[C001].id
+      "action": "核定",
       "note": "核定理由",
       "changes": { "statement": { "from": "修正前", "to": "修正後" } },
     },
@@ -142,48 +180,39 @@
   "knowledge_facts": [
     {
       "ref": "F001",
-      "candidate_fact_id": "$candidate_facts[C001].id", // 必須指向 approved 的候選事實
-      "statement": "與候選事實相同的敘述",
+      "candidate_fact_id": "C001", // 必須指向 status 為核定的事實
       "tags": ["標籤"],
     },
   ],
 
   "processing_jobs": [
-    {
-      "job_type": "extract_facts",
-      "status": "completed",
-      "result": { "ai_review": {}, "citation_review": {} }, // AI 審核紀錄保存於此
-    },
+    { "result": { "ai_review": {}, "citation_review": {} } }, // AI 審核紀錄
   ],
 }
 ```
 
 ---
 
-## 5. 驗證會擋下什麼
+## 7. 匯入行為
 
-| 情況                                    | 級別 |
-| --------------------------------------- | ---- |
-| 段落文字或原文引句是佔位符 / 空白       | 錯誤 |
-| 引句不在對應段落的文字中                | 錯誤 |
-| 事實引用了 `document_chunks` 沒有的段落 | 錯誤 |
-| `paragraph_id` 或 `ref` 重複            | 錯誤 |
-| 列舉值不合法                            | 錯誤 |
-| 正式事實對應不到候選事實                | 錯誤 |
-| 正式事實對應的候選事實不是 `approved`   | 錯誤 |
-| `sources` 不是剛好一筆                  | 錯誤 |
-| 正式事實的敘述與候選事實不一致          | 提醒 |
-| 候選事實已核定但沒有對應的正式事實      | 提醒 |
-| 審核紀錄對應不到候選事實                | 提醒 |
+1. **先驗證再匯入**：驗證只讀檔案，不寫入任何資料。畫面會列出
+   「會被跳過的項目」與「系統自動處理了什麼」。
+2. **同一個 `origin_url` 只匯入一次**。要更新內容請走來源頁的重新解析。
+3. **預設全部以「待審核」匯入**。要沿用檔案中的人工核定結果，
+   必須在畫面上勾選（`human_review: "completed"` 會預先勾好）。
+4. **正式事實一律由 `promote_candidate_fact` 產生**，不直接寫入
+   `knowledge_facts`——版本、`fact_versions` 與實體關聯才會與系統其他路徑一致。
+   `subject` 與 `object` 有填，實體與關聯就會自動建立。
+5. 匯入後新的正式事實還沒有向量，到正式事實頁補齊才會進入搜尋與問答。
 
 ---
 
-## 6. 匯入行為
+## 8. 什麼情況會整篇跳過
 
-1. **同一個 `origin_url` 只能匯入一次**。要更新內容請走來源頁的重新解析，
-   走增量更新流程，不要重複匯入。
-2. **正式事實一律由 `promote_candidate_fact` 產生**，不直接寫入
-   `knowledge_facts`——版本、`fact_versions` 與實體關聯才會與系統其他路徑一致。
-3. **預設全部以「待審核」匯入**。要沿用檔案中的人工核定結果，
-   必須在畫面上明確勾選（檔案標示 `human_review: "completed"` 時會預先勾好）。
-4. 匯入後新的正式事實還沒有向量，請到正式事實頁補齊，才會進入搜尋與問答。
+只有三種：
+
+- 檔案不是 JSON 物件
+- 這一篇沒有標題
+- 這一篇沒有任何可用的事實（全部缺原文或缺敘述）
+
+其他所有問題都只影響單筆。

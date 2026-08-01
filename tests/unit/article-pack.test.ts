@@ -5,14 +5,16 @@ import {
   chunkRef,
   isBindingPlaceholder,
   isContentPlaceholder,
+  quoteMatches,
   validateArticlePack,
 } from "@shared/article-pack.ts";
 
 /**
- * 文章包驗證。
+ * 文章包驗證：寬進嚴審。
  *
- * 重點是把「原文沒有附上」的檔案擋在匯入之前：
- * 沒有段落文字與原文引句，就無法判斷事實是否超出原文。
+ * 「寬」= 欄位別名、列舉值、段落編號、缺漏欄位都自動處理，
+ *        一筆有問題只跳過那一筆，不會整包擋下。
+ * 「嚴」= 引句對不上原文的事實一律退回待審核，不會被當成已核定。
  */
 
 const PARAGRAPH =
@@ -71,20 +73,14 @@ function pack(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function errorsOf(input: unknown) {
-  return validateArticlePack(input).issues.filter(
-    (issue) => issue.level === "error",
-  );
-}
+const first = (input: unknown) => validateArticlePack(input).articles[0];
 
 describe("佔位符分類", () => {
   it("綁定佔位符是合法的，由匯入流程解析", () => {
     for (const value of [
       "$auth.uid()",
       "$import_time",
-      "$approval_time",
       "$sources[0].id",
-      "$source_versions[0].id",
       "$document_chunks[P-004].id",
       "$candidate_facts[C001].id",
     ]) {
@@ -97,7 +93,10 @@ describe("佔位符分類", () => {
     for (const value of [
       "$resolve_source_paragraph(P-004)",
       "$resolve_quote(P-004,C001)",
-      "$resolve_paragraph_hash(P-004)",
+      "${paragraph}",
+      "<原文>",
+      "TODO",
+      "待填",
     ]) {
       expect(isContentPlaceholder(value), value).toBe(true);
     }
@@ -106,7 +105,6 @@ describe("佔位符分類", () => {
   it("參照可以是綁定寫法或直接寫 ref", () => {
     expect(candidateRef("$candidate_facts[C001].id")).toBe("C001");
     expect(candidateRef("C001")).toBe("C001");
-    expect(candidateRef("$sources[0].id")).toBeNull();
     expect(chunkRef("$document_chunks[P-004].id")).toBe("P-004");
   });
 });
@@ -116,48 +114,179 @@ describe("合法的文章包", () => {
 
   it("通過驗證並整理出可匯入的資料", () => {
     expect(result.ok).toBe(true);
-    expect(result.pack?.document_chunks).toHaveLength(1);
-    expect(result.pack?.candidate_facts[0].ref).toBe("C001");
-    expect(result.pack?.review_records).toHaveLength(1);
-    expect(result.pack?.knowledge_facts[0].candidate_fact_id).toBe("C001");
+    expect(result.articles).toHaveLength(1);
+    expect(first(pack()).chunks).toHaveLength(1);
+    expect(first(pack()).candidates[0].ref).toBe("C001");
+    expect(first(pack()).knowledgeFacts[0].candidate_fact_id).toBe("C001");
   });
 
   it("統計數量供匯入前確認", () => {
     expect(result.summary).toMatchObject({
+      articles: 1,
       chunks: 1,
       candidates: 1,
       approved: 1,
       knowledgeFacts: 1,
       reviews: 1,
+      quoteFallbacks: 0,
     });
   });
 });
 
-describe("擋下沒有原文的檔案", () => {
-  it("段落文字是佔位符時擋下並說明怎麼改", () => {
-    const issues = errorsOf(
-      pack({
-        document_chunks: [
-          {
-            paragraph_id: "P-004",
-            text: "$resolve_source_paragraph(P-004)",
-          },
-        ],
-      }),
-    );
+describe("寬鬆處理：欄位別名", () => {
+  it("接受精簡寫法：source + facts + 事實自帶原文", () => {
+    const result = validateArticlePack({
+      source: { title: "精簡寫法", url: "https://example.test/b" },
+      facts: [
+        {
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          paragraph_id: "P-004",
+          paragraph_text: PARAGRAPH,
+          quote: "作用於昆蟲神經系統的鈉離子通道",
+          status: "核定",
+        },
+      ],
+    });
 
-    expect(issues.length).toBeGreaterThan(0);
-    expect(issues[0].message).toContain("佔位符");
-    expect(issues[0].hint).toContain("真正的文字內容");
+    expect(result.ok).toBe(true);
+    const article = result.articles[0];
+    expect(article.source.title).toBe("精簡寫法");
+    expect(article.source.origin_url).toBe("https://example.test/b");
+    expect(article.chunks).toHaveLength(1);
+    expect(article.candidates[0].status).toBe("approved");
+    expect(article.candidates[0].quote_fallback).toBe(false);
   });
 
-  it("原文引句是佔位符時擋下", () => {
-    const issues = errorsOf(
+  it("中文欄位名與中文列舉值都接受", () => {
+    const result = validateArticlePack({
+      source: { title: "中文欄位" },
+      事實: [
+        {
+          敘述: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          段落: "P-004",
+          段落原文: PARAGRAPH,
+          原文片段: "作用於昆蟲神經系統的鈉離子通道",
+          審核狀態: "駁回",
+          風險等級: "高",
+          知識類型: "物質",
+        },
+      ],
+    });
+
+    const candidate = result.articles[0].candidates[0];
+    expect(candidate.status).toBe("rejected");
+    expect(candidate.risk_level).toBe("high");
+    expect(candidate.knowledge_type).toBe("substance");
+  });
+
+  it("沒有 ref 時自動編號，段落編號寫法不一也能對上", () => {
+    const result = validateArticlePack({
+      source: { title: "自動編號" },
+      document_chunks: [{ paragraph_id: "4", text: PARAGRAPH }],
+      facts: [
+        {
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          paragraph_id: "P004",
+          quote: "作用於昆蟲神經系統的鈉離子通道",
+        },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.articles[0].candidates[0].ref).toBe("C001");
+    expect(result.articles[0].candidates[0].source_paragraph_id).toBe("P-004");
+  });
+
+  it("列舉值無法辨識時回落預設值並提醒，不擋下匯入", () => {
+    const result = validateArticlePack(
       pack({
         candidate_facts: [
           {
             ref: "C001",
             statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+            source_paragraph_id: "P-004",
+            source_quote: "作用於昆蟲神經系統的鈉離子通道",
+            knowledge_type: "外星分類",
+            risk_level: "爆表",
+            status: "不知道",
+          },
+        ],
+        knowledge_facts: [],
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    const candidate = result.articles[0].candidates[0];
+    expect(candidate.knowledge_type).toBe("other");
+    expect(candidate.risk_level).toBe("medium");
+    expect(candidate.status).toBe("pending");
+    expect(result.issues.every((issue) => issue.level === "warning")).toBe(true);
+  });
+});
+
+describe("寬鬆處理：引句", () => {
+  it("引句可用刪節號串接多段", () => {
+    expect(
+      quoteMatches("賽滅寧屬於合成除蟲菊酯類…最終導致麻痺死亡", PARAGRAPH),
+    ).toBe(true);
+    expect(quoteMatches("賽滅寧會在人體累積", PARAGRAPH)).toBe(false);
+  });
+
+  it("引句對不上時退回整段，並強制回到待審核", () => {
+    const result = validateArticlePack(
+      pack({
+        candidate_facts: [
+          {
+            ref: "C001",
+            statement: "賽滅寧作用於昆蟲神經系統。",
+            source_paragraph_id: "P-004",
+            source_quote: "這句話原文裡沒有",
+            status: "approved",
+          },
+        ],
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    const candidate = result.articles[0].candidates[0];
+
+    expect(candidate.quote_fallback).toBe(true);
+    expect(candidate.source_quote).toBe(PARAGRAPH);
+    expect(candidate.status).toBe("pending");
+    expect(candidate.quality_flags).toContain("quote_not_verified");
+    expect(result.summary.quoteFallbacks).toBe(1);
+  });
+
+  it("引句是佔位符或缺漏時同樣退回整段，不再整包擋下", () => {
+    for (const quote of ["$resolve_quote(P-004,C001)", "", undefined]) {
+      const result = validateArticlePack(
+        pack({
+          candidate_facts: [
+            {
+              ref: "C001",
+              statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+              source_paragraph_id: "P-004",
+              source_quote: quote,
+              status: "approved",
+            },
+          ],
+          knowledge_facts: [],
+        }),
+      );
+
+      expect(result.ok, String(quote)).toBe(true);
+      expect(result.articles[0].candidates[0].quote_fallback).toBe(true);
+      expect(result.articles[0].candidates[0].status).toBe("pending");
+    }
+  });
+
+  it("退回整段的事實不會產生正式事實", () => {
+    const result = validateArticlePack(
+      pack({
+        candidate_facts: [
+          {
+            ref: "C001",
+            statement: "賽滅寧作用於昆蟲神經系統。",
             source_paragraph_id: "P-004",
             source_quote: "$resolve_quote(P-004,C001)",
             status: "approved",
@@ -166,48 +295,16 @@ describe("擋下沒有原文的檔案", () => {
       }),
     );
 
-    expect(issues.some((issue) => issue.where.includes("source_quote"))).toBe(true);
-  });
-
-  it("引句不在段落中時擋下", () => {
-    const issues = errorsOf(
-      pack({
-        candidate_facts: [
-          {
-            ref: "C001",
-            statement: "賽滅寧會累積在人體。",
-            source_paragraph_id: "P-004",
-            source_quote: "賽滅寧會在人體大量累積",
-            status: "pending",
-          },
-        ],
-      }),
+    expect(result.articles[0].knowledgeFacts).toHaveLength(0);
+    expect(result.issues.some((issue) => issue.hint?.includes("核定後"))).toBe(
+      true,
     );
-
-    expect(issues[0].message).toContain("不在段落");
-  });
-
-  it("引用不存在的段落時擋下", () => {
-    const issues = errorsOf(
-      pack({
-        candidate_facts: [
-          {
-            ref: "C001",
-            statement: "賽滅寧作用於昆蟲神經系統。",
-            source_paragraph_id: "P-099",
-            source_quote: "作用於昆蟲神經系統",
-          },
-        ],
-      }),
-    );
-
-    expect(issues[0].message).toContain("找不到段落");
   });
 });
 
-describe("正式事實必須有審核依據", () => {
-  it("對應的候選事實不是已核定時擋下", () => {
-    const issues = errorsOf(
+describe("寬鬆處理：部分匯入", () => {
+  it("一筆事實沒有原文時只跳過該筆，其餘照常匯入", () => {
+    const result = validateArticlePack(
       pack({
         candidate_facts: [
           {
@@ -215,46 +312,154 @@ describe("正式事實必須有審核依據", () => {
             statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
             source_paragraph_id: "P-004",
             source_quote: "作用於昆蟲神經系統的鈉離子通道",
-            status: "pending",
+            status: "approved",
           },
-        ],
-      }),
-    );
-
-    expect(issues[0].message).toContain("不是 approved");
-  });
-
-  it("對應不到候選事實時擋下", () => {
-    const issues = errorsOf(
-      pack({
-        knowledge_facts: [
           {
-            ref: "F001",
-            candidate_fact_id: "$candidate_facts[C999].id",
-            statement: "任何內容",
+            ref: "C002",
+            statement: "這一筆引用了不存在的段落。",
+            source_paragraph_id: "P-999",
+            source_quote: "任何內容",
           },
         ],
       }),
     );
-
-    expect(issues[0].message).toContain("對應不到候選事實");
-  });
-
-  it("已核定但沒有正式事實時只提醒，不擋", () => {
-    const result = validateArticlePack(pack({ knowledge_facts: [] }));
 
     expect(result.ok).toBe(true);
+    expect(result.articles[0].candidates).toHaveLength(1);
+    expect(result.articles[0].candidates[0].ref).toBe("C001");
     expect(
-      result.issues.some(
-        (issue) => issue.level === "warning" && issue.message.includes("沒有對應"),
-      ),
+      result.issues.some((issue) => issue.message.includes("這一筆跳過")),
+    ).toBe(true);
+  });
+
+  it("段落文字是佔位符時，事實可用自帶原文救回來", () => {
+    const result = validateArticlePack(
+      pack({
+        document_chunks: [
+          { paragraph_id: "P-004", text: "$resolve_source_paragraph(P-004)" },
+        ],
+        candidate_facts: [
+          {
+            ref: "C001",
+            statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+            source_paragraph_id: "P-004",
+            paragraph_text: PARAGRAPH,
+            source_quote: "作用於昆蟲神經系統的鈉離子通道",
+            status: "approved",
+          },
+        ],
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.articles[0].chunks[0].text).toBe(PARAGRAPH);
+    expect(result.articles[0].candidates[0].quote_fallback).toBe(false);
+  });
+
+  it("完全沒有原文時該筆跳過，整篇沒有事實才判定不可匯入", () => {
+    const result = validateArticlePack(
+      pack({
+        document_chunks: [
+          { paragraph_id: "P-004", text: "$resolve_source_paragraph(P-004)" },
+        ],
+        candidate_facts: [
+          {
+            ref: "C001",
+            statement: "沒有任何原文可以對照的事實。",
+            source_paragraph_id: "P-004",
+            source_quote: "$resolve_quote(P-004,C001)",
+          },
+        ],
+      }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.articles).toHaveLength(0);
+    expect(
+      result.issues.some((issue) => issue.hint?.includes("paragraph_text")),
     ).toBe(true);
   });
 });
 
-describe("列舉值與結構", () => {
-  it("不合法的列舉值被擋下", () => {
-    const risk = errorsOf(
+describe("多篇文章", () => {
+  it("一個檔案可以放多篇", () => {
+    const result = validateArticlePack({
+      articles: [
+        {
+          source: { title: "第一篇" },
+          facts: [
+            {
+              statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+              paragraph_id: "P-001",
+              paragraph_text: PARAGRAPH,
+              quote: "作用於昆蟲神經系統的鈉離子通道",
+            },
+          ],
+        },
+        {
+          source: { title: "第二篇" },
+          facts: [
+            {
+              statement: "賽滅寧屬於合成除蟲菊酯類。",
+              paragraph_id: "P-001",
+              paragraph_text: PARAGRAPH,
+              quote: "賽滅寧屬於合成除蟲菊酯類",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result.summary.articles).toBe(2);
+    expect(result.articles.map((article) => article.source.title)).toEqual([
+      "第一篇",
+      "第二篇",
+    ]);
+  });
+
+  it("其中一篇有問題時只跳過那一篇", () => {
+    const result = validateArticlePack({
+      articles: [
+        { source: {}, facts: [] },
+        {
+          source: { title: "好的那篇" },
+          facts: [
+            {
+              statement: "賽滅寧屬於合成除蟲菊酯類。",
+              paragraph_id: "P-001",
+              paragraph_text: PARAGRAPH,
+              quote: "賽滅寧屬於合成除蟲菊酯類",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.summary.articles).toBe(1);
+    expect(result.articles[0].source.title).toBe("好的那篇");
+  });
+});
+
+describe("正式事實", () => {
+  it("對應不到事實時只略過，不擋下整包", () => {
+    const result = validateArticlePack(
+      pack({
+        knowledge_facts: [
+          { ref: "F001", candidate_fact_id: "$candidate_facts[C999].id" },
+        ],
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.articles[0].knowledgeFacts).toHaveLength(0);
+    expect(result.issues.some((issue) => issue.message.includes("對應不到"))).toBe(
+      true,
+    );
+  });
+
+  it("對應的事實不是已核定時略過", () => {
+    const result = validateArticlePack(
       pack({
         candidate_facts: [
           {
@@ -262,37 +467,37 @@ describe("列舉值與結構", () => {
             statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
             source_paragraph_id: "P-004",
             source_quote: "作用於昆蟲神經系統的鈉離子通道",
-            risk_level: "extreme",
+            status: "pending",
           },
         ],
       }),
     );
-    expect(risk[0].where).toContain("risk_level");
 
-    const action = errorsOf(
-      pack({
-        review_records: [
-          { candidate_fact_id: "C001", action: "核定", to_status: "approved" },
-        ],
-      }),
-    );
-    expect(action[0].where).toContain("action");
+    expect(result.articles[0].knowledgeFacts).toHaveLength(0);
+    expect(
+      result.issues.some((issue) => issue.message.includes("目前是pending")),
+    ).toBe(true);
+  });
+});
+
+describe("整份無法使用時", () => {
+  it("不是物件", () => {
+    const result = validateArticlePack("字串");
+    expect(result.ok).toBe(false);
+    expect(result.issues[0].message).toContain("不是 JSON 物件");
   });
 
-  it("段落編號重複被擋下", () => {
-    const issues = errorsOf(
-      pack({
-        document_chunks: [
-          { paragraph_id: "P-004", text: PARAGRAPH },
-          { paragraph_id: "P-004", text: "另一段" },
-        ],
-      }),
-    );
-    expect(issues[0].message).toContain("重複");
+  it("沒有標題", () => {
+    const result = validateArticlePack({ facts: [{ statement: "沒有來源" }] });
+    expect(result.ok).toBe(false);
+    expect(result.issues[0].message).toContain("缺少文章標題");
   });
 
-  it("不是物件或沒有來源時給明確訊息", () => {
-    expect(errorsOf("字串")[0].message).toContain("不是 JSON 物件");
-    expect(errorsOf(pack({ sources: [] }))[0].where).toBe("sources");
+  it("沒有事實", () => {
+    const result = validateArticlePack({ source: { title: "空的" } });
+    expect(result.ok).toBe(false);
+    expect(
+      result.issues.some((issue) => issue.message.includes("沒有任何事實")),
+    ).toBe(true);
   });
 });

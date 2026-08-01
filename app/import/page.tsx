@@ -17,58 +17,44 @@ import { getCurrentUser } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "匯入文章包" };
 export const dynamic = "force-dynamic";
 
-const EXAMPLE = `{
-  "export_meta": {
-    "format": "CHA-database-aligned-export",
-    "format_version": 2,
-    "human_review": "completed"
-  },
-  "sources": [
+const MINIMAL = `{
+  "source": { "title": "文章標題", "url": "https://example.gov.tw/article" },
+  "facts": [
     {
-      "title": "文章標題",
-      "source_type": "url",
-      "origin_url": "https://example.gov.tw/article"
-    }
-  ],
-  "source_versions": [{ "version": 1, "parser_version": "chat-workflow/1.0" }],
-  "document_chunks": [
-    {
+      "statement": "一句一事的事實敘述。",
       "paragraph_id": "P-004",
-      "position": 4,
-      "block_type": "paragraph",
-      "heading_path": ["小節標題"],
-      "text": "這裡要放這一段的實際文字，不能是佔位符。"
+      "paragraph_text": "這一段的完整原文，讓事實有東西可以對照。",
+      "quote": "段落中支持這句話的片段"
     }
+  ]
+}`;
+
+const FULL = `{
+  "export_meta": { "human_review": "completed" },
+  "source": { "title": "文章標題", "url": "https://example.gov.tw/article" },
+  "document_chunks": [
+    { "paragraph_id": "P-004", "position": 4,
+      "heading_path": ["小節標題"], "text": "這一段的實際文字。" }
   ],
-  "candidate_facts": [
+  "facts": [
     {
       "ref": "C001",
-      "statement": "一句一事的候選事實。",
-      "knowledge_type": "substance",
-      "risk_level": "medium",
-      "conditions": { "population": null, "exposure_route": null, "dose": null,
-                      "duration": null, "location": null, "timeframe": null },
-      "source_paragraph_id": "P-004",
-      "source_quote": "這裡要放段落中支持這句話的連續原文片段",
-      "status": "approved"
+      "statement": "一句一事的事實敘述。",
+      "subject": "主體", "predicate": "關係", "object": "客體",
+      "knowledge_type": "物質",
+      "risk_level": "中",
+      "conditions": { "population": "孕婦" },
+      "paragraph_id": "P-004",
+      "quote": "段落中支持這句話的片段",
+      "status": "核定",
+      "review_note": "核定理由或 AI 審核意見"
     }
   ],
   "review_records": [
-    {
-      "candidate_fact_id": "$candidate_facts[C001].id",
-      "action": "approve",
-      "from_status": "pending",
-      "to_status": "approved",
-      "note": "人工核定"
-    }
+    { "candidate_fact_id": "C001", "action": "核定", "note": "人工核定" }
   ],
   "knowledge_facts": [
-    {
-      "ref": "F001",
-      "candidate_fact_id": "$candidate_facts[C001].id",
-      "statement": "一句一事的候選事實。",
-      "tags": ["標籤"]
-    }
+    { "ref": "F001", "candidate_fact_id": "C001", "tags": ["標籤"] }
   ]
 }`;
 
@@ -110,74 +96,89 @@ export default async function ImportPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>檔案必須自帶原文</CardTitle>
+            <CardTitle>只有一個硬性要求</CardTitle>
             <CardDescription>
-              這是整個系統唯一不能退讓的地方：沒有原文就無法驗證事實是否超出原文。
+              每一筆事實都要找得到原文。其他欄位不合就自動補，補不了只跳過那一筆。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-slate-700">
             <div className="rounded-md border border-red-200 bg-red-50 p-3">
-              <p className="font-medium text-red-900">
-                以下三個欄位不能是 <code>$resolve_…</code> 這類佔位符
-              </p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-red-900">
+              <p className="font-medium text-red-900">事實必須對得到原文</p>
+              <p className="mt-2 text-red-900">兩種寫法擇一：</p>
+              <ul className="mt-1 list-disc space-y-1 pl-5 text-red-900">
                 <li>
-                  <code>document_chunks[].text</code>：該段落的實際文字
+                  在該筆事實加 <code>paragraph_text</code>
                 </li>
                 <li>
-                  <code>candidate_facts[].source_quote</code>
-                  ：段落中支持該事實的連續片段
-                </li>
-                <li>
-                  <code>knowledge_facts[].source_quote</code>：同上
+                  或在 <code>document_chunks</code> 提供該段落的 <code>text</code>
                 </li>
               </ul>
               <p className="mt-2 text-xs text-red-800">
-                匯入端無法從網址自動還原「是原文的哪一段、哪一句」——網頁改版、
-                段落編號規則不同都會對不上，猜錯就等於偽造引用。
+                兩者都沒有的事實只會跳過那一筆；整篇都沒有才會整篇跳過。
+              </p>
+            </div>
+
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+              <p className="font-medium text-amber-900">引句對不上不會擋下匯入</p>
+              <p className="mt-2 text-amber-900">
+                引句缺漏、是佔位符或對不上原文時，系統會改用<b>整段原文</b>當依據，
+                並把狀態強制設回「待審核」。
+              </p>
+              <p className="mt-2 text-xs text-amber-800">
+                即使檔案寫 approved
+                也不會變成正式事實——它會出現在候選事實頁等你確認。
+                引句可用刪節號串接多段，例如「甲…乙」。
               </p>
             </div>
 
             <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3">
-              <p className="font-medium text-emerald-900">
-                這些欄位可以留空，由系統計算
-              </p>
+              <p className="font-medium text-emerald-900">這些系統會自動處理</p>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-emerald-900">
                 <li>
-                  <code>content_hash</code>、<code>statement_hash</code>
-                  ：一律由系統重算，才能和其他匯入路徑用同一套規則去重
+                  欄位別名：<code>facts</code>／<code>candidate_facts</code>、
+                  <code>quote</code>／<code>source_quote</code>、中文欄位名都接受
                 </li>
                 <li>
-                  <code>char_start</code>、<code>char_end</code>：依段落順序推算
+                  列舉值：<code>核定</code>、<code>高風險</code>、<code>物質</code>
+                  等中文直接寫；對不上就回落預設值
                 </li>
                 <li>
-                  <code>id</code>、<code>owner_id</code>、各種時間：由資料庫產生
+                  段落編號：<code>P-004</code>、<code>P004</code>、<code>4</code>{" "}
+                  都會對上
+                </li>
+                <li>
+                  <code>ref</code>、雜湊、字元位置、時間戳：不用給
                 </li>
               </ul>
               <p className="mt-2 text-xs text-emerald-800">
-                <code>$auth.uid()</code>、<code>$sources[0].id</code>、
-                <code>$candidate_facts[C001].id</code>{" "}
-                這類「綁定佔位符」是允許的，匯入時會解析成實際的 UUID。
+                完整欄位對照見 <code>docs/ARTICLE-PACK.md</code>。
               </p>
             </div>
-
-            <p className="text-xs text-slate-500">
-              只需要提供「有事實引用到的段落」，不需要重製整篇文章。
-            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>最小範例</CardTitle>
+            <CardTitle>格式範例</CardTitle>
             <CardDescription>
-              欄位名稱與列舉值與資料庫一致；未列出的欄位都有預設值。
+              上面是最小可用格式，下面是完整寫法。除了標題與事實敘述，其他欄位都可省略。
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <pre className="overflow-x-auto rounded-md bg-slate-900 p-4 text-xs text-slate-100">
-              {EXAMPLE}
-            </pre>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="mb-2 text-sm font-medium text-slate-800">
+                最小可用格式
+              </p>
+              <pre className="overflow-x-auto rounded-md bg-slate-900 p-4 text-xs text-slate-100">
+                {MINIMAL}
+              </pre>
+            </div>
+            <div>
+              <p className="mb-2 text-sm font-medium text-slate-800">完整寫法</p>
+              <pre className="overflow-x-auto rounded-md bg-slate-900 p-4 text-xs text-slate-100">
+                {FULL}
+              </pre>
+            </div>
           </CardContent>
         </Card>
 

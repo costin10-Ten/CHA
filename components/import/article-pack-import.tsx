@@ -99,7 +99,9 @@ export function ArticlePackImport() {
         </Button>
 
         {!check && (
-          <span className="text-xs text-slate-500">驗證通過後才能匯入。</span>
+          <span className="text-xs text-slate-500">
+            先驗證看看系統會怎麼處理，確認後再匯入。
+          </span>
         )}
       </div>
 
@@ -114,15 +116,22 @@ export function ArticlePackImport() {
           >
             <p className="font-medium">
               {check.ok
-                ? `驗證通過：${check.title ?? "未命名文章"}`
-                : `驗證未通過，有 ${errors.length} 個必須修正的問題`}
+                ? `可以匯入：${check.titles.join("、") || "未命名文章"}`
+                : "檔案裡沒有任何可匯入的事實"}
             </p>
             <p className="mt-1 text-xs">
-              {check.summary.chunks} 段原文．{check.summary.candidates} 筆候選事實（
-              已核定 {check.summary.approved}、已駁回 {check.summary.rejected}）．
+              {check.summary.articles} 篇．{check.summary.chunks} 段原文．
+              {check.summary.candidates} 筆事實（已核定 {check.summary.approved}、
+              待修正 {check.summary.needsFix}、已駁回 {check.summary.rejected}）．
               {check.summary.knowledgeFacts} 筆正式事實．{check.summary.reviews}{" "}
               筆審核紀錄
             </p>
+            {check.summary.quoteFallbacks > 0 && (
+              <p className="mt-1 text-xs">
+                其中 {check.summary.quoteFallbacks}{" "}
+                筆的引句對不上原文，會改以整段為依據並設為待審核。
+              </p>
+            )}
           </div>
 
           {check.ok && (
@@ -150,6 +159,9 @@ export function ArticlePackImport() {
 
           {errors.length > 0 && (
             <ul className="space-y-2">
+              <li className="text-xs font-medium text-slate-700">
+                以下 {errors.length} 項會被跳過，其餘照常匯入：
+              </li>
               {errors.slice(0, 20).map((issue, index) => (
                 <li
                   key={index}
@@ -171,7 +183,7 @@ export function ArticlePackImport() {
           {warnings.length > 0 && (
             <details className="text-xs text-slate-700">
               <summary className="cursor-pointer">
-                {warnings.length} 個提醒（不影響匯入）
+                系統自動處理了 {warnings.length} 項（欄位別名、預設值、引句回退等）
               </summary>
               <ul className="mt-2 list-disc space-y-1 pl-5">
                 {warnings.map((issue, index) => (

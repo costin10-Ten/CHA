@@ -55,7 +55,7 @@ export async function loadDemoData(): Promise<DemoResult> {
       const { data: facts } = await supabase
         .from("knowledge_facts")
         .select("id")
-        .eq("source_id", result.sourceId)
+        .in("source_id", result.sourceIds)
         .eq("status", "active");
 
       const factIds = (facts ?? []).map((fact) => fact.id);

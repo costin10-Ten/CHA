@@ -1,34 +1,36 @@
 import { quoteExistsInParagraph } from "./quality.ts";
 
 /**
- * 文章包（CHA-database-aligned-export）：在對話或其他工具中整理好的一篇文章，
- * 連同段落、候選事實、審核紀錄與正式事實一次匯入。
+ * 文章包：在對話或其他工具中整理好的文章，連同段落、候選事實、
+ * 審核紀錄與正式事實一次匯入。
  *
- * 設計上區分兩種佔位符：
- * - 綁定佔位符（$auth.uid()、$sources[0].id、$import_time…）
- *   指的是「由資料庫或匯入流程產生的值」，匯入時解析，合法。
- * - 內容佔位符（$resolve_source_paragraph、$resolve_quote…）
- *   指的是「原文內容本身沒有放進檔案」。
- *   這種一律擋下：沒有原文就無法驗證事實是否超出原文，
- *   整個專案的可回溯性就沒有意義了。
+ * 設計原則是「寬進嚴審」：
+ * - 能自動補的就自動補（欄位別名、列舉值、段落編號、字元位置）
+ * - 補不了的只跳過那一筆，其餘照常匯入，不會整包擋下
+ * - 唯一不放寬的是可回溯性：每一筆事實都要有真正的原文可對照
+ *
+ * 引句對不上原文時不再擋下，而是退回「以整段原文為依據」並強制回到待審核。
+ * 這樣既不會因為引句抓得不精準就匯不進來，也不會讓對不上的引句被當成已核定。
  */
 
 export const PACK_FORMAT = "CHA-database-aligned-export";
-export const SUPPORTED_FORMAT_VERSIONS = [1, 2];
+export const SUPPORTED_FORMAT_VERSIONS = [1, 2, 3];
 
-/** 由匯入流程解析的綁定佔位符。 */
+/** 由匯入流程解析的綁定佔位符（合法）。 */
 const BINDING_PATTERN =
-  /^\$(auth\.uid\(\)|import_time|approval_time|sources\[\d+\]\.id|source_versions\[\d+\]\.id|document_chunks\[[^\]]+\]\.id|candidate_facts\[[^\]]+\]\.id)$/;
+  /^\$(auth\.uid\(\)|import_time|approval_time|sources?\[\d+\]\.id|source_versions?\[\d+\]\.id|document_chunks\[[^\]]+\]\.id|candidate_facts\[[^\]]+\]\.id)$/;
 
 /** 代表「原文沒有附上」的內容佔位符。 */
-const CONTENT_PLACEHOLDER_PATTERN = /^\$resolve_/;
+const CONTENT_PLACEHOLDER_PATTERN = /^\$resolve_|^\$\{|^<[^>]*>$|^（?待填|^TODO/i;
 
 export function isBindingPlaceholder(value: unknown): boolean {
   return typeof value === "string" && BINDING_PATTERN.test(value);
 }
 
 export function isContentPlaceholder(value: unknown): boolean {
-  return typeof value === "string" && CONTENT_PLACEHOLDER_PATTERN.test(value);
+  return (
+    typeof value === "string" && CONTENT_PLACEHOLDER_PATTERN.test(value.trim())
+  );
 }
 
 export const KNOWLEDGE_TYPES = [
@@ -59,29 +61,86 @@ export const REVIEW_ACTIONS = [
   "reopen",
   "external_correction",
 ];
-export const SOURCE_TYPES = ["text", "file", "url"];
 
-export interface PackSource {
-  title: string;
-  source_type: string;
-  origin_url: string | null;
-  mime_type?: string | null;
-  byte_size?: number | null;
-  content_hash?: string | null;
-  status?: string;
-}
+/** 中文與常見寫法一律接受，對不上才回落預設值。 */
+const KNOWLEDGE_TYPE_ALIASES: Record<string, string> = {
+  物質: "substance",
+  化學物質: "substance",
+  substance: "substance",
+  概念: "concept",
+  機制: "concept",
+  concept: "concept",
+  法規: "policy",
+  政策: "policy",
+  法規政策: "policy",
+  policy: "policy",
+  事件: "event",
+  event: "event",
+  主題: "topic",
+  topic: "topic",
+  其他: "other",
+  other: "other",
+};
 
-export interface PackVersion {
-  version?: number;
-  title?: string | null;
-  raw_text?: string | null;
-  parser_version?: string;
-  char_count?: number;
-  chunk_count?: number;
-}
+const RISK_LEVEL_ALIASES: Record<string, string> = {
+  低: "low",
+  低風險: "low",
+  low: "low",
+  中: "medium",
+  中風險: "medium",
+  medium: "medium",
+  中等: "medium",
+  高: "high",
+  高風險: "high",
+  high: "high",
+};
+
+const STATUS_ALIASES: Record<string, string> = {
+  待審核: "pending",
+  未審核: "pending",
+  pending: "pending",
+  核定: "approved",
+  已核定: "approved",
+  通過: "approved",
+  approved: "approved",
+  駁回: "rejected",
+  已駁回: "rejected",
+  不通過: "rejected",
+  rejected: "rejected",
+  待修正: "needs_fix",
+  需修正: "needs_fix",
+  待確認: "needs_fix",
+  待查證: "needs_fix",
+  needs_fix: "needs_fix",
+  已合併: "merged",
+  merged: "merged",
+  已拆分: "split",
+  split: "split",
+};
+
+const ACTION_ALIASES: Record<string, string> = {
+  核定: "approve",
+  approve: "approve",
+  修正後核定: "approve_with_edit",
+  approve_with_edit: "approve_with_edit",
+  駁回: "reject",
+  reject: "reject",
+  待修正: "needs_fix",
+  待確認: "needs_fix",
+  needs_fix: "needs_fix",
+  拆分: "split",
+  split: "split",
+  合併: "merge",
+  merge: "merge",
+  重新抽取: "reextract",
+  reextract: "reextract",
+  退回待審核: "reopen",
+  reopen: "reopen",
+  外部校正: "external_correction",
+  external_correction: "external_correction",
+};
 
 export interface PackChunk {
-  ref?: string;
   paragraph_id: string;
   position?: number;
   block_type?: string;
@@ -89,86 +148,113 @@ export interface PackChunk {
   text: string;
   char_start?: number;
   char_end?: number;
-  content_hash?: string;
 }
 
 export interface PackCandidate {
   ref: string;
   statement: string;
-  subject?: string | null;
-  predicate?: string | null;
-  object?: string | null;
-  knowledge_type?: string;
-  conditions?: Record<string, string | null>;
+  subject: string | null;
+  predicate: string | null;
+  object: string | null;
+  knowledge_type: string;
+  conditions: Record<string, string | null>;
   source_quote: string;
   source_paragraph_id: string;
-  risk_level?: string;
-  confidence?: number;
-  status?: string;
-  quality_flags?: string[];
-  quality_score?: number;
-  review_note?: string | null;
-  edited?: boolean;
-  original_statement?: string | null;
-  extraction_batch?: string | null;
+  risk_level: string;
+  confidence: number;
+  status: string;
+  quality_flags: string[];
+  quality_score: number;
+  review_note: string | null;
+  edited: boolean;
+  original_statement: string | null;
+  extraction_batch: string | null;
+  /** true 表示引句對不上原文，已退回以整段為依據，必須人工確認。 */
+  quote_fallback: boolean;
 }
 
 export interface PackReview {
   candidate_fact_id: string;
   action: string;
-  from_status?: string | null;
-  to_status?: string | null;
-  note?: string | null;
-  changes?: unknown;
+  from_status: string | null;
+  to_status: string | null;
+  note: string | null;
+  changes: unknown;
 }
 
 export interface PackKnowledgeFact {
   ref?: string;
   candidate_fact_id: string;
   statement: string;
-  tags?: string[];
-  status?: string;
+  tags: string[];
+  status: string;
 }
 
 export interface PackJob {
-  job_type?: string;
-  status?: string;
-  payload?: unknown;
-  result?: unknown;
+  job_type: string;
+  status: string;
+  payload: unknown;
+  result: unknown;
 }
 
-export interface ArticlePack {
-  export_meta: Record<string, unknown>;
-  sources: PackSource[];
-  source_versions: PackVersion[];
-  document_chunks: PackChunk[];
-  candidate_facts: PackCandidate[];
-  review_records: PackReview[];
-  knowledge_facts: PackKnowledgeFact[];
-  processing_jobs: PackJob[];
+export interface PackSource {
+  title: string;
+  source_type: string;
+  origin_url: string | null;
+  mime_type: string | null;
+  byte_size: number | null;
+  content_hash: string | null;
+}
+
+export interface PackVersion {
+  version: number;
+  title: string | null;
+  raw_text: string | null;
+  parser_version: string;
+  char_count: number;
+}
+
+export interface NormalizedArticle {
+  source: PackSource;
+  version: PackVersion;
+  chunks: PackChunk[];
+  candidates: PackCandidate[];
+  reviews: PackReview[];
+  knowledgeFacts: PackKnowledgeFact[];
+  jobs: PackJob[];
 }
 
 export interface PackIssue {
-  /** error 會擋下匯入；warning 只提醒。 */
+  /** error：該筆被跳過（不影響其他筆）。warning：已自動補上或修正。 */
   level: "error" | "warning";
   where: string;
   message: string;
   hint?: string;
 }
 
-export interface PackValidation {
-  ok: boolean;
-  pack: ArticlePack | null;
-  issues: PackIssue[];
-  summary: {
-    chunks: number;
-    candidates: number;
-    approved: number;
-    rejected: number;
-    knowledgeFacts: number;
-    reviews: number;
-  };
+export interface PackSummary {
+  articles: number;
+  chunks: number;
+  candidates: number;
+  approved: number;
+  rejected: number;
+  needsFix: number;
+  knowledgeFacts: number;
+  reviews: number;
+  /** 引句對不上、已退回整段並強制待審核的筆數。 */
+  quoteFallbacks: number;
+  skipped: number;
 }
+
+export interface PackValidation {
+  /** 有沒有任何可匯入的內容。 */
+  ok: boolean;
+  articles: NormalizedArticle[];
+  issues: PackIssue[];
+  summary: PackSummary;
+}
+
+// --- 小工具 ----------------------------------------------------------------
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -181,10 +267,37 @@ function asArray(value: unknown): unknown[] {
 }
 
 function text(value: unknown): string {
-  return typeof value === "string" ? value : "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return "";
 }
 
-/** 解析候選事實參照：$candidate_facts[C001].id → C001，也接受直接寫 C001。 */
+/** 取第一個有內容的欄位，讓不同來源的欄位命名都能吃進來。 */
+function pick(row: Record<string, unknown>, ...keys: string[]): unknown {
+  for (const key of keys) {
+    const value = row[key];
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return undefined;
+}
+
+function coerce(
+  raw: unknown,
+  aliases: Record<string, string>,
+  allowed: string[],
+  fallback: string,
+): { value: string; coerced: boolean } {
+  const input = text(raw).trim();
+  if (!input) return { value: fallback, coerced: false };
+  if (allowed.includes(input)) return { value: input, coerced: false };
+
+  const mapped = aliases[input] ?? aliases[input.toLowerCase()];
+  if (mapped) return { value: mapped, coerced: true };
+
+  return { value: fallback, coerced: true };
+}
+
+/** 解析參照：$candidate_facts[C001].id → C001，也接受直接寫 C001。 */
 export function candidateRef(value: unknown): string | null {
   const raw = text(value).trim();
   if (!raw) return null;
@@ -195,7 +308,6 @@ export function candidateRef(value: unknown): string | null {
   return raw.startsWith("$") ? null : raw;
 }
 
-/** 解析段落參照：$document_chunks[P-004].id → P-004。 */
 export function chunkRef(value: unknown): string | null {
   const raw = text(value).trim();
   if (!raw) return null;
@@ -206,39 +318,67 @@ export function chunkRef(value: unknown): string | null {
   return raw.startsWith("$") ? null : raw;
 }
 
-const CONTENT_HINT =
-  "請把這個欄位換成真正的文字內容。匯入端無法從網址自動還原是原文的哪一段、哪一句。";
+/**
+ * 引句比對。
+ * 允許用刪節號串接多段：「甲…乙」只要甲與乙都在原文中就算通過。
+ */
+export function quoteMatches(quote: string, paragraph: string): boolean {
+  const segments = quote
+    .split(/…+|\.{3,}|\[?略\]?/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+
+  if (segments.length === 0) return false;
+  return segments.every((segment) => quoteExistsInParagraph(segment, paragraph));
+}
+
+function normalizeParagraphId(raw: unknown, index: number): string {
+  const value = text(raw).trim();
+  if (!value) return `P-${String(index + 1).padStart(3, "0")}`;
+
+  // 接受 P-001、P001、1、第1段 等寫法，統一成 P-001。
+  const digits = /(\d+)/.exec(value);
+  if (/^P-\d+$/i.test(value)) return value.toUpperCase();
+  if (digits) return `P-${digits[1].padStart(3, "0")}`;
+  return value;
+}
+
+// --- 主流程 ----------------------------------------------------------------
+
+const NO_SOURCE_HINT =
+  "每一筆事實都要有可對照的原文：在 document_chunks 提供該段落的文字，" +
+  "或直接在這筆事實裡加 paragraph_text 欄位。";
 
 /**
- * 驗證文章包。
- * 只做結構與內容檢查，不碰資料庫；因此可以完整單元測試，
- * 也可以在匯入前先讓使用者看到全部問題。
+ * 驗證並正規化文章包。
+ * 支援三種外層形狀：
+ *   { articles: [ 單篇, 單篇 ] }   多篇
+ *   { sources: [...], ... }        原本的單篇
+ *   { source: {...}, facts: [...] } 精簡單篇
  */
 export function validateArticlePack(input: unknown): PackValidation {
   const issues: PackIssue[] = [];
-  const empty = {
+  const root = asRecord(input);
+
+  const empty: PackSummary = {
+    articles: 0,
     chunks: 0,
     candidates: 0,
     approved: 0,
     rejected: 0,
+    needsFix: 0,
     knowledgeFacts: 0,
     reviews: 0,
+    quoteFallbacks: 0,
+    skipped: 0,
   };
 
-  const root = asRecord(input);
   if (!root) {
     issues.push({ level: "error", where: "檔案", message: "不是 JSON 物件" });
-    return { ok: false, pack: null, issues, summary: empty };
+    return { ok: false, articles: [], issues, summary: empty };
   }
 
   const meta = asRecord(root.export_meta) ?? {};
-  if (meta.format && meta.format !== PACK_FORMAT) {
-    issues.push({
-      level: "warning",
-      where: "export_meta.format",
-      message: `格式標示為「${String(meta.format)}」，預期是「${PACK_FORMAT}」`,
-    });
-  }
   if (
     typeof meta.format_version === "number" &&
     !SUPPORTED_FORMAT_VERSIONS.includes(meta.format_version)
@@ -246,393 +386,501 @@ export function validateArticlePack(input: unknown): PackValidation {
     issues.push({
       level: "warning",
       where: "export_meta.format_version",
-      message: `版本 ${meta.format_version} 未經測試，目前支援 ${SUPPORTED_FORMAT_VERSIONS.join("、")}`,
+      message: `版本 ${meta.format_version} 未經測試，仍會嘗試匯入`,
     });
   }
 
-  // --- sources ---------------------------------------------------------
-  const sources = asArray(root.sources).map((item) => asRecord(item) ?? {});
-  if (sources.length !== 1) {
-    issues.push({
-      level: "error",
-      where: "sources",
-      message: `一個檔案必須剛好一筆 sources，目前有 ${sources.length} 筆`,
-    });
-  }
+  // 多篇：{ articles: [...] }；否則整份當成一篇。
+  const rawArticles = Array.isArray(root.articles)
+    ? root.articles
+    : Array.isArray(root.documents)
+      ? root.documents
+      : [root];
 
-  const source = sources[0] ?? {};
-  if (!text(source.title).trim()) {
-    issues.push({ level: "error", where: "sources[0].title", message: "缺少標題" });
-  }
-  const sourceType = text(source.source_type) || "url";
-  if (!SOURCE_TYPES.includes(sourceType)) {
-    issues.push({
-      level: "error",
-      where: "sources[0].source_type",
-      message: `不是允許值（${SOURCE_TYPES.join(" | ")}）`,
-    });
-  }
+  const articles: NormalizedArticle[] = [];
+  const summary = { ...empty };
 
-  // --- document_chunks -------------------------------------------------
-  const chunks = asArray(root.document_chunks).map((item) => asRecord(item) ?? {});
-  if (chunks.length === 0) {
-    issues.push({
-      level: "error",
-      where: "document_chunks",
-      message: "沒有任何段落。事實必須能對應到原文段落。",
-    });
-  }
+  rawArticles.forEach((rawArticle, index) => {
+    const label = rawArticles.length > 1 ? `第 ${index + 1} 篇` : "文章";
+    const article = normalizeArticle(asRecord(rawArticle) ?? {}, label, issues);
 
-  const chunkByParagraph = new Map<string, PackChunk>();
-  // 段落有列出但內容不能用時，後面的事實要說得出真正的原因，
-  // 不能只回報「找不到段落」讓人以為是漏了段落。
-  const unusableParagraphs = new Map<string, string>();
-
-  for (const [index, chunk] of chunks.entries()) {
-    const where = `document_chunks[${index}]`;
-    const paragraphId = text(chunk.paragraph_id).trim();
-
-    if (!paragraphId) {
-      issues.push({ level: "error", where, message: "缺少 paragraph_id" });
-      continue;
-    }
-    if (chunkByParagraph.has(paragraphId)) {
-      issues.push({
-        level: "error",
-        where,
-        message: `paragraph_id ${paragraphId} 重複`,
-      });
-      continue;
+    if (!article) {
+      summary.skipped += 1;
+      return;
     }
 
-    const body = chunk.text;
-    if (isContentPlaceholder(body)) {
-      issues.push({
-        level: "error",
-        where: `${where}.text（${paragraphId}）`,
-        message: `段落文字還是佔位符「${text(body)}」`,
-        hint: CONTENT_HINT,
-      });
-      unusableParagraphs.set(paragraphId, "段落文字還是佔位符");
-      continue;
-    }
-    if (text(body).trim().length === 0) {
-      issues.push({
-        level: "error",
-        where: `${where}.text（${paragraphId}）`,
-        message: "段落文字是空的",
-        hint: CONTENT_HINT,
-      });
-      unusableParagraphs.set(paragraphId, "段落文字是空的");
-      continue;
-    }
+    articles.push(article);
+    summary.articles += 1;
+    summary.chunks += article.chunks.length;
+    summary.candidates += article.candidates.length;
+    summary.approved += article.candidates.filter(
+      (candidate) => candidate.status === "approved",
+    ).length;
+    summary.rejected += article.candidates.filter(
+      (candidate) => candidate.status === "rejected",
+    ).length;
+    summary.needsFix += article.candidates.filter(
+      (candidate) => candidate.status === "needs_fix",
+    ).length;
+    summary.quoteFallbacks += article.candidates.filter(
+      (candidate) => candidate.quote_fallback,
+    ).length;
+    summary.knowledgeFacts += article.knowledgeFacts.length;
+    summary.reviews += article.reviews.length;
+  });
 
-    chunkByParagraph.set(paragraphId, {
-      paragraph_id: paragraphId,
-      position: typeof chunk.position === "number" ? chunk.position : index,
-      block_type: text(chunk.block_type) || "paragraph",
-      heading_path: asArray(chunk.heading_path).map((item) => text(item)),
-      text: text(body),
-      char_start: typeof chunk.char_start === "number" ? chunk.char_start : 0,
-      char_end: typeof chunk.char_end === "number" ? chunk.char_end : 0,
-    });
-  }
-
-  // --- candidate_facts -------------------------------------------------
-  const candidates = asArray(root.candidate_facts).map(
-    (item) => asRecord(item) ?? {},
-  );
-  const candidateByRef = new Map<string, PackCandidate>();
-  let approved = 0;
-  let rejected = 0;
-
-  for (const [index, candidate] of candidates.entries()) {
-    const ref = text(candidate.ref).trim() || `#${index + 1}`;
-    const where = `candidate_facts[${ref}]`;
-
-    if (candidateByRef.has(ref)) {
-      issues.push({ level: "error", where, message: `ref ${ref} 重複` });
-      continue;
-    }
-
-    const statement = text(candidate.statement).trim();
-    if (statement.length < 4) {
-      issues.push({ level: "error", where, message: "statement 太短或缺少" });
-      continue;
-    }
-
-    const paragraphId = text(candidate.source_paragraph_id).trim();
-    const chunk = chunkByParagraph.get(paragraphId);
-    if (!chunk) {
-      const reason = unusableParagraphs.get(paragraphId);
-      issues.push({
-        level: "error",
-        where: `${where}.source_paragraph_id`,
-        message: reason
-          ? `無法使用段落 ${paragraphId}：${reason}`
-          : `找不到段落 ${paragraphId || "（空白）"}`,
-        hint: reason
-          ? "修好上面那一段的文字，這筆事實就會一併通過。"
-          : "document_chunks 必須包含每一筆事實引用的段落。",
-      });
-      continue;
-    }
-
-    const quote = candidate.source_quote;
-    if (isContentPlaceholder(quote)) {
-      issues.push({
-        level: "error",
-        where: `${where}.source_quote`,
-        message: `原文引句還是佔位符「${text(quote)}」`,
-        hint: CONTENT_HINT,
-      });
-      continue;
-    }
-    if (text(quote).trim().length === 0) {
-      issues.push({
-        level: "error",
-        where: `${where}.source_quote`,
-        message: "缺少原文引句",
-        hint: "沒有引句就無法判斷事實是否超出原文，這類事實不得進入核定流程。",
-      });
-      continue;
-    }
-    if (!quoteExistsInParagraph(text(quote), chunk.text)) {
-      issues.push({
-        level: "error",
-        where: `${where}.source_quote`,
-        message: `引句不在段落 ${paragraphId} 的文字中`,
-        hint: "引句必須是該段落的連續片段（可忽略空白與標點差異）。",
-      });
-      continue;
-    }
-
-    const knowledgeType = text(candidate.knowledge_type) || "other";
-    if (!KNOWLEDGE_TYPES.includes(knowledgeType)) {
-      issues.push({
-        level: "error",
-        where: `${where}.knowledge_type`,
-        message: `「${knowledgeType}」不是允許值`,
-      });
-      continue;
-    }
-
-    const riskLevel = text(candidate.risk_level) || "low";
-    if (!RISK_LEVELS.includes(riskLevel)) {
-      issues.push({
-        level: "error",
-        where: `${where}.risk_level`,
-        message: `「${riskLevel}」不是允許值`,
-      });
-      continue;
-    }
-
-    const status = text(candidate.status) || "pending";
-    if (!CANDIDATE_STATUSES.includes(status)) {
-      issues.push({
-        level: "error",
-        where: `${where}.status`,
-        message: `「${status}」不是允許值`,
-      });
-      continue;
-    }
-    if (status === "approved") approved += 1;
-    if (status === "rejected") rejected += 1;
-
-    const conditions = asRecord(candidate.conditions) ?? {};
-
-    candidateByRef.set(ref, {
-      ref,
-      statement,
-      subject: text(candidate.subject) || null,
-      predicate: text(candidate.predicate) || null,
-      object: text(candidate.object) || null,
-      knowledge_type: knowledgeType,
-      conditions: Object.fromEntries(
-        Object.entries(conditions).map(([key, value]) => [
-          key,
-          typeof value === "string" ? value : null,
-        ]),
-      ),
-      source_quote: text(quote),
-      source_paragraph_id: paragraphId,
-      risk_level: riskLevel,
-      confidence:
-        typeof candidate.confidence === "number" ? candidate.confidence : 0.5,
-      status,
-      quality_flags: asArray(candidate.quality_flags).map((item) => text(item)),
-      quality_score:
-        typeof candidate.quality_score === "number" ? candidate.quality_score : 100,
-      review_note: text(candidate.review_note) || null,
-      edited: candidate.edited === true,
-      original_statement: text(candidate.original_statement) || null,
-      extraction_batch: text(candidate.extraction_batch) || null,
-    });
-  }
-
-  if (candidateByRef.size === 0) {
-    issues.push({
-      level: "error",
-      where: "candidate_facts",
-      message: "沒有任何可用的候選事實",
-    });
-  }
-
-  // --- review_records --------------------------------------------------
-  const reviews: PackReview[] = [];
-  for (const [index, review] of asArray(root.review_records).entries()) {
-    const row = asRecord(review) ?? {};
-    const where = `review_records[${index}]`;
-    const ref = candidateRef(row.candidate_fact_id);
-
-    if (!ref || !candidateByRef.has(ref)) {
-      issues.push({
-        level: "warning",
-        where,
-        message: `對應不到候選事實 ${ref ?? "（空白）"}，這筆審核紀錄會被略過`,
-      });
-      continue;
-    }
-
-    const action = text(row.action);
-    if (!REVIEW_ACTIONS.includes(action)) {
-      issues.push({
-        level: "error",
-        where: `${where}.action`,
-        message: `「${action}」不是允許的審核動作`,
-      });
-      continue;
-    }
-
-    reviews.push({
-      candidate_fact_id: ref,
-      action,
-      from_status: text(row.from_status) || null,
-      to_status: text(row.to_status) || null,
-      note: text(row.note) || null,
-      changes: row.changes ?? {},
-    });
-  }
-
-  // --- knowledge_facts -------------------------------------------------
-  const knowledgeFacts: PackKnowledgeFact[] = [];
-  for (const [index, fact] of asArray(root.knowledge_facts).entries()) {
-    const row = asRecord(fact) ?? {};
-    const where = `knowledge_facts[${text(row.ref) || index}]`;
-    const ref = candidateRef(row.candidate_fact_id);
-
-    if (!ref || !candidateByRef.has(ref)) {
-      issues.push({
-        level: "error",
-        where,
-        message: `對應不到候選事實 ${ref ?? "（空白）"}`,
-        hint: "正式事實必須由某一筆候選事實核定而來，才能保留審核歷程。",
-      });
-      continue;
-    }
-
-    const candidate = candidateByRef.get(ref)!;
-    if (candidate.status !== "approved") {
-      issues.push({
-        level: "error",
-        where,
-        message: `對應的候選事實 ${ref} 狀態是 ${candidate.status}，不是 approved`,
-        hint: "未經核定的候選事實不得產生正式事實。",
-      });
-      continue;
-    }
-
-    const statement = text(row.statement).trim();
-    if (statement && statement !== candidate.statement) {
-      issues.push({
-        level: "warning",
-        where,
-        message: `敘述與候選事實 ${ref} 不一致，匯入時以候選事實為準`,
-      });
-    }
-
-    knowledgeFacts.push({
-      ref: text(row.ref) || undefined,
-      candidate_fact_id: ref,
-      statement: candidate.statement,
-      tags: asArray(row.tags).map((item) => text(item)),
-      status: text(row.status) || "active",
-    });
-  }
-
-  // 已核定但沒有對應正式事實：提醒，不擋。
-  const promoted = new Set(knowledgeFacts.map((fact) => fact.candidate_fact_id));
-  for (const candidate of candidateByRef.values()) {
-    if (candidate.status === "approved" && !promoted.has(candidate.ref)) {
-      issues.push({
-        level: "warning",
-        where: `candidate_facts[${candidate.ref}]`,
-        message: "狀態是已核定，但檔案中沒有對應的正式事實",
-      });
-    }
-  }
-
-  const version = asRecord(asArray(root.source_versions)[0]) ?? {};
-  const jobs = asArray(root.processing_jobs).map((item) => asRecord(item) ?? {});
-
-  const summary = {
-    chunks: chunkByParagraph.size,
-    candidates: candidateByRef.size,
-    approved,
-    rejected,
-    knowledgeFacts: knowledgeFacts.length,
-    reviews: reviews.length,
-  };
-
-  const ok = !issues.some((issue) => issue.level === "error");
+  summary.skipped += issues.filter((issue) => issue.level === "error").length;
 
   return {
-    ok,
+    ok: articles.length > 0 && summary.candidates > 0,
+    articles,
     issues,
     summary,
-    pack: ok
-      ? {
-          export_meta: meta,
-          sources: [
-            {
-              title: text(source.title),
-              source_type: sourceType,
-              origin_url: text(source.origin_url) || null,
-              mime_type: text(source.mime_type) || null,
-              byte_size:
-                typeof source.byte_size === "number" ? source.byte_size : null,
-              content_hash: isBindingPlaceholder(source.content_hash)
-                ? null
-                : text(source.content_hash) || null,
-              status: "ready",
-            },
-          ],
-          source_versions: [
-            {
-              version: typeof version.version === "number" ? version.version : 1,
-              title: text(version.title) || text(source.title),
-              raw_text: isContentPlaceholder(version.raw_text)
-                ? null
-                : text(version.raw_text) || null,
-              parser_version: text(version.parser_version) || "article-pack/1.0",
-              char_count:
-                typeof version.char_count === "number" ? version.char_count : 0,
-              chunk_count: chunkByParagraph.size,
-            },
-          ],
-          document_chunks: [...chunkByParagraph.values()].sort(
-            (a, b) => (a.position ?? 0) - (b.position ?? 0),
-          ),
-          candidate_facts: [...candidateByRef.values()],
-          review_records: reviews,
-          knowledge_facts: knowledgeFacts,
-          processing_jobs: jobs.map((job) => ({
-            job_type: text(job.job_type) || "extract_facts",
-            status: text(job.status) || "completed",
-            payload: job.payload ?? {},
-            result: job.result ?? {},
-          })),
-        }
-      : null,
+  };
+}
+
+function normalizeArticle(
+  raw: Record<string, unknown>,
+  label: string,
+  issues: PackIssue[],
+): NormalizedArticle | null {
+  // --- 來源 ---------------------------------------------------------------
+  const sourceRaw =
+    asRecord(pick(raw, "source")) ??
+    asRecord(asArray(pick(raw, "sources"))[0]) ??
+    {};
+
+  const sourceList = asArray(pick(raw, "sources"));
+  if (sourceList.length > 1) {
+    issues.push({
+      level: "warning",
+      where: `${label}.sources`,
+      message: `有 ${sourceList.length} 筆來源，只會使用第一筆。多篇文章請用 articles 陣列。`,
+    });
+  }
+
+  const title =
+    text(pick(sourceRaw, "title", "name", "標題")).trim() ||
+    text(pick(raw, "title", "標題")).trim();
+
+  if (!title) {
+    issues.push({
+      level: "error",
+      where: `${label}.sources[0].title`,
+      message: "缺少文章標題，這一篇整篇跳過",
+    });
+    return null;
+  }
+
+  const sourceTypeRaw = text(pick(sourceRaw, "source_type", "type")).trim();
+  const sourceType = ["text", "file", "url"].includes(sourceTypeRaw)
+    ? sourceTypeRaw
+    : "url";
+
+  // --- 段落 ---------------------------------------------------------------
+  const chunkRows = asArray(
+    pick(raw, "document_chunks", "chunks", "paragraphs", "段落"),
+  );
+
+  const chunks = new Map<string, PackChunk>();
+
+  chunkRows.forEach((item, index) => {
+    const row = asRecord(item);
+    if (!row) return;
+
+    const paragraphId = normalizeParagraphId(
+      pick(row, "paragraph_id", "ref", "id", "pid"),
+      index,
+    );
+
+    const body = pick(row, "text", "paragraph_text", "content", "body", "原文");
+
+    if (isContentPlaceholder(body) || text(body).trim().length === 0) {
+      issues.push({
+        level: "warning",
+        where: `${label}.段落 ${paragraphId}`,
+        message:
+          "段落沒有實際文字，改由引用它的事實自帶原文（若也沒有就跳過該筆事實）",
+        hint: NO_SOURCE_HINT,
+      });
+      return;
+    }
+
+    if (chunks.has(paragraphId)) {
+      issues.push({
+        level: "warning",
+        where: `${label}.段落 ${paragraphId}`,
+        message: "段落編號重複，保留第一筆",
+      });
+      return;
+    }
+
+    chunks.set(paragraphId, {
+      paragraph_id: paragraphId,
+      position: typeof row.position === "number" ? row.position : index,
+      block_type: text(pick(row, "block_type")) || "paragraph",
+      heading_path: asArray(pick(row, "heading_path", "headings")).map((value) =>
+        text(value),
+      ),
+      text: text(body),
+      char_start: typeof row.char_start === "number" ? row.char_start : 0,
+      char_end: typeof row.char_end === "number" ? row.char_end : 0,
+    });
+  });
+
+  // --- 候選事實 -----------------------------------------------------------
+  const candidateRows = asArray(
+    pick(raw, "candidate_facts", "facts", "candidates", "事實"),
+  );
+
+  if (candidateRows.length === 0) {
+    issues.push({
+      level: "error",
+      where: `${label}.candidate_facts`,
+      message: "沒有任何事實，這一篇整篇跳過",
+    });
+    return null;
+  }
+
+  const candidates = new Map<string, PackCandidate>();
+
+  candidateRows.forEach((item, index) => {
+    const row = asRecord(item);
+    if (!row) return;
+
+    const ref =
+      text(pick(row, "ref", "id", "code", "編號")).trim() ||
+      `C${String(index + 1).padStart(3, "0")}`;
+    const where = `${label}.${ref}`;
+
+    if (candidates.has(ref)) {
+      issues.push({
+        level: "warning",
+        where,
+        message: "編號重複，保留第一筆",
+      });
+      return;
+    }
+
+    const statement = text(
+      pick(row, "statement", "fact", "sentence", "text", "事實", "敘述"),
+    ).trim();
+
+    if (statement.length < 2) {
+      issues.push({
+        level: "error",
+        where,
+        message: "沒有事實敘述，這一筆跳過",
+      });
+      return;
+    }
+
+    // 段落：用指定的編號找；找不到就看這筆事實有沒有自帶原文。
+    const paragraphId = normalizeParagraphId(
+      pick(row, "source_paragraph_id", "paragraph_id", "paragraph", "段落"),
+      index,
+    );
+
+    const inlineText = pick(
+      row,
+      "paragraph_text",
+      "source_paragraph_text",
+      "context",
+      "段落原文",
+    );
+
+    let chunk = chunks.get(paragraphId);
+
+    if (!chunk && !isContentPlaceholder(inlineText) && text(inlineText).trim()) {
+      // 事實自帶原文時就地補一個段落，不需要另外寫 document_chunks。
+      chunk = {
+        paragraph_id: paragraphId,
+        position: chunks.size,
+        block_type: "paragraph",
+        heading_path: [],
+        text: text(inlineText),
+        char_start: 0,
+        char_end: 0,
+      };
+      chunks.set(paragraphId, chunk);
+    }
+
+    if (!chunk) {
+      issues.push({
+        level: "error",
+        where,
+        message: `找不到段落 ${paragraphId} 的原文，這一筆跳過`,
+        hint: NO_SOURCE_HINT,
+      });
+      return;
+    }
+
+    // 引句：對不上就退回整段，並強制回到待審核。
+    const rawQuote = pick(row, "source_quote", "quote", "evidence", "原文片段");
+    let quote = text(rawQuote).trim();
+    let quoteFallback = false;
+
+    if (!quote || isContentPlaceholder(rawQuote)) {
+      quote = chunk.text;
+      quoteFallback = true;
+      issues.push({
+        level: "warning",
+        where,
+        message: `沒有原文引句，改以段落 ${paragraphId} 全文為依據，狀態設為待審核`,
+      });
+    } else if (!quoteMatches(quote, chunk.text)) {
+      quote = chunk.text;
+      quoteFallback = true;
+      issues.push({
+        level: "warning",
+        where,
+        message: `引句不在段落 ${paragraphId} 中，改以整段為依據，狀態設為待審核`,
+        hint: "引句要是該段落的連續片段；多段可用刪節號串接，例如「甲…乙」。",
+      });
+    }
+
+    const knowledgeType = coerce(
+      pick(row, "knowledge_type", "type", "知識類型"),
+      KNOWLEDGE_TYPE_ALIASES,
+      KNOWLEDGE_TYPES,
+      "other",
+    );
+    if (knowledgeType.coerced) {
+      issues.push({
+        level: "warning",
+        where,
+        message: `knowledge_type 無法辨識，改用 ${knowledgeType.value}`,
+      });
+    }
+
+    const riskLevel = coerce(
+      pick(row, "risk_level", "risk", "風險等級"),
+      RISK_LEVEL_ALIASES,
+      RISK_LEVELS,
+      "medium",
+    );
+    if (riskLevel.coerced) {
+      issues.push({
+        level: "warning",
+        where,
+        message: `risk_level 無法辨識，改用 ${riskLevel.value}`,
+      });
+    }
+
+    const statusResult = coerce(
+      pick(row, "status", "decision", "審核狀態", "人工決定"),
+      STATUS_ALIASES,
+      CANDIDATE_STATUSES,
+      "pending",
+    );
+    if (statusResult.coerced) {
+      issues.push({
+        level: "warning",
+        where,
+        message: `status 無法辨識，改用待審核`,
+      });
+    }
+
+    // 引句退回整段時不得沿用「已核定」，一律回到待審核。
+    const status = quoteFallback ? "pending" : statusResult.value;
+
+    const conditionsRaw = asRecord(pick(row, "conditions", "條件")) ?? {};
+    const conditions = Object.fromEntries(
+      Object.entries(conditionsRaw).map(([key, value]) => [
+        key,
+        typeof value === "string" && value.trim() ? value : null,
+      ]),
+    );
+
+    const flags = asArray(pick(row, "quality_flags", "flags")).map((value) =>
+      text(value),
+    );
+    if (quoteFallback) flags.push("quote_not_verified");
+
+    candidates.set(ref, {
+      ref,
+      statement,
+      subject: text(pick(row, "subject", "主體")) || null,
+      predicate: text(pick(row, "predicate", "關係")) || null,
+      object: text(pick(row, "object", "客體")) || null,
+      knowledge_type: knowledgeType.value,
+      conditions,
+      source_quote: quote,
+      source_paragraph_id: chunk.paragraph_id,
+      risk_level: riskLevel.value,
+      confidence:
+        typeof row.confidence === "number"
+          ? row.confidence
+          : quoteFallback
+            ? 0.4
+            : 0.6,
+      status,
+      quality_flags: flags,
+      quality_score:
+        typeof row.quality_score === "number"
+          ? row.quality_score
+          : quoteFallback
+            ? 60
+            : 100,
+      review_note:
+        text(pick(row, "review_note", "note", "理由", "審核意見")) || null,
+      edited: row.edited === true,
+      original_statement: text(pick(row, "original_statement", "原始敘述")) || null,
+      extraction_batch: text(pick(row, "extraction_batch")) || null,
+      quote_fallback: quoteFallback,
+    });
+  });
+
+  if (candidates.size === 0) {
+    issues.push({
+      level: "error",
+      where: `${label}`,
+      message: "沒有任何可用的事實，這一篇整篇跳過",
+    });
+    return null;
+  }
+
+  // --- 審核紀錄 -----------------------------------------------------------
+  const reviews: PackReview[] = [];
+  asArray(pick(raw, "review_records", "reviews", "審核紀錄")).forEach(
+    (item, index) => {
+      const row = asRecord(item);
+      if (!row) return;
+
+      const ref = candidateRef(
+        pick(row, "candidate_fact_id", "candidate_ref", "ref", "編號"),
+      );
+      if (!ref || !candidates.has(ref)) {
+        issues.push({
+          level: "warning",
+          where: `${label}.審核紀錄 ${index + 1}`,
+          message: "對應不到事實，略過這筆紀錄",
+        });
+        return;
+      }
+
+      const candidate = candidates.get(ref)!;
+      const action = coerce(
+        pick(row, "action", "decision", "動作"),
+        ACTION_ALIASES,
+        REVIEW_ACTIONS,
+        candidate.status === "approved"
+          ? "approve"
+          : candidate.status === "rejected"
+            ? "reject"
+            : "needs_fix",
+      );
+
+      if (action.coerced) {
+        issues.push({
+          level: "warning",
+          where: `${label}.審核紀錄 ${index + 1}`,
+          message: `審核動作無法辨識，改用 ${action.value}`,
+        });
+      }
+
+      reviews.push({
+        candidate_fact_id: ref,
+        action: action.value,
+        from_status: text(pick(row, "from_status")) || "pending",
+        to_status: text(pick(row, "to_status")) || candidate.status,
+        note: text(pick(row, "note", "理由")) || null,
+        changes: row.changes ?? {},
+      });
+    },
+  );
+
+  // --- 正式事實 -----------------------------------------------------------
+  const knowledgeFacts: PackKnowledgeFact[] = [];
+  asArray(pick(raw, "knowledge_facts", "final_facts", "正式事實")).forEach(
+    (item, index) => {
+      const row = asRecord(item);
+      if (!row) return;
+
+      const where = `${label}.正式事實 ${text(pick(row, "ref")) || index + 1}`;
+      const ref = candidateRef(
+        pick(row, "candidate_fact_id", "candidate_ref", "from", "編號"),
+      );
+
+      if (!ref || !candidates.has(ref)) {
+        issues.push({
+          level: "warning",
+          where,
+          message: "對應不到事實，略過。正式事實必須由某一筆事實核定而來。",
+        });
+        return;
+      }
+
+      const candidate = candidates.get(ref)!;
+      if (candidate.status !== "approved") {
+        issues.push({
+          level: "warning",
+          where,
+          message: `對應的事實 ${ref} 目前是${candidate.status}，略過這筆正式事實`,
+          hint: candidate.quote_fallback
+            ? "因為引句對不上原文而退回待審核，核定後就會產生正式事實。"
+            : undefined,
+        });
+        return;
+      }
+
+      knowledgeFacts.push({
+        ref: text(pick(row, "ref")) || undefined,
+        candidate_fact_id: ref,
+        statement: candidate.statement,
+        tags: asArray(pick(row, "tags", "標籤")).map((value) => text(value)),
+        status: "active",
+      });
+    },
+  );
+
+  // --- 版本與工作 ---------------------------------------------------------
+  const versionRaw =
+    asRecord(asArray(pick(raw, "source_versions"))[0]) ??
+    asRecord(pick(raw, "source_version")) ??
+    {};
+
+  const orderedChunks = [...chunks.values()].sort(
+    (a, b) => (a.position ?? 0) - (b.position ?? 0),
+  );
+
+  const jobs = asArray(pick(raw, "processing_jobs", "jobs")).map((item) => {
+    const row = asRecord(item) ?? {};
+    return {
+      job_type: text(pick(row, "job_type")) || "extract_facts",
+      status: text(pick(row, "status")) || "completed",
+      payload: row.payload ?? {},
+      result: row.result ?? {},
+    };
+  });
+
+  return {
+    source: {
+      title,
+      source_type: sourceType,
+      origin_url: text(pick(sourceRaw, "origin_url", "url", "網址")) || null,
+      mime_type: text(pick(sourceRaw, "mime_type")) || null,
+      byte_size:
+        typeof sourceRaw.byte_size === "number" ? sourceRaw.byte_size : null,
+      content_hash: isBindingPlaceholder(sourceRaw.content_hash)
+        ? null
+        : text(pick(sourceRaw, "content_hash")) || null,
+    },
+    version: {
+      version: typeof versionRaw.version === "number" ? versionRaw.version : 1,
+      title: text(pick(versionRaw, "title")) || title,
+      raw_text: isContentPlaceholder(versionRaw.raw_text)
+        ? null
+        : text(pick(versionRaw, "raw_text")) || null,
+      parser_version:
+        text(pick(versionRaw, "parser_version")) || "article-pack/3.0",
+      char_count:
+        typeof versionRaw.char_count === "number" ? versionRaw.char_count : 0,
+    },
+    chunks: orderedChunks,
+    candidates: [...candidates.values()],
+    reviews,
+    knowledgeFacts,
+    jobs,
   };
 }
