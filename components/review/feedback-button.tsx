@@ -57,7 +57,7 @@ export function FeedbackButton({ candidateFactId }: { candidateFactId: string })
 
       {open && (
         <div className="w-full space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3">
-          <label className="block text-sm">
+          <label className="block min-w-0 text-sm">
             <span className="mb-1 block text-xs font-medium text-slate-700">
               問題類型
             </span>

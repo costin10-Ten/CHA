@@ -12,13 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getApiUsage, getDashboardStats } from "@/lib/dashboard/queries";
 import {
   JOB_STATUS_CLASS,
   JOB_STATUS_LABEL,
+  JOB_TYPE_LABEL,
   formatDateTime,
 } from "@/lib/jobs/labels";
 import { getOrCreateProfile } from "@/lib/profile";
-import { getSourceStats } from "@/lib/sources/queries";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -26,54 +27,85 @@ export const dynamic = "force-dynamic";
 
 /**
  * 統計數字全部來自資料庫查詢，不放任何無資料來源的假數字。
- * 尚未建立的資料表（候選事實、核定事實等）會在對應 Phase 完成後接上。
+ * 查不到的項目顯示「—」而不是 0，避免把「查詢失敗」誤讀成「沒有資料」。
  */
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?redirectTo=/dashboard");
 
   const supabase = await createClient();
-  const [profile, stats, recentJobs] = await Promise.all([
-    getOrCreateProfile(user.id),
-    getSourceStats(),
+  const [profile, stats, usage, recentJobs, recentAnswers] = await Promise.all([
+    getOrCreateProfile(user.id).catch(() => null),
+    getDashboardStats(),
+    getApiUsage(),
     supabase
       .from("processing_jobs")
       .select("id, job_type, status, progress, created_at, last_error")
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("answer_sessions")
+      .select("id, question, created_at, publishable, unsupported_count")
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
 
   const jobs = recentJobs.data ?? [];
+  const answers = recentAnswers.data ?? [];
 
   return (
     <AppShell
       title="Dashboard"
-      description={`已登入：${user.email}`}
+      description={`已登入：${profile?.display_name ?? user.email}`}
       actions={
-        <Link href="/sources">
-          <Button>匯入來源</Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/sources">
+            <Button>匯入來源</Button>
+          </Link>
+          <Link href="/import">
+            <Button variant="outline">匯入文章包</Button>
+          </Link>
+        </div>
       }
     >
       <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatTile label="文件總數" value={stats.total} />
-          <StatTile label="解析完成" value={stats.ready} />
-          <StatTile label="處理中" value={stats.pending} />
-          <StatTile label="段落總數" value={stats.chunkCount} />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <StatTile label="文件總數" value={stats.sources} href="/sources" />
+          <StatTile label="候選事實" value={stats.candidates} href="/review" />
+          <StatTile
+            label="待審核"
+            value={stats.pendingReview}
+            href="/review?status=pending"
+            highlight={(stats.pendingReview ?? 0) > 0}
+          />
+          <StatTile
+            label="核定事實"
+            value={stats.knowledgeFacts}
+            href="/knowledge"
+          />
+          <StatTile
+            label="高風險事實"
+            value={stats.highRisk}
+            href="/knowledge?risk=high"
+          />
+          <StatTile label="原文段落" value={stats.chunks} />
+          <StatTile label="現行向量" value={stats.activeEmbeddings} />
+          <StatTile label="素材草稿" value={stats.drafts} href="/generate" />
+          <StatTile
+            label="驗證失敗句數"
+            value={stats.unsupportedSentences}
+            href="/verify"
+            danger={(stats.unsupportedSentences ?? 0) > 0}
+          />
+          <StatTile
+            label="被阻擋的回答"
+            value={stats.blockedAnswers}
+            href="/verify"
+            danger={(stats.blockedAnswers ?? 0) > 0}
+          />
         </div>
 
-        {stats.failed > 0 && (
-          <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            有 {stats.failed} 份文件解析失敗，請到
-            <Link href="/sources" className="mx-1 underline">
-              來源
-            </Link>
-            檢視錯誤訊息並重新解析。
-          </p>
-        )}
-
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>最近處理工作</CardTitle>
@@ -81,24 +113,86 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               {jobs.length === 0 ? (
-                <p className="text-sm text-slate-500">尚無背景工作。</p>
+                <p className="text-sm text-slate-500">還沒有背景工作。</p>
               ) : (
                 <ul className="space-y-2 text-sm">
                   {jobs.map((job) => (
                     <li
                       key={job.id}
-                      className="flex items-center justify-between gap-3"
+                      className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-2 last:border-0"
                     >
-                      <span className="truncate text-slate-800">
-                        {job.job_type}
+                      <Badge className={JOB_STATUS_CLASS[job.status]}>
+                        {JOB_STATUS_LABEL[job.status]}
+                      </Badge>
+                      <span className="text-slate-700">
+                        {JOB_TYPE_LABEL[job.job_type] ?? job.job_type}
                       </span>
-                      <span className="flex shrink-0 items-center gap-2">
-                        <Badge className={JOB_STATUS_CLASS[job.status]}>
-                          {JOB_STATUS_LABEL[job.status]}
-                        </Badge>
+                      {job.status === "processing" && (
                         <span className="text-xs text-slate-500">
-                          {formatDateTime(job.created_at)}
+                          {job.progress}%
                         </span>
+                      )}
+                      <span className="ml-auto text-xs text-slate-400">
+                        {formatDateTime(job.created_at)}
+                      </span>
+                      {job.last_error && (
+                        <span className="w-full text-xs text-red-600">
+                          {job.last_error}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Link
+                href="/history"
+                className="mt-3 inline-block text-sm text-blue-700 underline"
+              >
+                檢視完整歷程
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>最近問答</CardTitle>
+              <CardDescription>
+                每一份回答都經過逐句驗證，紅色句子不會進入發布稿。
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {answers.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  還沒有問答紀錄。到
+                  <Link href="/ask" className="mx-1 underline">
+                    問答
+                  </Link>
+                  提第一個問題。
+                </p>
+              ) : (
+                <ul className="space-y-2 text-sm">
+                  {answers.map((answer) => (
+                    <li
+                      key={answer.id}
+                      className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-2 last:border-0"
+                    >
+                      <Link
+                        href={`/verify/${answer.id}`}
+                        className="min-w-0 flex-1 truncate text-slate-800 hover:underline"
+                      >
+                        {answer.question}
+                      </Link>
+                      {answer.unsupported_count > 0 ? (
+                        <Badge className="bg-red-100 text-red-800">
+                          紅 {answer.unsupported_count}
+                        </Badge>
+                      ) : answer.publishable ? (
+                        <Badge className="bg-emerald-100 text-emerald-800">
+                          可發布
+                        </Badge>
+                      ) : null}
+                      <span className="text-xs text-slate-400">
+                        {formatDateTime(answer.created_at)}
                       </span>
                     </li>
                   ))}
@@ -106,53 +200,81 @@ export default async function DashboardPage() {
               )}
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>帳號</CardTitle>
-              <CardDescription>來自 Supabase Auth 與 profiles。</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-slate-500">User ID</dt>
-                  <dd className="truncate font-mono text-xs text-slate-800">
-                    {user.id}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-slate-500">顯示名稱</dt>
-                  <dd className="text-slate-800">
-                    {profile?.display_name ?? "（未設定）"}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-slate-500">建立時間</dt>
-                  <dd className="text-slate-800">
-                    {profile ? formatDateTime(profile.created_at) : "—"}
-                  </dd>
-                </div>
-              </dl>
-
-              <div className="mt-4 space-y-1 text-sm text-slate-700">
-                <p className="font-medium text-slate-900">目前進度</p>
-                <p>✅ Phase 1：Auth、profiles、RLS、CI</p>
-                <p>✅ Phase 2：來源匯入、Storage 直傳、背景工作、文件版本</p>
-                <p>⏳ Phase 3：候選事實抽取與自動品質檢查</p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>API 用量概況</CardTitle>
+            <CardDescription>
+              最近 500 次模型呼叫。使用 Mock Provider 時不會產生費用。
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <UsageTile label="呼叫次數" value={usage.runs} />
+              <UsageTile label="輸入 tokens" value={usage.inputTokens} />
+              <UsageTile label="輸出 tokens" value={usage.outputTokens} />
+              <UsageTile label="失敗次數" value={usage.failures} />
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              使用的 provider：
+              {usage.providers.length > 0 ? usage.providers.join("、") : "尚無紀錄"}
+              ．
+              <Link href="/settings/models" className="ml-1 underline">
+                模型設定
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </AppShell>
   );
 }
 
-function StatTile({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+function StatTile({
+  label,
+  value,
+  href,
+  highlight,
+  danger,
+}: {
+  label: string;
+  value: number | null;
+  href?: string;
+  highlight?: boolean;
+  danger?: boolean;
+}) {
+  const tone = danger
+    ? "border-red-200 bg-red-50"
+    : highlight
+      ? "border-blue-200 bg-blue-50"
+      : "border-slate-200 bg-white";
+
+  const content = (
+    <div className={`rounded-lg border p-4 ${tone}`}>
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
+      <p className="mt-1 text-2xl font-semibold text-slate-900">
+        {value === null ? "—" : value}
+      </p>
+    </div>
+  );
+
+  return href ? (
+    <Link href={href} className="block transition-opacity hover:opacity-80">
+      {content}
+    </Link>
+  ) : (
+    content
+  );
+}
+
+function UsageTile({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-slate-900">
+        {value.toLocaleString("zh-TW")}
+      </p>
     </div>
   );
 }

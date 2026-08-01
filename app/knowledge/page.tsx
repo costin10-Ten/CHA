@@ -97,7 +97,7 @@ export default async function KnowledgePage({
           </CardHeader>
           <CardContent>
             <form method="get" className="grid gap-3 sm:grid-cols-4">
-              <label className="block text-sm">
+              <label className="block min-w-0 text-sm">
                 <span className="mb-1 block text-xs font-medium text-slate-600">
                   狀態
                 </span>
@@ -114,7 +114,7 @@ export default async function KnowledgePage({
                 </select>
               </label>
 
-              <label className="block text-sm">
+              <label className="block min-w-0 text-sm">
                 <span className="mb-1 block text-xs font-medium text-slate-600">
                   風險等級
                 </span>

@@ -47,7 +47,7 @@ OpenAI／Anthropic 等模型 API（測試一律使用 Mock Provider）
 | 6     | 混合搜尋、證據包、AI 問答、引用來源                                 | ✅ 完成 |
 | 7     | 逐句驗證、綠黃紅標示、紅色句子阻擋                                  | ✅ 完成 |
 | 8     | 風險溝通素材、匯出與備份、增量更新與排程                            | ✅ 完成 |
-| 9     | UI 整理、效能、完整測試、部署文件、Production 驗證                  | ⏳ 待辦 |
+| 9     | UI 整理、完整頁面、示範資料、部署文件、Production 驗證              | ✅ 完成 |
 
 ## 本機開發
 
@@ -130,9 +130,10 @@ app/                Next.js App Router 頁面與 Route Handlers
   verify/           逐句驗證
   generate/         風險溝通素材產製與草稿
   export/           匯出頁與待選事實包回填
-  import/           文章包匯入（外部整理好的一篇文章）
+  import/           文章包匯入與示範資料
+  history/          背景工作、審核、模型呼叫與回報的時間線
+  settings/         模型與用量、提示詞與回報、帳號與資料
   api/export/       匯出下載（JSON／CSV／Markdown）
-  settings/prompts/ 提示詞版本與抽取回報統計
 components/
   ui/               基礎 UI 元件
   auth/             登入與登出
@@ -140,7 +141,8 @@ components/
   review/           審核清單、單筆編輯、回報抽取問題
   generate/         素材表單與草稿編輯
   export/           待選事實包回填
-  settings/         回報處理狀態
+  import/           文章包匯入與示範資料載入
+  settings/         子導覽與回報處理狀態
 lib/
   auth/             登入表單 schema 與錯誤訊息
   jobs/             工作狀態標籤與觸發 Edge Function
@@ -152,6 +154,9 @@ lib/
   generate/         素材查詢與標籤
   export/           匯出格式（純函式，可單元測試）與查詢
   settings/         提示詞、回報與模型用量查詢
+  dashboard/        Dashboard 統計與 API 用量
+  history/          處理歷程時間線
+  demo/             示範資料（自行撰寫，走一般匯入路徑）
   supabase/         browser／server／admin client 與 middleware
   env.ts            環境變數集中驗證
   profile.ts        profiles 讀寫
@@ -169,6 +174,7 @@ supabase/
 docs/
   ARTICLE-PACK.md   文章包匯入格式
   BACKUP.md         備份與還原操作
+  DEPLOY.md         部署設定與上線檢查清單
   BACKLOG.md        使用者提出的需求追蹤
 tests/
   unit/             Vitest
@@ -556,6 +562,16 @@ select cron.schedule(
 - 新使用者註冊時由 `handle_new_user` trigger 自動建立 profile
 - 任何情況都不得以關閉 RLS 解決權限錯誤（單元測試會檢查 migration 是否出現 `disable row level security`）
 
+## 示範資料
+
+`/import` 的「載入示範資料」會匯入三篇自行撰寫的短文（氫氟酸、汞、蘇丹紅），
+每篇 12 筆候選事實（6 核定、2 待修正、2 駁回、2 待審核）與 3 份素材草稿。
+
+被駁回的兩筆刻意做成真實會發生的抽取錯誤——把「部分」寫成「都」、
+把第 3 類分類寫成「吃到就會得癌症」——用來檢查審核與驗證規則有沒有在運作。
+
+示範資料走的是與一般匯入完全相同的驗證與匯入路徑，不是特例插入。
+
 ## 部署
 
 ### Vercel
@@ -591,6 +607,9 @@ Secrets and variables → Actions 建立三個 Repository Secret：
 
 首次套用（workflow 尚未進入 main 之前）可改用 Supabase Dashboard →
 SQL Editor → New query，貼上 `supabase/migrations/` 內的 SQL 執行，效果相同。
+
+詳細的環境變數、Cron 設定與上線檢查清單見
+[`docs/DEPLOY.md`](docs/DEPLOY.md)。
 
 ## 分支
 

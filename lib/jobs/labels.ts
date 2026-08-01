@@ -9,6 +9,15 @@ export const JOB_STATUS_LABEL: Record<JobStatus, string> = {
   cancelled: "已取消",
 };
 
+export const JOB_TYPE_LABEL: Record<string, string> = {
+  parse_document: "文件解析",
+  extract_facts: "候選事實抽取",
+  generate_embeddings: "向量產生",
+  verify_answer: "回答驗證",
+  generate_content: "素材產製",
+  scheduled_update: "排程更新",
+};
+
 export const SOURCE_STATUS_LABEL: Record<SourceStatus, string> = {
   pending: "等待處理",
   processing: "解析中",

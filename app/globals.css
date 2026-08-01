@@ -32,6 +32,23 @@ textarea {
   color-scheme: light;
 }
 
+/*
+ * select 的固有寬度由最長的 option 決定：文件標題一長，
+ * 整個下拉就會撐破卡片並讓頁面能左右捲動（手機上特別明顯）。
+ * 一律限制在容器寬度內，長標題由瀏覽器自行截斷。
+ */
+select,
+input,
+textarea {
+  max-width: 100%;
+}
+
+/* 頁面本身永遠不該橫向捲動；需要捲動的表格自己包 overflow-x。 */
+html,
+body {
+  overflow-x: hidden;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: #94a3b8; /* slate-400 */

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { SettingsNav } from "@/components/settings/settings-nav";
 import { FeedbackResolveButton } from "@/components/settings/feedback-resolve-button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -44,6 +45,8 @@ export default async function PromptSettingsPage() {
       title="提示詞與抽取回報"
       description="每一版提示詞被回報了多少問題、集中在哪一類。用來判斷提示詞該怎麼調整。"
     >
+      <SettingsNav current="/settings/prompts" />
+
       <div className="space-y-6">
         {loadError && (
           <div className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-800">

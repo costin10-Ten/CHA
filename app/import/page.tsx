@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { ArticlePackImport } from "@/components/import/article-pack-import";
+import { DemoLoader } from "@/components/import/demo-loader";
 import {
   Card,
   CardContent,
@@ -90,6 +91,20 @@ export default async function ImportPage() {
           </CardHeader>
           <CardContent>
             <ArticlePackImport />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>示範資料</CardTitle>
+            <CardDescription>
+              三篇自行撰寫的短文（氫氟酸、汞、蘇丹紅），每篇含 12 筆候選事實（6
+              核定、2 待修正、2 駁回、2 待審核）與 3 份素材草稿。
+              走的是與上面完全相同的匯入路徑。
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DemoLoader />
           </CardContent>
         </Card>
 

@@ -63,14 +63,15 @@ export default async function ExportPage({
             />
 
             <form method="get" className="flex flex-wrap items-end gap-3 pt-2">
-              <label className="block text-sm">
+              {/* 文件標題可能很長；min-w-0 + w-full 讓下拉留在卡片內。 */}
+              <label className="block w-full min-w-0 text-sm sm:w-64">
                 <span className="mb-1 block text-xs font-medium text-slate-600">
                   只匯出某一份文件
                 </span>
                 <select
                   name="source"
                   defaultValue={params.source ?? ""}
-                  className="h-10 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900"
+                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900"
                 >
                   <option value="">全部文件</option>
                   {sources.map((source) => (

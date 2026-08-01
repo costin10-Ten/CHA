@@ -39,7 +39,7 @@ export function GenerateForm({ types }: { types: DraftTypeOption[] }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm">
+        <label className="block min-w-0 text-sm">
           <span className="mb-1 block text-xs font-medium text-slate-600">
             素材類型
           </span>
@@ -57,7 +57,7 @@ export function GenerateForm({ types }: { types: DraftTypeOption[] }) {
           </select>
         </label>
 
-        <label className="block text-sm">
+        <label className="block min-w-0 text-sm">
           <span className="mb-1 block text-xs font-medium text-slate-600">
             主題
           </span>
@@ -69,7 +69,7 @@ export function GenerateForm({ types }: { types: DraftTypeOption[] }) {
           />
         </label>
 
-        <label className="block text-sm">
+        <label className="block min-w-0 text-sm">
           <span className="mb-1 block text-xs font-medium text-slate-600">
             目標受眾
           </span>
@@ -87,7 +87,7 @@ export function GenerateForm({ types }: { types: DraftTypeOption[] }) {
           </select>
         </label>
 
-        <label className="block text-sm">
+        <label className="block min-w-0 text-sm">
           <span className="mb-1 block text-xs font-medium text-slate-600">
             語氣
           </span>
