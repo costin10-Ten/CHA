@@ -25,20 +25,12 @@
       "subject": "部分內分泌疾病",
       "predicate": "可能出現",
       "object": "疲勞等症狀",
-      "proposition_types": [
-        "health_advice",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["health_advice", "toxicology_mechanism"],
       "risk_level": "高",
       "status": "待審核",
       "review_note": "外部補充命題，不是原文直接陳述；須以政府衛生機關來源單獨審核。",
-      "_supporting_source_ids": [
-        "E10"
-      ],
-      "_suggested_tags": [
-        "內分泌疾病",
-        "疲勞"
-      ]
+      "_supporting_source_ids": ["E10"],
+      "_suggested_tags": ["內分泌疾病", "疲勞"]
     },
     {
       "ref": "F004",
@@ -46,19 +38,12 @@
       "subject": "疲勞等常見症狀",
       "predicate": "不足以單獨判定",
       "object": "內分泌疾病",
-      "proposition_types": [
-        "health_advice"
-      ],
+      "proposition_types": ["health_advice"],
       "risk_level": "高",
       "status": "待審核",
       "review_note": "外部補充的診斷提醒；NIDDK指出部分甲狀腺疾病不能只依症狀診斷。",
-      "_supporting_source_ids": [
-        "E10"
-      ],
-      "_suggested_tags": [
-        "就醫判斷",
-        "內分泌疾病"
-      ]
+      "_supporting_source_ids": ["E10"],
+      "_suggested_tags": ["就醫判斷", "內分泌疾病"]
     }
   ]
 }

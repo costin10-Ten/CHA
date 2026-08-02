@@ -31,21 +31,12 @@
       "subject": "日本水俣工廠",
       "predicate": "自1932年起生產並排放",
       "object": "乙醛製程廢水",
-      "proposition_types": [
-        "event",
-        "agency_topic"
-      ],
+      "proposition_types": ["event", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部史實修正；原文寫『1940年代起』。",
-      "_supporting_source_ids": [
-        "E05",
-        "E06"
-      ],
-      "_suggested_tags": [
-        "水俣病",
-        "汞"
-      ]
+      "_supporting_source_ids": ["E05", "E06"],
+      "_suggested_tags": ["水俣病", "汞"]
     },
     {
       "ref": "F052",
@@ -53,22 +44,12 @@
       "subject": "乙醛製造過程",
       "predicate": "會因副反應產生",
       "object": "甲基汞",
-      "proposition_types": [
-        "event",
-        "substance_property",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["event", "substance_property", "toxicology_mechanism"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部官方資料補充；原文僅稱有機汞。",
-      "_supporting_source_ids": [
-        "E05",
-        "E06"
-      ],
-      "_suggested_tags": [
-        "甲基汞",
-        "乙醛製程"
-      ]
+      "_supporting_source_ids": ["E05", "E06"],
+      "_suggested_tags": ["甲基汞", "乙醛製程"]
     },
     {
       "ref": "F057",
@@ -76,21 +57,12 @@
       "subject": "水俣病",
       "predicate": "於1956年獲",
       "object": "正式通報及確認",
-      "proposition_types": [
-        "event",
-        "agency_topic"
-      ],
+      "proposition_types": ["event", "agency_topic"],
       "risk_level": "低",
       "status": "待審核",
       "review_note": "外部官方史實，原文未載年份。",
-      "_supporting_source_ids": [
-        "E05",
-        "E06"
-      ],
-      "_suggested_tags": [
-        "水俣病",
-        "1956年"
-      ]
+      "_supporting_source_ids": ["E05", "E06"],
+      "_suggested_tags": ["水俣病", "1956年"]
     }
   ]
 }

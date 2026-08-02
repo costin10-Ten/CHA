@@ -268,7 +268,8 @@ export async function approveWithEdit(
         subject: edited.subject,
         predicate: edited.predicate,
         object: edited.object,
-        proposition_types: edited.proposition_types as CandidateFactRow["proposition_types"],
+        proposition_types:
+          edited.proposition_types as CandidateFactRow["proposition_types"],
         risk_level: edited.risk_level as CandidateFactRow["risk_level"],
         conditions: edited.conditions,
         quality_flags: quality.flags,
@@ -521,8 +522,7 @@ export async function batchReview(
     // 已核定／已駁回要改判，必須到單筆審核頁明確操作。
     const allowed = facts.filter(
       (fact) =>
-        isBatchReviewable(fact.status) &&
-        !assertActionAllowed(fact.status, action),
+        isBatchReviewable(fact.status) && !assertActionAllowed(fact.status, action),
     );
     if (allowed.length === 0) {
       return {

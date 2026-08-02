@@ -25,21 +25,12 @@
       "subject": "部分橙劑",
       "predicate": "受到污染",
       "object": "TCDD",
-      "proposition_types": [
-        "event",
-        "substance_property",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["event", "substance_property", "toxicology_mechanism"],
       "risk_level": "高",
       "status": "待審核",
       "review_note": "外部補充的重要暴露背景，原文未直接說明。",
-      "_supporting_source_ids": [
-        "E09"
-      ],
-      "_suggested_tags": [
-        "橙劑",
-        "TCDD"
-      ]
+      "_supporting_source_ids": ["E09"],
+      "_suggested_tags": ["橙劑", "TCDD"]
     },
     {
       "ref": "F071",
@@ -47,22 +38,12 @@
       "subject": "橙劑及其TCDD污染",
       "predicate": "持續受到研究",
       "object": "不同長期健康效應",
-      "proposition_types": [
-        "research_literature",
-        "event",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["research_literature", "event", "toxicology_mechanism"],
       "risk_level": "高",
       "status": "待審核",
       "review_note": "研究狀態命題；不得將所有健康終點概括為已確認因果。",
-      "_supporting_source_ids": [
-        "E09"
-      ],
-      "_suggested_tags": [
-        "橙劑",
-        "TCDD",
-        "健康研究"
-      ]
+      "_supporting_source_ids": ["E09"],
+      "_suggested_tags": ["橙劑", "TCDD", "健康研究"]
     },
     {
       "ref": "F072",
@@ -70,22 +51,12 @@
       "subject": "美國國家科學院2018年評估",
       "predicate": "認為證據不足以判定",
       "object": "越戰除草劑暴露與後代先天異常的關聯",
-      "proposition_types": [
-        "research_literature",
-        "event",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["research_literature", "event", "toxicology_mechanism"],
       "risk_level": "高",
       "status": "待審核",
       "review_note": "用於更正原文『使孩子畸形』的過度因果敘述。",
-      "_supporting_source_ids": [
-        "E09"
-      ],
-      "_suggested_tags": [
-        "橙劑",
-        "先天異常",
-        "證據等級"
-      ]
+      "_supporting_source_ids": ["E09"],
+      "_suggested_tags": ["橙劑", "先天異常", "證據等級"]
     }
   ]
 }

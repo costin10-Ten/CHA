@@ -31,21 +31,12 @@
       "subject": "特定官能基",
       "predicate": "不能單獨證明",
       "object": "內分泌干擾作用",
-      "proposition_types": [
-        "chemistry_concept",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["chemistry_concept", "toxicology_mechanism"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "為防止由結構特徵直接跳到分類結論而新增的審核命題。",
-      "_supporting_source_ids": [
-        "E02",
-        "E03"
-      ],
-      "_suggested_tags": [
-        "官能基",
-        "結構活性"
-      ]
+      "_supporting_source_ids": ["E02", "E03"],
+      "_suggested_tags": ["官能基", "結構活性"]
     }
   ]
 }

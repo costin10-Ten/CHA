@@ -25,20 +25,12 @@
       "subject": "甲基汞",
       "predicate": "可累積於",
       "object": "魚貝類及水生食物鏈",
-      "proposition_types": [
-        "toxicology_mechanism",
-        "substance_property"
-      ],
+      "proposition_types": ["toxicology_mechanism", "substance_property"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部官方機制補充；原文僅寫魚貝類受污染。",
-      "_supporting_source_ids": [
-        "E05"
-      ],
-      "_suggested_tags": [
-        "甲基汞",
-        "生物累積"
-      ]
+      "_supporting_source_ids": ["E05"],
+      "_suggested_tags": ["甲基汞", "生物累積"]
     }
   ]
 }

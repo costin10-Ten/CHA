@@ -31,21 +31,12 @@
       "subject": "荷爾蒙與受體",
       "predicate": "不一定是",
       "object": "絕對一對一對應",
-      "proposition_types": [
-        "chemistry_concept",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["chemistry_concept", "toxicology_mechanism"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "為避免『一把鑰匙只開一把鎖』的過度簡化而新增；非原文直接命題。",
-      "_supporting_source_ids": [
-        "E01",
-        "E03"
-      ],
-      "_suggested_tags": [
-        "受體",
-        "配體"
-      ]
+      "_supporting_source_ids": ["E01", "E03"],
+      "_suggested_tags": ["受體", "配體"]
     },
     {
       "ref": "F017",
@@ -53,21 +44,12 @@
       "subject": "部分內分泌干擾物",
       "predicate": "可能改變",
       "object": "荷爾蒙的合成或分泌",
-      "proposition_types": [
-        "toxicology_mechanism",
-        "agency_topic"
-      ],
+      "proposition_types": ["toxicology_mechanism", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部機制補充，原文未直接列出合成或分泌。",
-      "_supporting_source_ids": [
-        "E01",
-        "E03"
-      ],
-      "_suggested_tags": [
-        "荷爾蒙合成",
-        "荷爾蒙分泌"
-      ]
+      "_supporting_source_ids": ["E01", "E03"],
+      "_suggested_tags": ["荷爾蒙合成", "荷爾蒙分泌"]
     }
   ]
 }

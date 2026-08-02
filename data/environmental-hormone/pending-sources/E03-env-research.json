@@ -25,19 +25,12 @@
       "subject": "部分內分泌干擾物",
       "predicate": "可能改變",
       "object": "荷爾蒙的運輸",
-      "proposition_types": [
-        "toxicology_mechanism",
-        "agency_topic"
-      ],
+      "proposition_types": ["toxicology_mechanism", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部機制補充，原文未直接列出運輸。",
-      "_supporting_source_ids": [
-        "E03"
-      ],
-      "_suggested_tags": [
-        "荷爾蒙運輸"
-      ]
+      "_supporting_source_ids": ["E03"],
+      "_suggested_tags": ["荷爾蒙運輸"]
     },
     {
       "ref": "F020",
@@ -45,19 +38,12 @@
       "subject": "部分內分泌干擾物",
       "predicate": "可能改變",
       "object": "基因體訊號傳遞",
-      "proposition_types": [
-        "toxicology_mechanism",
-        "agency_topic"
-      ],
+      "proposition_types": ["toxicology_mechanism", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部機制補充；原文僅泛稱荷爾蒙訊號傳遞。",
-      "_supporting_source_ids": [
-        "E03"
-      ],
-      "_suggested_tags": [
-        "基因體訊號"
-      ]
+      "_supporting_source_ids": ["E03"],
+      "_suggested_tags": ["基因體訊號"]
     },
     {
       "ref": "F021",
@@ -65,19 +51,12 @@
       "subject": "部分內分泌干擾物",
       "predicate": "可能改變",
       "object": "非基因體訊號傳遞",
-      "proposition_types": [
-        "toxicology_mechanism",
-        "agency_topic"
-      ],
+      "proposition_types": ["toxicology_mechanism", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部機制補充；原文未直接使用非基因體一詞。",
-      "_supporting_source_ids": [
-        "E03"
-      ],
-      "_suggested_tags": [
-        "非基因體訊號"
-      ]
+      "_supporting_source_ids": ["E03"],
+      "_suggested_tags": ["非基因體訊號"]
     },
     {
       "ref": "F035",
@@ -85,20 +64,12 @@
       "subject": "靶組織有效濃度",
       "predicate": "影響",
       "object": "外源性物質與受體競爭程度",
-      "proposition_types": [
-        "toxicology_mechanism",
-        "chemistry_concept"
-      ],
+      "proposition_types": ["toxicology_mechanism", "chemistry_concept"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "以科學上較精確的『有效濃度』取代原文『分子數量龐大』。",
-      "_supporting_source_ids": [
-        "E03"
-      ],
-      "_suggested_tags": [
-        "有效濃度",
-        "受體競爭"
-      ]
+      "_supporting_source_ids": ["E03"],
+      "_suggested_tags": ["有效濃度", "受體競爭"]
     },
     {
       "ref": "F036",
@@ -106,20 +77,12 @@
       "subject": "生體可用率",
       "predicate": "會影響",
       "object": "外源性物質的受體作用",
-      "proposition_types": [
-        "toxicology_mechanism",
-        "chemistry_concept"
-      ],
+      "proposition_types": ["toxicology_mechanism", "chemistry_concept"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部補充命題，原文未直接陳述生體可用率。",
-      "_supporting_source_ids": [
-        "E03"
-      ],
-      "_suggested_tags": [
-        "生體可用率",
-        "受體作用"
-      ]
+      "_supporting_source_ids": ["E03"],
+      "_suggested_tags": ["生體可用率", "受體作用"]
     }
   ]
 }

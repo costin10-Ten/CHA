@@ -13,9 +13,7 @@
     {
       "ref": "X001",
       "statement": "讀者每天都睡不飽或感到疲勞。",
-      "proposition_types": [
-        "health_advice"
-      ],
+      "proposition_types": ["health_advice"],
       "risk_level": "高",
       "paragraph_id": "P-001",
       "quote": "每天都覺得睡不飽、疲勞嗎？",
@@ -25,9 +23,7 @@
     {
       "ref": "X002",
       "statement": "讀者正受到痘痘困擾。",
-      "proposition_types": [
-        "health_advice"
-      ],
+      "proposition_types": ["health_advice"],
       "risk_level": "高",
       "paragraph_id": "P-001",
       "quote": "或是為了皮膚層出不窮的痘痘而煩惱？",
@@ -37,9 +33,7 @@
     {
       "ref": "X003",
       "statement": "環境荷爾蒙是易容在人體內的間諜。",
-      "proposition_types": [
-        "agency_topic"
-      ],
+      "proposition_types": ["agency_topic"],
       "risk_level": "低",
       "paragraph_id": "P-002",
       "quote": "環境荷爾蒙（environmental hormone）就像是易容在體內的間諜",
@@ -49,10 +43,7 @@
     {
       "ref": "X004",
       "statement": "每種荷爾蒙只能與唯一一種受體結合。",
-      "proposition_types": [
-        "chemistry_concept",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["chemistry_concept", "toxicology_mechanism"],
       "risk_level": "中",
       "paragraph_id": "P-001",
       "quote": "像是一把只能打開特定鎖的專屬鑰匙",
@@ -62,10 +53,7 @@
     {
       "ref": "X005",
       "statement": "人類對環境荷爾蒙危害的認知建立在血淋淋的歷史事件上。",
-      "proposition_types": [
-        "event",
-        "agency_topic"
-      ],
+      "proposition_types": ["event", "agency_topic"],
       "risk_level": "低",
       "paragraph_id": "P-006",
       "quote": "人類對環境荷爾蒙危害的認知，是建立在20世紀下半葉一樁樁血淋淋的歷史事件之上",
@@ -75,9 +63,7 @@
     {
       "ref": "X006",
       "statement": "環境公害是一部部真實上演的災難片。",
-      "proposition_types": [
-        "event"
-      ],
+      "proposition_types": ["event"],
       "risk_level": "低",
       "paragraph_id": "P-006",
       "quote": "這些環境公害是一部部真實上演的災難片",
@@ -87,9 +73,7 @@
     {
       "ref": "X007",
       "statement": "環境公害是自然對人類科技發展的反撲。",
-      "proposition_types": [
-        "event"
-      ],
+      "proposition_types": ["event"],
       "risk_level": "低",
       "paragraph_id": "P-006",
       "quote": "映照出人類科技發展與自然反撲的循環",
@@ -99,9 +83,7 @@
     {
       "ref": "X008",
       "statement": "這些歷史故事並不反對科技。",
-      "proposition_types": [
-        "agency_topic"
-      ],
+      "proposition_types": ["agency_topic"],
       "risk_level": "低",
       "paragraph_id": "P-006",
       "quote": "這些故事並非反科技",
@@ -111,9 +93,7 @@
     {
       "ref": "X009",
       "statement": "人類進步必須以謹慎與尊重為前提。",
-      "proposition_types": [
-        "agency_topic"
-      ],
+      "proposition_types": ["agency_topic"],
       "risk_level": "低",
       "paragraph_id": "P-006",
       "quote": "進步必須以謹慎與尊重為前提",
@@ -123,52 +103,35 @@
     {
       "ref": "X010",
       "statement": "塞維索戴奧辛洩漏導致居民流產率上升。",
-      "proposition_types": [
-        "event",
-        "toxicology_mechanism",
-        "research_literature"
-      ],
+      "proposition_types": ["event", "toxicology_mechanism", "research_literature"],
       "risk_level": "高",
       "paragraph_id": "P-006",
       "quote": "「戴奧辛」的洩漏導致居民癌症與流產率上升",
       "status": "駁回",
       "review_note": "現有主要追蹤研究未支持TCDD暴露造成自然流產增加；以F062取代。",
-      "_supporting_source_ids": [
-        "E12"
-      ]
+      "_supporting_source_ids": ["E12"]
     },
     {
       "ref": "X011",
       "statement": "橙劑使暴露地區的孩子發生先天異常。",
-      "proposition_types": [
-        "event",
-        "toxicology_mechanism",
-        "health_advice"
-      ],
+      "proposition_types": ["event", "toxicology_mechanism", "health_advice"],
       "risk_level": "高",
       "paragraph_id": "P-006",
       "quote": "橙劑的漫天灑落，不只使森林枯死、更使孩子畸形",
       "status": "駁回",
       "review_note": "用語不當且因果過度概括；以F071、F072表達證據狀態。",
-      "_supporting_source_ids": [
-        "E09"
-      ]
+      "_supporting_source_ids": ["E09"]
     },
     {
       "ref": "X012",
       "statement": "所有PFAS都會在人體內停留很久。",
-      "proposition_types": [
-        "substance_property",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["substance_property", "toxicology_mechanism"],
       "risk_level": "高",
       "paragraph_id": "P-004",
       "quote": "部分內分泌干擾物…還能在體內停留許久…典型例子包括…PFAS",
       "status": "駁回",
       "review_note": "把廣泛物質群誤當同質類別；不同PFAS半衰期差異很大。",
-      "_supporting_source_ids": [
-        "E04"
-      ]
+      "_supporting_source_ids": ["E04"]
     },
     {
       "ref": "X013",
@@ -183,10 +146,7 @@
       "quote": "許多已知環境荷爾蒙具備可能與受體互動的結構特徵（如芳香環、氯/氟取代基、羥基或酯基等）",
       "status": "駁回",
       "review_note": "把可能相關的結構特徵誤作充分判定條件；以F032取代。",
-      "_supporting_source_ids": [
-        "E02",
-        "E03"
-      ]
+      "_supporting_source_ids": ["E02", "E03"]
     }
   ]
 }

@@ -25,20 +25,12 @@
       "subject": "DDT及其部分代謝物",
       "predicate": "具有",
       "object": "環境持久性",
-      "proposition_types": [
-        "substance_property",
-        "agency_topic"
-      ],
+      "proposition_types": ["substance_property", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部補充命題；原文僅將DDT列為典型例子。",
-      "_supporting_source_ids": [
-        "E08"
-      ],
-      "_suggested_tags": [
-        "DDT",
-        "持久性有機污染物"
-      ]
+      "_supporting_source_ids": ["E08"],
+      "_suggested_tags": ["DDT", "持久性有機污染物"]
     },
     {
       "ref": "F045",
@@ -46,20 +38,12 @@
       "subject": "DDE",
       "predicate": "會干擾",
       "object": "部分鳥類的蛋殼形成",
-      "proposition_types": [
-        "toxicology_mechanism",
-        "substance_property"
-      ],
+      "proposition_types": ["toxicology_mechanism", "substance_property"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "以主要相關代謝物DDE取代原文籠統的DDT；不是原文直接引句。",
-      "_supporting_source_ids": [
-        "E08"
-      ],
-      "_suggested_tags": [
-        "DDE",
-        "蛋殼變薄"
-      ]
+      "_supporting_source_ids": ["E08"],
+      "_suggested_tags": ["DDE", "蛋殼變薄"]
     },
     {
       "ref": "F046",
@@ -67,21 +51,12 @@
       "subject": "DDE造成的蛋殼變薄",
       "predicate": "曾與之相關",
       "object": "部分猛禽繁殖成功率及族群下降",
-      "proposition_types": [
-        "toxicology_mechanism",
-        "research_literature"
-      ],
+      "proposition_types": ["toxicology_mechanism", "research_literature"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部研究命題，須保留關聯語氣。",
-      "_supporting_source_ids": [
-        "E08"
-      ],
-      "_suggested_tags": [
-        "DDE",
-        "猛禽",
-        "生態風險"
-      ]
+      "_supporting_source_ids": ["E08"],
+      "_suggested_tags": ["DDE", "猛禽", "生態風險"]
     }
   ]
 }

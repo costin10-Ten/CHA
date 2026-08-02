@@ -25,20 +25,12 @@
       "subject": "內分泌干擾物",
       "predicate": "可能改變",
       "object": "正常荷爾蒙訊號",
-      "proposition_types": [
-        "toxicology_mechanism",
-        "agency_topic"
-      ],
+      "proposition_types": ["toxicology_mechanism", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "整合外部官方機制說明；圖說本身未完整呈現這些作用。",
-      "_supporting_source_ids": [
-        "E01"
-      ],
-      "_suggested_tags": [
-        "內分泌訊號",
-        "圖說修正"
-      ]
+      "_supporting_source_ids": ["E01"],
+      "_suggested_tags": ["內分泌訊號", "圖說修正"]
     }
   ]
 }

@@ -25,22 +25,12 @@
       "subject": "塞維索長期追蹤研究",
       "predicate": "發現",
       "object": "部分淋巴及造血系統腫瘤風險增加",
-      "proposition_types": [
-        "research_literature",
-        "event",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["research_literature", "event", "toxicology_mechanism"],
       "risk_level": "高",
       "status": "待審核",
       "review_note": "研究結果命題；不可改寫成所有癌症均增加。",
-      "_supporting_source_ids": [
-        "E13"
-      ],
-      "_suggested_tags": [
-        "塞維索事故",
-        "癌症風險",
-        "世代研究"
-      ]
+      "_supporting_source_ids": ["E13"],
+      "_suggested_tags": ["塞維索事故", "癌症風險", "世代研究"]
     }
   ]
 }

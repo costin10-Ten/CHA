@@ -25,22 +25,12 @@
       "subject": "塞維索婦女健康追蹤研究",
       "predicate": "未發現關聯",
       "object": "母體TCDD濃度與自然流產增加",
-      "proposition_types": [
-        "research_literature",
-        "event",
-        "toxicology_mechanism"
-      ],
+      "proposition_types": ["research_literature", "event", "toxicology_mechanism"],
       "risk_level": "高",
       "status": "待審核",
       "review_note": "此命題用來更正原文『流產率上升』的敘述；須人工核定。",
-      "_supporting_source_ids": [
-        "E12"
-      ],
-      "_suggested_tags": [
-        "塞維索事故",
-        "自然流產",
-        "TCDD"
-      ]
+      "_supporting_source_ids": ["E12"],
+      "_suggested_tags": ["塞維索事故", "自然流產", "TCDD"]
     }
   ]
 }

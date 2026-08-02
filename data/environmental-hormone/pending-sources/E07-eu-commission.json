@@ -25,22 +25,12 @@
       "subject": "塞維索事故",
       "predicate": "造成",
       "object": "居民TCDD暴露及環境污染",
-      "proposition_types": [
-        "event",
-        "toxicology_mechanism",
-        "agency_topic"
-      ],
+      "proposition_types": ["event", "toxicology_mechanism", "agency_topic"],
       "risk_level": "高",
       "status": "待審核",
       "review_note": "外部官方事件摘要；原文未明載暴露與污染範圍。",
-      "_supporting_source_ids": [
-        "E07"
-      ],
-      "_suggested_tags": [
-        "塞維索事故",
-        "TCDD",
-        "環境污染"
-      ]
+      "_supporting_source_ids": ["E07"],
+      "_suggested_tags": ["塞維索事故", "TCDD", "環境污染"]
     },
     {
       "ref": "F064",
@@ -48,20 +38,12 @@
       "subject": "塞維索指令",
       "predicate": "旨在預防",
       "object": "涉及危險物質的重大工業事故",
-      "proposition_types": [
-        "foreign_policy",
-        "agency_topic"
-      ],
+      "proposition_types": ["foreign_policy", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部歐盟官方政策目的；原文僅稱行為指引。",
-      "_supporting_source_ids": [
-        "E07"
-      ],
-      "_suggested_tags": [
-        "塞維索指令",
-        "工業安全"
-      ]
+      "_supporting_source_ids": ["E07"],
+      "_suggested_tags": ["塞維索指令", "工業安全"]
     },
     {
       "ref": "F065",
@@ -69,21 +51,12 @@
       "subject": "塞維索指令",
       "predicate": "旨在限制",
       "object": "重大事故對健康與環境的後果",
-      "proposition_types": [
-        "foreign_policy",
-        "agency_topic"
-      ],
+      "proposition_types": ["foreign_policy", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部歐盟官方政策目的。",
-      "_supporting_source_ids": [
-        "E07"
-      ],
-      "_suggested_tags": [
-        "塞維索指令",
-        "健康",
-        "環境"
-      ]
+      "_supporting_source_ids": ["E07"],
+      "_suggested_tags": ["塞維索指令", "健康", "環境"]
     }
   ]
 }

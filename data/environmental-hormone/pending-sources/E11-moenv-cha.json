@@ -25,21 +25,12 @@
       "subject": "我國環境荷爾蒙管理",
       "predicate": "涉及",
       "object": "多主管機關分工",
-      "proposition_types": [
-        "domestic_policy",
-        "agency_topic"
-      ],
+      "proposition_types": ["domestic_policy", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部國內政策補充，原文未說明部會分工。",
-      "_supporting_source_ids": [
-        "E11"
-      ],
-      "_suggested_tags": [
-        "環境荷爾蒙",
-        "跨部會",
-        "權責"
-      ]
+      "_supporting_source_ids": ["E11"],
+      "_suggested_tags": ["環境荷爾蒙", "跨部會", "權責"]
     },
     {
       "ref": "F078",
@@ -47,20 +38,12 @@
       "subject": "我國環境荷爾蒙管理",
       "predicate": "採取",
       "object": "跨部會協調及分工",
-      "proposition_types": [
-        "domestic_policy",
-        "agency_topic"
-      ],
+      "proposition_types": ["domestic_policy", "agency_topic"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部國內政策補充，須以化學署正式頁面核定。",
-      "_supporting_source_ids": [
-        "E11"
-      ],
-      "_suggested_tags": [
-        "環境荷爾蒙",
-        "跨部會治理"
-      ]
+      "_supporting_source_ids": ["E11"],
+      "_suggested_tags": ["環境荷爾蒙", "跨部會治理"]
     }
   ]
 }

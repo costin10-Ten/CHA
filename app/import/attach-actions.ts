@@ -372,7 +372,14 @@ function readFactsLoosely(payload: unknown): {
     const article =
       item && typeof item === "object" ? (item as Record<string, unknown>) : {};
 
-    const list = ["facts", "candidate_facts", "candidates", "原子命題", "命題", "事實"]
+    const list = [
+      "facts",
+      "candidate_facts",
+      "candidates",
+      "原子命題",
+      "命題",
+      "事實",
+    ]
       .map((key) => article[key])
       .find((value) => Array.isArray(value));
 
@@ -380,7 +387,16 @@ function readFactsLoosely(payload: unknown): {
       const row =
         raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
 
-      const statement = ["statement", "fact", "sentence", "text", "敘述", "原子命題", "命題", "事實"]
+      const statement = [
+        "statement",
+        "fact",
+        "sentence",
+        "text",
+        "敘述",
+        "原子命題",
+        "命題",
+        "事實",
+      ]
         .map((key) => row[key])
         .find((value) => typeof value === "string" && value.trim().length > 1);
 

@@ -25,21 +25,12 @@
       "subject": "內分泌干擾物",
       "predicate": "定義為",
       "object": "改變內分泌功能並造成不良影響的外源物質或混合物",
-      "proposition_types": [
-        "foreign_policy",
-        "agency_topic",
-        "chemistry_concept"
-      ],
+      "proposition_types": ["foreign_policy", "agency_topic", "chemistry_concept"],
       "risk_level": "中",
       "status": "待審核",
       "review_note": "外部正式定義，不是原文直接陳述。",
-      "_supporting_source_ids": [
-        "E02"
-      ],
-      "_suggested_tags": [
-        "WHO",
-        "內分泌干擾物定義"
-      ]
+      "_supporting_source_ids": ["E02"],
+      "_suggested_tags": ["WHO", "內分泌干擾物定義"]
     },
     {
       "ref": "F027",
@@ -55,13 +46,8 @@
       "risk_level": "中",
       "status": "待審核",
       "review_note": "依WHO定義作成的審核推論；須人工確認是否納入正式知識層。",
-      "_supporting_source_ids": [
-        "E02"
-      ],
-      "_suggested_tags": [
-        "證據判定",
-        "內分泌干擾物"
-      ]
+      "_supporting_source_ids": ["E02"],
+      "_suggested_tags": ["證據判定", "內分泌干擾物"]
     }
   ]
 }
