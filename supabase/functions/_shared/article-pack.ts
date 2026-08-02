@@ -222,6 +222,8 @@ export interface NormalizedArticle {
   reviews: PackReview[];
   knowledgeFacts: PackKnowledgeFact[];
   jobs: PackJob[];
+  /** 事實包裡標為駁回、因此沒有匯入的編號。 */
+  droppedRejected: string[];
 }
 
 export interface PackIssue {
@@ -237,6 +239,7 @@ export interface PackSummary {
   chunks: number;
   candidates: number;
   approved: number;
+  /** 事實包裡標為駁回、被略過不匯入的筆數。 */
   rejected: number;
   needsFix: number;
   knowledgeFacts: number;
@@ -416,9 +419,7 @@ export function validateArticlePack(input: unknown): PackValidation {
     summary.approved += article.candidates.filter(
       (candidate) => candidate.status === "approved",
     ).length;
-    summary.rejected += article.candidates.filter(
-      (candidate) => candidate.status === "rejected",
-    ).length;
+    summary.rejected += article.droppedRejected.length;
     summary.needsFix += article.candidates.filter(
       (candidate) => candidate.status === "needs_fix",
     ).length;
@@ -543,6 +544,8 @@ function normalizeArticle(
   }
 
   const candidates = new Map<string, PackCandidate>();
+  /** 事實包裡標為駁回、因此不匯入的編號。 */
+  const rejectedRefs: string[] = [];
 
   candidateRows.forEach((item, index) => {
     const row = asRecord(item);
@@ -572,6 +575,23 @@ function normalizeArticle(
         where,
         message: "沒有事實敘述，這一筆跳過",
       });
+      return;
+    }
+
+    const statusResult = coerce(
+      pick(row, "status", "decision", "審核狀態", "人工決定"),
+      STATUS_ALIASES,
+      CANDIDATE_STATUSES,
+      "pending",
+    );
+
+    // 標為駁回的事實不匯入。
+    //
+    // 駁回代表整理者已經判定「這句話不成立」。把它建成候選事實只會讓
+    // 不成立的句子躺在待審清單裡，等著被全選批次核定一起放行——
+    // 這正是先前發生過的事。要留紀錄請留在事實包裡，不要進資料庫。
+    if (statusResult.value === "rejected") {
+      rejectedRefs.push(ref);
       return;
     }
 
@@ -667,12 +687,6 @@ function normalizeArticle(
       });
     }
 
-    const statusResult = coerce(
-      pick(row, "status", "decision", "審核狀態", "人工決定"),
-      STATUS_ALIASES,
-      CANDIDATE_STATUSES,
-      "pending",
-    );
     if (statusResult.coerced) {
       issues.push({
         level: "warning",
@@ -731,11 +745,25 @@ function normalizeArticle(
     });
   });
 
+  if (rejectedRefs.length > 0) {
+    issues.push({
+      level: "warning",
+      where: `${label}.facts`,
+      message: `略過 ${rejectedRefs.length} 筆標為駁回的事實（${rejectedRefs
+        .slice(0, 5)
+        .join("、")}${rejectedRefs.length > 5 ? " 等" : ""}），駁回的事實不會匯入`,
+      hint: "駁回代表這句話不成立，建立成候選事實只會增加被誤放行的機會。要保留紀錄請留在事實包檔案裡。",
+    });
+  }
+
   if (candidates.size === 0) {
     issues.push({
       level: "error",
       where: `${label}`,
-      message: "沒有任何可用的事實，這一篇整篇跳過",
+      message:
+        rejectedRefs.length > 0
+          ? "這一篇的事實全部標為駁回，沒有可匯入的內容"
+          : "沒有任何可用的事實，這一篇整篇跳過",
     });
     return null;
   }
@@ -882,5 +910,6 @@ function normalizeArticle(
     reviews,
     knowledgeFacts,
     jobs,
+    droppedRejected: rejectedRefs,
   };
 }

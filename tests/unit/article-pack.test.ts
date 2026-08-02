@@ -166,7 +166,7 @@ describe("寬鬆處理：欄位別名", () => {
           段落: "P-004",
           段落原文: PARAGRAPH,
           原文片段: "作用於昆蟲神經系統的鈉離子通道",
-          審核狀態: "駁回",
+          審核狀態: "核定",
           風險等級: "高",
           知識類型: "物質",
         },
@@ -174,7 +174,7 @@ describe("寬鬆處理：欄位別名", () => {
     });
 
     const candidate = result.articles[0].candidates[0];
-    expect(candidate.status).toBe("rejected");
+    expect(candidate.status).toBe("approved");
     expect(candidate.risk_level).toBe("high");
     expect(candidate.knowledge_type).toBe("substance");
   });
@@ -499,5 +499,123 @@ describe("整份無法使用時", () => {
     expect(
       result.issues.some((issue) => issue.message.includes("沒有任何事實")),
     ).toBe(true);
+  });
+});
+
+/**
+ * 駁回的事實不匯入。
+ *
+ * 起因：使用者匯入另一個 AI 產出的事實包，包內已標為駁回的事實仍被建成
+ * 候選事實，之後在審核清單被全選批次核定，一起寫進了正式事實庫。
+ * 根因有兩處，這裡守住入口這一處：駁回的事實根本不該進資料庫。
+ */
+describe("駁回的事實不匯入", () => {
+  it("標為駁回的事實不會變成候選事實", () => {
+    const result = validateArticlePack({
+      source: { title: "含駁回" },
+      document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
+      facts: [
+        {
+          ref: "F-1",
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          source_paragraph_id: "P-004",
+          source_quote: "作用於昆蟲神經系統的鈉離子通道",
+          status: "approved",
+        },
+        {
+          ref: "F-2",
+          statement: "賽滅寧對人體有立即致命危險。",
+          source_paragraph_id: "P-004",
+          source_quote: "作用於昆蟲神經系統的鈉離子通道",
+          status: "rejected",
+        },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.articles[0].candidates).toHaveLength(1);
+    expect(result.articles[0].candidates[0].ref).toBe("F-1");
+    expect(result.articles[0].droppedRejected).toEqual(["F-2"]);
+    expect(result.summary.candidates).toBe(1);
+    expect(result.summary.rejected).toBe(1);
+  });
+
+  it("中文的「駁回」「不通過」一樣不匯入", () => {
+    for (const label of ["駁回", "已駁回", "不通過"]) {
+      const result = validateArticlePack({
+        source: { title: "中文駁回" },
+        document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
+        事實: [
+          {
+            ref: "F-1",
+            敘述: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+            段落: "P-004",
+            原文片段: "作用於昆蟲神經系統的鈉離子通道",
+            審核狀態: label,
+          },
+        ],
+      });
+
+      expect(result.ok, label).toBe(false);
+      expect(
+        result.issues.some((issue) => issue.message.includes("全部標為駁回")),
+        label,
+      ).toBe(true);
+    }
+  });
+
+  it("會告訴使用者略過了哪幾筆", () => {
+    const result = validateArticlePack({
+      source: { title: "含駁回" },
+      document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
+      facts: [
+        {
+          ref: "F-1",
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          source_paragraph_id: "P-004",
+          source_quote: "作用於昆蟲神經系統的鈉離子通道",
+        },
+        { ref: "F-2", statement: "駁回一", status: "rejected" },
+        { ref: "F-3", statement: "駁回二", status: "rejected" },
+      ],
+    });
+
+    const notice = result.issues.find((issue) =>
+      issue.message.includes("略過 2 筆標為駁回"),
+    );
+    expect(notice).toBeDefined();
+    expect(notice?.message).toContain("F-2");
+    expect(notice?.message).toContain("F-3");
+    // 駁回的事實不必有可對應的段落，不該因此產生錯誤。
+    expect(result.issues.some((issue) => issue.level === "error")).toBe(false);
+  });
+
+  it("駁回的事實不會被寫成正式事實", () => {
+    const result = validateArticlePack({
+      source: { title: "含駁回" },
+      document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
+      facts: [
+        {
+          ref: "F-1",
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          source_paragraph_id: "P-004",
+          source_quote: "作用於昆蟲神經系統的鈉離子通道",
+          status: "rejected",
+        },
+        {
+          ref: "F-2",
+          statement: "賽滅寧屬於合成除蟲菊精類殺蟲劑。",
+          source_paragraph_id: "P-004",
+          source_quote: "賽滅寧",
+          status: "approved",
+        },
+      ],
+      knowledge_facts: [{ candidate_ref: "F-1" }, { candidate_ref: "F-2" }],
+    });
+
+    const refs = result.articles[0].knowledgeFacts.map(
+      (fact) => fact.candidate_fact_id,
+    );
+    expect(refs).not.toContain("F-1");
   });
 });

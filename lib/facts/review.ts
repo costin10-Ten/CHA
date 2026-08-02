@@ -41,6 +41,11 @@ export const ACTION_RESULT_STATUS: Record<ReviewAction, CandidateStatus | null> 
 /**
  * 允許的狀態轉換。
  * 已合併或已拆分的事實是歷史紀錄，不可再直接審核，只能退回待審核。
+ *
+ * 已駁回的事實**不能一步核定**：必須先「退回待審核」，
+ * 讓人重新看過一次原文與敘述，才能核定。
+ * 駁回代表「這句話不成立」，推翻這個判斷應該是有意識的兩個動作，
+ * 不該和一般核定混在同一批操作裡。
  */
 const ALLOWED_ACTIONS: Record<CandidateStatus, ReviewAction[]> = {
   pending: [
@@ -53,10 +58,26 @@ const ALLOWED_ACTIONS: Record<CandidateStatus, ReviewAction[]> = {
   ],
   needs_fix: ["approve", "approve_with_edit", "reject", "split", "merge", "reopen"],
   approved: ["reject", "needs_fix", "reopen"],
-  rejected: ["reopen", "approve", "approve_with_edit"],
+  rejected: ["reopen"],
   merged: ["reopen"],
   split: ["reopen"],
 };
+
+/**
+ * 可以被批次操作的狀態：只有「還沒做決定」的。
+ *
+ * 單筆審核頁可以推翻既有決定（畫面上看得到目前狀態、要按到那一筆）；
+ * 批次操作不行——一次幾十筆的動作不該有能力翻掉已經做過的判斷。
+ * 這是全選誤把已駁回事實一起核定的防線。
+ */
+export const BATCH_REVIEWABLE_STATUSES: CandidateStatus[] = [
+  "pending",
+  "needs_fix",
+];
+
+export function isBatchReviewable(status: CandidateStatus): boolean {
+  return BATCH_REVIEWABLE_STATUSES.includes(status);
+}
 
 export function canApplyAction(
   status: CandidateStatus,

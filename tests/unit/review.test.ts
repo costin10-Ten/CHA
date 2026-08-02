@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   ACTION_RESULT_STATUS,
   MAX_STATEMENT_LENGTH,
+  BATCH_REVIEWABLE_STATUSES,
   assertActionAllowed,
   buildChanges,
   canApplyAction,
   isBatchApprovable,
+  isBatchReviewable,
   parseSplitStatements,
   validateMerge,
   validateSplit,
@@ -42,6 +44,19 @@ describe("canApplyAction", () => {
       expect(canApplyAction(status, "split")).toBe(false);
       expect(canApplyAction(status, "reopen")).toBe(true);
     }
+  });
+
+  /**
+   * 起因：匯入的事實包裡有已駁回的事實，在審核清單被全選後批次核定，
+   * 一步就寫進了正式事實庫。推翻一個「這句話不成立」的判斷，
+   * 應該要先退回待審核、重新看過。
+   */
+  it("已駁回不能一步核定，必須先退回待審核", () => {
+    expect(canApplyAction("rejected", "approve")).toBe(false);
+    expect(canApplyAction("rejected", "approve_with_edit")).toBe(false);
+    expect(canApplyAction("rejected", "reopen")).toBe(true);
+    // 退回之後才走得通。
+    expect(canApplyAction("pending", "approve")).toBe(true);
   });
 
   it("重新抽取在任何狀態都允許", () => {
@@ -167,5 +182,51 @@ describe("isBatchApprovable", () => {
     },
   ])("不符合條件時排除：%o", (fact) => {
     expect(isBatchApprovable(fact)).toBe(false);
+  });
+});
+
+describe("isBatchReviewable", () => {
+  /**
+   * 批次操作只能作用於「還沒做決定」的候選事實。
+   * 單筆審核頁看得到目前狀態、要按到那一筆，可以推翻決定；
+   * 一次幾十筆的批次動作不該有這個能力。
+   */
+  it("只有待審核與待確認可以批次操作", () => {
+    expect(BATCH_REVIEWABLE_STATUSES).toEqual(["pending", "needs_fix"]);
+    expect(isBatchReviewable("pending")).toBe(true);
+    expect(isBatchReviewable("needs_fix")).toBe(true);
+  });
+
+  it("已做過決定的一律排除在批次之外", () => {
+    for (const status of [
+      "approved",
+      "rejected",
+      "merged",
+      "split",
+    ] as CandidateStatus[]) {
+      expect(isBatchReviewable(status), status).toBe(false);
+    }
+  });
+
+  it("可批次核定的一定也是可批次操作的", () => {
+    const statuses: CandidateStatus[] = [
+      "pending",
+      "approved",
+      "rejected",
+      "needs_fix",
+      "merged",
+      "split",
+    ];
+    for (const status of statuses) {
+      if (
+        isBatchApprovable({
+          status,
+          risk_level: "low",
+          quality_flags: [],
+        } as Parameters<typeof isBatchApprovable>[0])
+      ) {
+        expect(isBatchReviewable(status), status).toBe(true);
+      }
+    }
   });
 });

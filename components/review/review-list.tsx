@@ -26,7 +26,11 @@ import {
   RISK_LEVEL_LABEL,
   qualityFlagLabel,
 } from "@/lib/facts/labels";
-import { isBatchApprovable } from "@/lib/facts/review";
+import {
+  canApplyAction,
+  isBatchApprovable,
+  isBatchReviewable,
+} from "@/lib/facts/review";
 import { formatDateTime } from "@/lib/jobs/labels";
 import type { CandidateFactRow } from "@/lib/supabase/types";
 
@@ -52,9 +56,17 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
     setSelected(new Set(facts.filter(isBatchApprovable).map((fact) => fact.id)));
   }
 
-  /** 全選只作用於目前畫面上的清單（已套用篩選與筆數上限）。 */
+  /**
+   * 全選只作用於目前畫面上「還沒做決定」的候選事實
+   * （已套用篩選與筆數上限）。
+   *
+   * 刻意不包含已核定與已駁回：全選加批次核定曾經把清單裡
+   * 已駁回的事實一起寫進正式事實庫。
+   */
   function toggleAll(checked: boolean) {
-    setSelected(checked ? new Set(facts.map((fact) => fact.id)) : new Set());
+    setSelected(
+      checked ? new Set(reviewableFacts.map((fact) => fact.id)) : new Set(),
+    );
   }
 
   function run(work: () => Promise<ReviewResult>, clearSelection = true) {
@@ -72,8 +84,11 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
 
   const selectedIds = [...selected];
   const batchApprovableCount = facts.filter(isBatchApprovable).length;
+  const reviewableFacts = facts.filter((fact) => isBatchReviewable(fact.status));
+  const decidedCount = facts.length - reviewableFacts.length;
 
-  const allSelected = facts.length > 0 && selected.size === facts.length;
+  const allSelected =
+    reviewableFacts.length > 0 && selected.size === reviewableFacts.length;
   const someSelected = selected.size > 0 && !allSelected;
 
   // indeterminate 只能用 DOM property 設定，沒有對應的 React 屬性。
@@ -89,17 +104,18 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
             <input
               ref={selectAllRef}
               type="checkbox"
-              aria-label="全選本頁候選事實"
+              aria-label="全選本頁待審核與待確認的候選事實"
               checked={allSelected}
               onChange={(event) => toggleAll(event.target.checked)}
-              disabled={pending || facts.length === 0}
+              disabled={pending || reviewableFacts.length === 0}
               className="h-4 w-4 rounded border-slate-300"
             />
-            全選
+            全選待審核
           </label>
 
           <span className="text-sm text-slate-600">
-            已選取 {selected.size} 筆（本頁共 {facts.length} 筆）
+            已選取 {selected.size} 筆（本頁可批次操作 {reviewableFacts.length} 筆
+            {decidedCount > 0 ? `，已做過決定 ${decidedCount} 筆不列入` : ""}）
           </span>
 
           <Button
@@ -169,7 +185,8 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
           )}
 
           <p className="w-full text-xs text-slate-500">
-            「可批次核定」的條件是：狀態為待審核、低風險，且沒有任何品質標記。
+            批次操作只作用於待審核與待確認的事實；已核定或已駁回的要改判，
+            請用該筆下方的按鈕。「可批次核定」再多一層條件：低風險且沒有任何品質標記。
           </p>
 
           {mergeOpen && (
@@ -208,7 +225,13 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
                     aria-label={`選取：${fact.statement}`}
                     checked={selected.has(fact.id)}
                     onChange={() => toggle(fact.id)}
-                    className="h-4 w-4 rounded border-slate-300"
+                    disabled={!isBatchReviewable(fact.status)}
+                    title={
+                      isBatchReviewable(fact.status)
+                        ? undefined
+                        : "已做過決定的事實不能批次操作，請用下方按鈕單筆處理"
+                    }
+                    className="h-4 w-4 rounded border-slate-300 disabled:opacity-40"
                   />
                   <Badge className={CANDIDATE_STATUS_CLASS[fact.status]}>
                     {CANDIDATE_STATUS_LABEL[fact.status]}
@@ -271,7 +294,12 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
                 <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
                   <Button
                     size="sm"
-                    disabled={pending || fact.status === "approved"}
+                    disabled={pending || !canApplyAction(fact.status, "approve")}
+                    title={
+                      fact.status === "rejected"
+                        ? "已駁回的事實要先「退回待審核」才能核定"
+                        : undefined
+                    }
                     onClick={() => run(() => approveCandidate(fact.id), false)}
                   >
                     核定
@@ -279,7 +307,7 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={pending || fact.status === "rejected"}
+                    disabled={pending || !canApplyAction(fact.status, "reject")}
                     onClick={() => run(() => rejectCandidate(fact.id), false)}
                   >
                     駁回

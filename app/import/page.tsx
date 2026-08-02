@@ -183,6 +183,36 @@ export default async function ImportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <a
+                href="/examples/fact-pack-minimal.json"
+                download="事實包範例-最小.json"
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                下載最小範例
+              </a>
+              <a
+                href="/examples/fact-pack-full.json"
+                download="事實包範例-完整.json"
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                下載完整範例
+              </a>
+              <span className="self-center text-xs text-slate-500">
+                兩份範例都附了逐欄說明（底線開頭的欄位系統會忽略），可以直接改成自己的內容。
+              </span>
+            </div>
+
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <p className="font-medium">標為駁回的事實不會匯入</p>
+              <p className="mt-1 text-xs">
+                <code>status</code> 是 <code>駁回</code>／<code>rejected</code>{" "}
+                的事實會被略過，匯入畫面會列出略過了哪幾筆。
+                駁回代表這句話不成立，建成候選事實只會讓它躺在待審清單裡等著被誤放行。
+                要保留紀錄請留在事實包檔案裡。
+              </p>
+            </div>
+
             <div>
               <p className="mb-2 text-sm font-medium text-slate-800">
                 最小可用格式

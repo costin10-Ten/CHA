@@ -10,6 +10,7 @@ import { normalizeForCompare } from "@shared/quality.ts";
 import {
   assertActionAllowed,
   buildChanges,
+  isBatchReviewable,
   parseSplitStatements,
   validateMerge,
   validateSplit,
@@ -508,11 +509,19 @@ export async function batchReview(
 
     if (loadError || !facts) throw new Error("讀取候選事實失敗");
 
+    // 批次操作只作用於「還沒做決定」的候選事實。
+    // 已核定／已駁回要改判，必須到單筆審核頁明確操作。
     const allowed = facts.filter(
-      (fact) => !assertActionAllowed(fact.status, action),
+      (fact) =>
+        isBatchReviewable(fact.status) &&
+        !assertActionAllowed(fact.status, action),
     );
     if (allowed.length === 0) {
-      return { status: "error", message: "選取的項目目前都不允許這個動作" };
+      return {
+        status: "error",
+        message:
+          "選取的項目都不是待審核或待確認狀態。已核定或已駁回的事實要改判，請進入單筆審核頁。",
+      };
     }
 
     const toStatus: CandidateStatus =

@@ -144,3 +144,23 @@ supabase storage cp -r ss://sources ./storage-backup --experimental
 3. 登入、開 `/knowledge` 確認事實數量與正式環境一致
 4. 開 `/search` 搜尋一個關鍵字，確認補齊向量後有結果
 5. 刪除臨時專案
+
+---
+
+## 6. 清空資料重來
+
+要把知識資料全部清掉、從乾淨的狀態重新匯入時，用
+`supabase/scripts/reset-data.sql`：
+
+1. **先到 `/export` 匯出一份備份**（這個動作不可復原）
+2. Supabase Dashboard → SQL Editor → 貼上 `supabase/scripts/reset-data.sql`
+3. 把腳本開頭的 `v_email` 換成你的登入信箱
+4. Run
+
+會刪除：來源文件、文件版本、段落、候選事實、審核紀錄、正式事實、事實版本、
+實體、關聯、向量索引、問答紀錄、素材草稿、抽取回報、工作佇列、模型呼叫紀錄。
+
+不會刪除：你的帳號、`profiles`、`prompt_versions`（提示詞版本），
+以及所有資料表結構——不需要重跑 migrations。
+
+上傳的檔案本體在 Storage，不會一起刪；腳本結尾有一段註解起來的 SQL 可以一併清掉。
