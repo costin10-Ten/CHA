@@ -88,7 +88,13 @@ export async function validatePack(json: string): Promise<ValidateResult> {
 
 export type ImportPackResult =
   | { status: "idle" }
-  | { status: "error"; message: string; issues?: PackIssue[] }
+  | {
+      status: "error";
+      message: string;
+      issues?: PackIssue[];
+      /** 寫入階段的失敗原因；驗證過了卻沒寫進去時，答案在這裡。 */
+      problems?: string[];
+    }
   | {
       status: "success";
       message: string;
@@ -163,9 +169,17 @@ export async function importArticlePack(
     }
 
     if (created.articles === 0) {
+      // 驗證過了卻一篇都沒寫進去，原因一定在 problems 裡（網址重複、
+      // 資料表寫入失敗…）。以前只回傳 validation.issues，使用者看到的是
+      // 一整排「已自動處理」，真正的原因被吞掉了。
+      const blocked = problems.filter((problem) => problem.startsWith("已跳過"));
       return {
         status: "error",
-        message: "沒有任何一篇匯入成功。",
+        message:
+          blocked.length > 0
+            ? `沒有任何一篇匯入成功：${blocked[0].split("：").slice(1).join("：")}`
+            : "沒有任何一篇匯入成功。",
+        problems: blocked.length > 0 ? blocked : problems,
         issues: validation.issues,
       };
     }

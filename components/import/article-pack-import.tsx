@@ -204,14 +204,36 @@ export function ArticlePackImport() {
           <p role="alert" className="text-sm text-red-800">
             {result.message}
           </p>
-          {result.issues && result.issues.length > 0 && (
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-red-800">
-              {result.issues.slice(0, 10).map((issue, index) => (
-                <li key={index}>
-                  {issue.where}：{issue.message}
-                </li>
+
+          {/* 寫入階段的失敗原因排在最前面：驗證的提醒有時上百條，
+              真正擋下匯入的原因不能被埋在裡面。 */}
+          {result.problems && result.problems.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs font-medium text-red-900">
+              {result.problems.map((problem, index) => (
+                <li key={index}>{problem}</li>
               ))}
             </ul>
+          )}
+
+          {result.issues && result.issues.length > 0 && (
+            <details className="mt-2 text-xs text-red-800">
+              <summary className="cursor-pointer">
+                驗證階段的提醒 {result.issues.length} 項
+                {result.problems && result.problems.length > 0
+                  ? "（這些不是匯入失敗的原因）"
+                  : ""}
+              </summary>
+              <ul className="mt-1 list-disc space-y-1 pl-5">
+                {result.issues.slice(0, 30).map((issue, index) => (
+                  <li key={index}>
+                    {issue.where}：{issue.message}
+                  </li>
+                ))}
+                {result.issues.length > 30 && (
+                  <li>…另有 {result.issues.length - 30} 項</li>
+                )}
+              </ul>
+            </details>
           )}
         </div>
       )}
