@@ -1,0 +1,1499 @@
+{
+  "_說明": "依 fact-pack-full.json 格式建立。本檔包含原始文章段落、77筆修正後候選原子命題及13筆駁回紀錄。source.title 與 facts[].statement 為必要欄位；底線開頭欄位供人工閱讀或稽核，匯入系統時可忽略。",
+  "_本檔範圍": "只保留能對應到環境部這篇文章段落（P-001～P-006）的 44 筆原子命題，匯入時 0 錯誤 0 警告。原檔另有 33 筆整理自外部文獻、在本文找不到可引用原文，已分組放在 pending-sources/；另有 13 筆標為駁回，依規則不匯入，保留在 rejected.json。",
+  "_分類說明": "proposition_types 採九類複選。分類包含知識內容、事件類型與治理層級，彼此可重疊。醫學健康建議須為政府機關來源；涉及醫療診斷、健康效應或高風險因果者，原則上保留待審核。",
+  "_九類": {
+    "substance_property": "物質與物理化學性質",
+    "chemistry_concept": "化學基本概念",
+    "event": "事件",
+    "agency_topic": "化學署主題",
+    "toxicology_mechanism": "毒理與反應機制",
+    "domestic_policy": "國內治理政策",
+    "foreign_policy": "國外治理政策",
+    "research_literature": "研究與期刊",
+    "health_advice": "醫學健康建議——須為政府機關來源；高風險健康內容仍需人工單獨審核。"
+  },
+  "_審查原則": {
+    "scientific_accuracy": "科學正確性",
+    "intro_consistency": "引言一致性",
+    "government_responsibility": "部會權責",
+    "non_sensational": "不聳動"
+  },
+  "_外部佐證來源": {
+    "E01": {
+      "title": "Endocrine Disruptors",
+      "publisher": "U.S. National Institute of Environmental Health Sciences (NIEHS)",
+      "url": "https://www.niehs.nih.gov/health/topics/agents/endocrine",
+      "source_type": "government"
+    },
+    "E02": {
+      "title": "State of the Science of Endocrine Disrupting Chemicals 2012",
+      "publisher": "World Health Organization / UNEP",
+      "url": "https://iris.who.int/bitstreams/173c5e04-99fd-4f83-972f-7913d7d8e6b1/download",
+      "source_type": "intergovernmental"
+    },
+    "E03": {
+      "title": "Exposure, toxicological mechanism of endocrine disrupting compounds and future direction of identification using nano-architectonics",
+      "publisher": "Environmental Research",
+      "url": "https://doi.org/10.1016/j.envres.2023.115577",
+      "source_type": "peer_reviewed_journal"
+    },
+    "E04": {
+      "title": "Properties: PFAS Information for Clinicians",
+      "publisher": "U.S. Agency for Toxic Substances and Disease Registry (ATSDR)",
+      "url": "https://www.atsdr.cdc.gov/pfas/hcp/clinical-overview/properties.html",
+      "source_type": "government"
+    },
+    "E05": {
+      "title": "Minamata Disease: The History and Measures",
+      "publisher": "Ministry of the Environment, Government of Japan",
+      "url": "https://www.env.go.jp/en/chemi/hs/minamata2002/ch2.html",
+      "source_type": "government"
+    },
+    "E06": {
+      "title": "Occurrence and cause of Minamata disease",
+      "publisher": "National Institute for Minamata Disease, Japan",
+      "url": "https://nimd.env.go.jp/english/qa/",
+      "source_type": "government"
+    },
+    "E07": {
+      "title": "Industrial accidents",
+      "publisher": "European Commission",
+      "url": "https://environment.ec.europa.eu/topics/industrial-emissions-and-safety/industrial-accidents_en",
+      "source_type": "government"
+    },
+    "E08": {
+      "title": "DDE and eggshell thinning references",
+      "publisher": "U.S. Environmental Protection Agency HERO",
+      "url": "https://hero.epa.gov/reference/3064007/",
+      "source_type": "government_research_index"
+    },
+    "E09": {
+      "title": "Veterans and Agent Orange: Update 11 (2018)",
+      "publisher": "National Academies of Sciences, Engineering, and Medicine",
+      "url": "https://nap.nationalacademies.org/catalog/25137/veterans-and-agent-orange-update-11-2018",
+      "source_type": "national_academy"
+    },
+    "E10": {
+      "title": "Hypothyroidism (Underactive Thyroid)",
+      "publisher": "U.S. National Institute of Diabetes and Digestive and Kidney Diseases (NIDDK)",
+      "url": "https://www.niddk.nih.gov/health-information/endocrine-diseases/hypothyroidism",
+      "source_type": "government_health"
+    },
+    "E11": {
+      "title": "我國跨部會環境荷爾蒙管理",
+      "publisher": "環境部化學物質管理署",
+      "url": "https://www.cha.gov.tw/cp-23-2120-5656e-1.html",
+      "source_type": "government"
+    },
+    "E12": {
+      "title": "Seveso Women's Health Study: TCDD and spontaneous abortion",
+      "publisher": "Peer-reviewed research indexed by PubMed",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/24291766/",
+      "source_type": "peer_reviewed_journal"
+    },
+    "E13": {
+      "title": "Long-term cancer follow-up after the Seveso accident",
+      "publisher": "Peer-reviewed research indexed by PubMed",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/19754930/",
+      "source_type": "peer_reviewed_journal"
+    }
+  },
+  "export_meta": {
+    "format_version": 2,
+    "created_at": "2026-08-03T00:14:00+08:00",
+    "generator": "ChatGPT",
+    "_human_review": "本檔尚未經人類審核，因此未寫 human_review=completed；匯入時不應預先沿用核定結果。"
+  },
+  "source": {
+    "title": "環境荷爾蒙怎麼讓我內分泌失調的？——緒論",
+    "url": "https://topic.moenv.gov.tw/chemiknowledgemap/cp-224-12793-eb4dc-5.html",
+    "source_type": "url",
+    "publisher": "環境部化學物質管理署",
+    "publishing_unit": "綜合規劃組",
+    "published_date": "2025-12-26",
+    "page_review_date": "2026-01-23"
+  },
+  "document_chunks": [
+    {
+      "paragraph_id": "P-001",
+      "position": 1,
+      "heading_path": [
+        "緒論",
+        "引言"
+      ],
+      "text": "每天都覺得睡不飽、疲勞嗎？或是為了皮膚層出不窮的痘痘而煩惱？這些狀況很常見，成因也很多元，例如作息、壓力、飲食等，而「內分泌失調」是其中可能因素之一。內分泌是身體裡一個重要的系統，告訴各器官該開始工作了，需要做哪些事，哪些器官要共同合作等等，而荷爾蒙就是這個傳令兵，負責溝通協調。每種荷爾蒙在歷經長期的演化後都有特殊的結構，具備高度特異性，能與細胞裡特定的受體結合，像是一把只能打開特定鎖的專屬鑰匙。"
+    },
+    {
+      "paragraph_id": "P-002",
+      "position": 2,
+      "heading_path": [
+        "緒論",
+        "內分泌干擾物"
+      ],
+      "text": "人體現存的荷爾蒙受體是演化出來的精妙成果，除了需具高親和力外，更需高度特異性以避免不同荷爾蒙間互相干擾。受體具高親和力與特異性，主要辨識其天然配體，然而，某些結構相似的外源化學物質仍可能產生交叉活性或競爭結合，環境荷爾蒙即屬此類風險之一。環境荷爾蒙（environmental hormone）就像是易容在體內的間諜，它能維妙維肖地模仿我們身體內的天然荷爾蒙的結構，偽裝成「鑰匙」打開或鎖上錯誤的「鎖」（荷爾蒙受體），透過多重而複雜的生物機制，干擾荷爾蒙訊號傳遞、受體敏感性以及代謝途徑，進而增加生殖、發育與代謝系統失調的風險。因此，環境荷爾蒙也被稱為內分泌干擾物（endocrine disrupting chemicals, EDCs）。"
+    },
+    {
+      "paragraph_id": "P-003",
+      "position": 3,
+      "heading_path": [
+        "緒論",
+        "圖1"
+      ],
+      "text": "圖1：內分泌干擾物進入細胞時，荷爾蒙會與荷爾蒙受體結合，然後產生細胞反應。（圖片來源：AI生成）"
+    },
+    {
+      "paragraph_id": "P-004",
+      "position": 4,
+      "heading_path": [
+        "緒論",
+        "結構與作用機制"
+      ],
+      "text": "許多已知環境荷爾蒙具備可能與受體互動的結構特徵（如芳香環、氯/氟取代基、羥基或酯基等），能模仿天然荷爾蒙的結構或干擾與原特定受體結合。因為這些受體的荷爾蒙結合位點具有一定的結構相容性，能和多種小分子相互作用。當這些外來分子數量龐大，即使親和力較低，也能與天然荷爾蒙競爭和受體結合，影響基因轉錄與細胞功能，造成內分泌干擾。此外，部分內分泌干擾物會活化膜受體，且還能在體內停留許久，產生持久的效應，典型例子包括知名殺蟲劑DDT和全氟與多氟烷基物質（Per- and polyfluoroalkyl substances, PFAS）等。"
+    },
+    {
+      "paragraph_id": "P-005",
+      "position": 5,
+      "heading_path": [
+        "緒論",
+        "圖2"
+      ],
+      "text": "圖2：常見的環境荷爾蒙。（圖片來源：環境部化學物質管理署）"
+    },
+    {
+      "paragraph_id": "P-006",
+      "position": 6,
+      "heading_path": [
+        "緒論",
+        "歷史事件與治理"
+      ],
+      "text": "人類對環境荷爾蒙危害的認知，是建立在20世紀下半葉一樁樁血淋淋的歷史事件之上。這些環境公害是一部部真實上演的災難片，映照出人類科技發展與自然反撲的循環。1940年代起，日本熊本縣因工業排放有機汞污染海灣，居民食用受污染的魚貝類後，出現嚴重神經病變，造成數千名確診與更多居民受到影響，史稱水俣灣事件。1976年義大利塞維（Seveso）發生一起有機氯化合物污染事件，劇毒化學品「戴奧辛」的洩漏導致居民癌症與流產率上升，而1982年歐洲共同體（歐盟前身）為此制定了「塞維索指令」，作為日後產業界因應化學災害事件的行為指引。DDT曾被視為奇蹟農藥，卻讓老鷹蛋殼變薄、嚴重影響生態；越戰中橙劑的漫天灑落，不只使森林枯死、更使孩子畸形。這些故事並非反科技，而是提醒人類：進步必須以謹慎與尊重為前提。如何透過風險溝通降低民眾暴露，同時透過法規從源頭控制有害物質與綠色化學設計從源頭減少有害物質，已是現代化學物質管理與公共衛生的重要課題。"
+    }
+  ],
+  "facts": [
+    {
+      "ref": "F001",
+      "statement": "疲勞是非特異性表現，可能有多種原因。",
+      "subject": "疲勞",
+      "predicate": "可能有",
+      "object": "多種原因",
+      "proposition_types": [
+        "health_advice"
+      ],
+      "risk_level": "高",
+      "paragraph_id": "P-001",
+      "quote": "這些狀況很常見，成因也很多元",
+      "status": "待審核",
+      "review_note": "原文屬政府機關來源，但為健康判斷內容，建議併同政府衛生機關資料人工確認。",
+      "_supporting_source_ids": [
+        "E10"
+      ],
+      "_suggested_tags": [
+        "疲勞",
+        "健康判斷"
+      ]
+    },
+    {
+      "ref": "F002",
+      "statement": "作息、壓力及飲食可能影響疲勞或痘痘等常見狀況。",
+      "subject": "作息、壓力及飲食",
+      "predicate": "可能影響",
+      "object": "疲勞或痘痘等常見狀況",
+      "proposition_types": [
+        "health_advice"
+      ],
+      "risk_level": "高",
+      "paragraph_id": "P-001",
+      "quote": "成因也很多元，例如作息、壓力、飲食等",
+      "status": "待審核",
+      "review_note": "原文列舉影響因素，但未提供衛生機關專門佐證；不宜批次核定。",
+      "_suggested_tags": [
+        "生活型態",
+        "疲勞",
+        "痘痘"
+      ]
+    },
+    {
+      "ref": "F005",
+      "statement": "內分泌系統參與調節人體多種生理功能。",
+      "subject": "內分泌系統",
+      "predicate": "參與調節",
+      "object": "人體多種生理功能",
+      "proposition_types": [
+        "chemistry_concept",
+        "agency_topic"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-001",
+      "quote": "內分泌是身體裡一個重要的系統，告訴各器官該開始工作了，需要做哪些事，哪些器官要共同合作等等",
+      "status": "核定",
+      "_suggested_tags": [
+        "內分泌系統",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "ref": "F006",
+      "statement": "荷爾蒙是內分泌系統使用的訊號分子。",
+      "subject": "荷爾蒙",
+      "predicate": "是",
+      "object": "內分泌系統使用的訊號分子",
+      "proposition_types": [
+        "chemistry_concept",
+        "agency_topic"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-001",
+      "quote": "荷爾蒙就是這個傳令兵",
+      "status": "核定",
+      "_suggested_tags": [
+        "荷爾蒙",
+        "內分泌系統"
+      ]
+    },
+    {
+      "ref": "F007",
+      "statement": "荷爾蒙可協調不同器官的功能。",
+      "subject": "荷爾蒙",
+      "predicate": "可協調",
+      "object": "不同器官的功能",
+      "proposition_types": [
+        "chemistry_concept",
+        "agency_topic"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-001",
+      "quote": "荷爾蒙就是這個傳令兵，負責溝通協調",
+      "status": "核定",
+      "_suggested_tags": [
+        "荷爾蒙",
+        "生理調節"
+      ]
+    },
+    {
+      "ref": "F008",
+      "statement": "荷爾蒙可與相應受體互動並引發細胞反應。",
+      "subject": "荷爾蒙",
+      "predicate": "與受體互動並引發",
+      "object": "細胞反應",
+      "proposition_types": [
+        "chemistry_concept",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-003",
+      "quote": "荷爾蒙會與荷爾蒙受體結合，然後產生細胞反應",
+      "status": "核定",
+      "_suggested_tags": [
+        "荷爾蒙受體",
+        "細胞反應"
+      ]
+    },
+    {
+      "ref": "F009",
+      "statement": "荷爾蒙與受體之間通常具有一定程度的選擇性。",
+      "subject": "荷爾蒙與受體",
+      "predicate": "具有",
+      "object": "一定程度的選擇性",
+      "proposition_types": [
+        "chemistry_concept",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-002",
+      "quote": "受體具高親和力與特異性，主要辨識其天然配體",
+      "status": "待審核",
+      "review_note": "將原文的絕對化語氣限縮為『一定程度的選擇性』，須人工確認修正文字符合預期。",
+      "_supporting_source_ids": [
+        "E01",
+        "E03"
+      ],
+      "_suggested_tags": [
+        "受體",
+        "選擇性"
+      ]
+    },
+    {
+      "ref": "F011",
+      "statement": "部分外源性化學物質可能干擾內分泌系統功能。",
+      "subject": "部分外源性化學物質",
+      "predicate": "可能干擾",
+      "object": "內分泌系統功能",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-002",
+      "quote": "某些結構相似的外源化學物質仍可能產生交叉活性或競爭結合，環境荷爾蒙即屬此類風險之一",
+      "status": "核定",
+      "_suggested_tags": [
+        "內分泌干擾物",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "ref": "F012",
+      "statement": "部分外源性化學物質可能與荷爾蒙受體互動。",
+      "subject": "部分外源性化學物質",
+      "predicate": "可能互動",
+      "object": "荷爾蒙受體",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-002",
+      "quote": "某些結構相似的外源化學物質仍可能產生交叉活性或競爭結合",
+      "status": "核定",
+      "_suggested_tags": [
+        "受體作用",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "ref": "F013",
+      "statement": "部分內分泌干擾物可能模仿天然荷爾蒙的作用。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "可能模仿",
+      "object": "天然荷爾蒙的作用",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-002",
+      "quote": "模仿我們身體內的天然荷爾蒙的結構",
+      "status": "核定",
+      "_suggested_tags": [
+        "內分泌干擾物",
+        "模仿作用"
+      ]
+    },
+    {
+      "ref": "F014",
+      "statement": "部分內分泌干擾物可能活化荷爾蒙受體。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "可能活化",
+      "object": "荷爾蒙受體",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-002",
+      "quote": "偽裝成「鑰匙」打開或鎖上錯誤的「鎖」（荷爾蒙受體）",
+      "status": "核定",
+      "_suggested_tags": [
+        "受體活化",
+        "內分泌干擾物"
+      ]
+    },
+    {
+      "ref": "F015",
+      "statement": "部分內分泌干擾物可能阻斷荷爾蒙受體。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "可能阻斷",
+      "object": "荷爾蒙受體",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-002",
+      "quote": "偽裝成「鑰匙」打開或鎖上錯誤的「鎖」（荷爾蒙受體）",
+      "status": "核定",
+      "_suggested_tags": [
+        "受體阻斷",
+        "內分泌干擾物"
+      ]
+    },
+    {
+      "ref": "F016",
+      "statement": "部分內分泌干擾物可能與天然荷爾蒙競爭受體。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "可能競爭",
+      "object": "天然荷爾蒙的受體",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-002",
+      "quote": "某些結構相似的外源化學物質仍可能產生交叉活性或競爭結合",
+      "status": "核定",
+      "_suggested_tags": [
+        "受體競爭",
+        "內分泌干擾物"
+      ]
+    },
+    {
+      "ref": "F019",
+      "statement": "部分內分泌干擾物可能改變荷爾蒙的代謝或排除。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "可能改變",
+      "object": "荷爾蒙的代謝或排除",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-002",
+      "quote": "干擾荷爾蒙訊號傳遞、受體敏感性以及代謝途徑",
+      "status": "待審核",
+      "review_note": "原文支持代謝途徑，但未明載排除；整句保留待審核。",
+      "_supporting_source_ids": [
+        "E03"
+      ],
+      "_suggested_tags": [
+        "荷爾蒙代謝",
+        "排除"
+      ]
+    },
+    {
+      "ref": "F022",
+      "statement": "內分泌干擾可能增加不良生殖效應的風險。",
+      "subject": "內分泌干擾",
+      "predicate": "可能增加",
+      "object": "不良生殖效應的風險",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "高",
+      "conditions": {
+        "population": null,
+        "dose": null,
+        "duration": null,
+        "route": null
+      },
+      "paragraph_id": "P-002",
+      "quote": "進而增加生殖、發育與代謝系統失調的風險",
+      "status": "核定",
+      "_suggested_tags": [
+        "生殖毒性",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "ref": "F023",
+      "statement": "內分泌干擾可能增加不良發育效應的風險。",
+      "subject": "內分泌干擾",
+      "predicate": "可能增加",
+      "object": "不良發育效應的風險",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "高",
+      "conditions": {
+        "population": null,
+        "dose": null,
+        "duration": null,
+        "route": null
+      },
+      "paragraph_id": "P-002",
+      "quote": "進而增加生殖、發育與代謝系統失調的風險",
+      "status": "核定",
+      "_suggested_tags": [
+        "發育毒性",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "ref": "F024",
+      "statement": "內分泌干擾可能增加部分代謝異常的風險。",
+      "subject": "內分泌干擾",
+      "predicate": "可能增加",
+      "object": "部分代謝異常的風險",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "高",
+      "conditions": {
+        "population": null,
+        "dose": null,
+        "duration": null,
+        "route": null
+      },
+      "paragraph_id": "P-002",
+      "quote": "進而增加生殖、發育與代謝系統失調的風險",
+      "status": "核定",
+      "_suggested_tags": [
+        "代謝影響",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "ref": "F025",
+      "statement": "「環境荷爾蒙」是內分泌干擾物常用的通俗稱呼之一。",
+      "subject": "環境荷爾蒙",
+      "predicate": "是通俗稱呼",
+      "object": "內分泌干擾物",
+      "proposition_types": [
+        "agency_topic",
+        "chemistry_concept"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-002",
+      "quote": "環境荷爾蒙也被稱為內分泌干擾物",
+      "status": "待審核",
+      "review_note": "以『通俗稱呼之一』限縮原文的等同表述。",
+      "_supporting_source_ids": [
+        "E01",
+        "E02"
+      ],
+      "_suggested_tags": [
+        "環境荷爾蒙",
+        "名詞定義"
+      ]
+    },
+    {
+      "ref": "F028",
+      "statement": "天然荷爾蒙與相應受體結合後，可能引發後續細胞反應。",
+      "subject": "天然荷爾蒙",
+      "predicate": "與受體結合後可能引發",
+      "object": "細胞反應",
+      "proposition_types": [
+        "chemistry_concept",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-003",
+      "quote": "荷爾蒙會與荷爾蒙受體結合，然後產生細胞反應",
+      "status": "核定",
+      "_suggested_tags": [
+        "荷爾蒙受體",
+        "細胞反應"
+      ]
+    },
+    {
+      "ref": "F031",
+      "statement": "某些外源性化學物質的整體分子結構可能使其與荷爾蒙相關分子互動。",
+      "subject": "某些外源性化學物質的整體分子結構",
+      "predicate": "可能使其互動",
+      "object": "荷爾蒙相關分子",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "chemistry_concept"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-004",
+      "quote": "許多已知環境荷爾蒙具備可能與受體互動的結構特徵",
+      "status": "核定",
+      "_suggested_tags": [
+        "結構活性",
+        "受體"
+      ]
+    },
+    {
+      "ref": "F033",
+      "statement": "部分荷爾蒙受體的配體結合位置可與不只一種分子互動。",
+      "subject": "部分荷爾蒙受體的配體結合位置",
+      "predicate": "可互動",
+      "object": "不只一種分子",
+      "proposition_types": [
+        "chemistry_concept",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-004",
+      "quote": "這些受體的荷爾蒙結合位點具有一定的結構相容性，能和多種小分子相互作用",
+      "status": "核定",
+      "_suggested_tags": [
+        "受體",
+        "配體"
+      ]
+    },
+    {
+      "ref": "F034",
+      "statement": "分子與受體之間的親和力會影響其結合程度。",
+      "subject": "分子與受體之間的親和力",
+      "predicate": "會影響",
+      "object": "結合程度",
+      "proposition_types": [
+        "chemistry_concept",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-004",
+      "quote": "即使親和力較低，也能與天然荷爾蒙競爭和受體結合",
+      "status": "待審核",
+      "review_note": "原文隱含親和力是影響因素，但未直接表述一般原理。",
+      "_supporting_source_ids": [
+        "E03"
+      ],
+      "_suggested_tags": [
+        "親和力",
+        "受體結合"
+      ]
+    },
+    {
+      "ref": "F037",
+      "statement": "某些對受體親和力較低的外源性物質，在靶組織達到足夠有效濃度時，仍可能與天然荷爾蒙競爭。",
+      "subject": "低親和力外源性物質",
+      "predicate": "在足夠有效濃度時可能競爭",
+      "object": "天然荷爾蒙",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "chemistry_concept"
+      ],
+      "risk_level": "中",
+      "conditions": {
+        "population": null,
+        "dose": "靶組織達到足夠有效濃度",
+        "duration": null,
+        "route": null
+      },
+      "paragraph_id": "P-004",
+      "quote": "當這些外來分子數量龐大，即使親和力較低，也能與天然荷爾蒙競爭和受體結合",
+      "status": "待審核",
+      "review_note": "保留原意並修正濃度概念；須人工核定修正文句。",
+      "_supporting_source_ids": [
+        "E03"
+      ],
+      "_suggested_tags": [
+        "親和力",
+        "有效濃度",
+        "受體競爭"
+      ]
+    },
+    {
+      "ref": "F038",
+      "statement": "荷爾蒙受體訊號的改變可能影響基因轉錄。",
+      "subject": "荷爾蒙受體訊號的改變",
+      "predicate": "可能影響",
+      "object": "基因轉錄",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "chemistry_concept"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-004",
+      "quote": "影響基因轉錄與細胞功能",
+      "status": "核定",
+      "_suggested_tags": [
+        "基因轉錄",
+        "受體訊號"
+      ]
+    },
+    {
+      "ref": "F039",
+      "statement": "荷爾蒙受體訊號的改變可能影響細胞功能。",
+      "subject": "荷爾蒙受體訊號的改變",
+      "predicate": "可能影響",
+      "object": "細胞功能",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "chemistry_concept"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-004",
+      "quote": "影響基因轉錄與細胞功能",
+      "status": "核定",
+      "_suggested_tags": [
+        "細胞功能",
+        "受體訊號"
+      ]
+    },
+    {
+      "ref": "F040",
+      "statement": "部分內分泌干擾物可能透過膜相關受體產生作用。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "可能透過",
+      "object": "膜相關受體產生作用",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "chemistry_concept"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-004",
+      "quote": "部分內分泌干擾物會活化膜受體",
+      "status": "核定",
+      "_suggested_tags": [
+        "膜受體",
+        "非基因體作用"
+      ]
+    },
+    {
+      "ref": "F041",
+      "statement": "部分內分泌干擾物具有環境持久性或生物體內持久性。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "具有",
+      "object": "環境或生物體內持久性",
+      "proposition_types": [
+        "substance_property",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-004",
+      "quote": "且還能在體內停留許久，產生持久的效應",
+      "status": "待審核",
+      "review_note": "原文只支持部分物質可在體內停留；『環境持久性』為外部擴充。",
+      "_supporting_source_ids": [
+        "E03",
+        "E04"
+      ],
+      "_suggested_tags": [
+        "持久性",
+        "內分泌干擾物"
+      ]
+    },
+    {
+      "ref": "F042",
+      "statement": "化學物質在人體內維持較長時間，可能延長其內部暴露期間。",
+      "subject": "化學物質在人體內維持較長時間",
+      "predicate": "可能延長",
+      "object": "內部暴露期間",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "substance_property"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-004",
+      "quote": "在體內停留許久，產生持久的效應",
+      "status": "待審核",
+      "review_note": "將『持久效應』改寫為較可驗證的毒物動力學表述。",
+      "_supporting_source_ids": [
+        "E04"
+      ],
+      "_suggested_tags": [
+        "內部暴露",
+        "半衰期"
+      ]
+    },
+    {
+      "ref": "F044",
+      "statement": "DDT及其部分代謝物可能干擾部分生物的內分泌相關途徑。",
+      "subject": "DDT及其部分代謝物",
+      "predicate": "可能干擾",
+      "object": "部分生物的內分泌相關途徑",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "substance_property",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-004",
+      "quote": "典型例子包括知名殺蟲劑DDT",
+      "status": "待審核",
+      "review_note": "原文以DDT為內分泌干擾物例子；修正版保留『可能』及物種範圍。",
+      "_supporting_source_ids": [
+        "E03",
+        "E08"
+      ],
+      "_suggested_tags": [
+        "DDT",
+        "生態毒理"
+      ]
+    },
+    {
+      "ref": "F047",
+      "statement": "部分受到充分研究的PFAS會在人體內維持較長時間。",
+      "subject": "部分受到充分研究的PFAS",
+      "predicate": "會維持",
+      "object": "較長的人體內停留時間",
+      "proposition_types": [
+        "substance_property",
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-004",
+      "quote": "典型例子包括…全氟與多氟烷基物質（Per- and polyfluoroalkyl substances, PFAS）等",
+      "status": "待審核",
+      "review_note": "將原文對PFAS整類的概括限縮為部分已研究物質。",
+      "_supporting_source_ids": [
+        "E04"
+      ],
+      "_suggested_tags": [
+        "PFAS",
+        "人體半衰期"
+      ]
+    },
+    {
+      "ref": "F053",
+      "statement": "水俣工廠排放的含甲基汞廢水污染了水俣灣周邊環境。",
+      "subject": "含甲基汞廢水",
+      "predicate": "污染",
+      "object": "水俣灣周邊環境",
+      "proposition_types": [
+        "event",
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "高",
+      "paragraph_id": "P-006",
+      "quote": "日本熊本縣因工業排放有機汞污染海灣",
+      "status": "待審核",
+      "review_note": "將有機汞精確化為甲基汞，須依日本官方來源核定。",
+      "_supporting_source_ids": [
+        "E05",
+        "E06"
+      ],
+      "_suggested_tags": [
+        "水俣病",
+        "甲基汞",
+        "環境污染"
+      ]
+    },
+    {
+      "ref": "F055",
+      "statement": "水俣地區居民曾因食用受甲基汞污染的魚貝類而暴露。",
+      "subject": "水俣地區居民",
+      "predicate": "因食用而暴露",
+      "object": "受甲基汞污染的魚貝類",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "event"
+      ],
+      "risk_level": "高",
+      "conditions": {
+        "population": "水俣地區居民",
+        "dose": null,
+        "duration": "長期／歷史暴露",
+        "route": "食入"
+      },
+      "paragraph_id": "P-006",
+      "quote": "居民食用受污染的魚貝類後",
+      "status": "待審核",
+      "review_note": "將污染物精確化為甲基汞。",
+      "_supporting_source_ids": [
+        "E05"
+      ],
+      "_suggested_tags": [
+        "甲基汞",
+        "食物暴露"
+      ]
+    },
+    {
+      "ref": "F056",
+      "statement": "水俣病是以中樞神經系統損傷為主的甲基汞中毒疾病。",
+      "subject": "水俣病",
+      "predicate": "是",
+      "object": "以中樞神經系統損傷為主的甲基汞中毒疾病",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "event",
+        "health_advice"
+      ],
+      "risk_level": "高",
+      "paragraph_id": "P-006",
+      "quote": "出現嚴重神經病變",
+      "status": "待審核",
+      "review_note": "疾病定義來自日本政府官方資料；因屬醫學健康內容，仍列待審核。",
+      "_supporting_source_ids": [
+        "E05"
+      ],
+      "_suggested_tags": [
+        "水俣病",
+        "神經毒性"
+      ]
+    },
+    {
+      "ref": "F058",
+      "statement": "日本官方認定的水俣病患者累計達數千人。",
+      "subject": "日本官方認定的水俣病患者",
+      "predicate": "累計達",
+      "object": "數千人",
+      "proposition_types": [
+        "event",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-006",
+      "quote": "造成數千名確診與更多居民受到影響",
+      "status": "待審核",
+      "review_note": "原文未附統計截止日期；正式核定前應補指定日期與數值。",
+      "_supporting_source_ids": [
+        "E05"
+      ],
+      "_suggested_tags": [
+        "水俣病",
+        "患者統計"
+      ]
+    },
+    {
+      "ref": "F059",
+      "statement": "1976年，義大利塞維索發生釋放TCDD的重大工業事故。",
+      "subject": "義大利塞維索",
+      "predicate": "於1976年發生",
+      "object": "釋放TCDD的重大工業事故",
+      "proposition_types": [
+        "event",
+        "agency_topic"
+      ],
+      "risk_level": "高",
+      "paragraph_id": "P-006",
+      "quote": "1976年義大利塞維（Seveso）發生一起有機氯化合物污染事件，劇毒化學品「戴奧辛」的洩漏",
+      "status": "待審核",
+      "review_note": "以TCDD精確化原文的戴奧辛；須依歐盟官方資料核定。",
+      "_supporting_source_ids": [
+        "E07"
+      ],
+      "_suggested_tags": [
+        "塞維索事故",
+        "TCDD",
+        "化學事故"
+      ]
+    },
+    {
+      "ref": "F063",
+      "statement": "塞維索事故促成歐洲共同體於1982年採行第一版塞維索指令。",
+      "subject": "塞維索事故",
+      "predicate": "促成",
+      "object": "歐洲共同體於1982年採行塞維索指令",
+      "proposition_types": [
+        "foreign_policy",
+        "event",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-006",
+      "quote": "1982年歐洲共同體（歐盟前身）為此制定了「塞維索指令」",
+      "status": "核定",
+      "_suggested_tags": [
+        "塞維索指令",
+        "歐盟",
+        "化學事故"
+      ]
+    },
+    {
+      "ref": "F066",
+      "statement": "DDT曾被廣泛使用為農藥。",
+      "subject": "DDT",
+      "predicate": "曾被廣泛使用為",
+      "object": "農藥",
+      "proposition_types": [
+        "event",
+        "agency_topic",
+        "substance_property"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-006",
+      "quote": "DDT曾被視為奇蹟農藥",
+      "status": "待審核",
+      "review_note": "將情緒性『奇蹟農藥』改為中性歷史表述。",
+      "_supporting_source_ids": [
+        "E08"
+      ],
+      "_suggested_tags": [
+        "DDT",
+        "農藥"
+      ]
+    },
+    {
+      "ref": "F067",
+      "statement": "DDE會造成部分猛禽及其他鳥類的蛋殼變薄。",
+      "subject": "DDE",
+      "predicate": "會造成",
+      "object": "部分鳥類蛋殼變薄",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "substance_property"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-006",
+      "quote": "DDT曾被視為奇蹟農藥，卻讓老鷹蛋殼變薄",
+      "status": "待審核",
+      "review_note": "以DDE精確化原文DDT，且將老鷹限縮為部分猛禽及其他鳥類。",
+      "_supporting_source_ids": [
+        "E08"
+      ],
+      "_suggested_tags": [
+        "DDE",
+        "蛋殼變薄",
+        "鳥類"
+      ]
+    },
+    {
+      "ref": "F068",
+      "statement": "越戰期間曾以空中噴灑方式大規模使用橙劑。",
+      "subject": "越戰期間",
+      "predicate": "曾大規模空中噴灑",
+      "object": "橙劑",
+      "proposition_types": [
+        "event",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-006",
+      "quote": "越戰中橙劑的漫天灑落",
+      "status": "待審核",
+      "review_note": "將『漫天灑落』中性化；正式核定須補政府或國家級資料。",
+      "_supporting_source_ids": [
+        "E09"
+      ],
+      "_suggested_tags": [
+        "橙劑",
+        "越戰"
+      ]
+    },
+    {
+      "ref": "F069",
+      "statement": "橙劑在越戰期間主要用於使植物落葉及清除植被。",
+      "subject": "橙劑",
+      "predicate": "用於",
+      "object": "使植物落葉及清除植被",
+      "proposition_types": [
+        "event",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "paragraph_id": "P-006",
+      "quote": "橙劑的漫天灑落，不只使森林枯死",
+      "status": "待審核",
+      "review_note": "中性化並精確化用途；須外部來源核定。",
+      "_supporting_source_ids": [
+        "E09"
+      ],
+      "_suggested_tags": [
+        "橙劑",
+        "除草劑",
+        "落葉劑"
+      ]
+    },
+    {
+      "ref": "F073",
+      "statement": "化學物質風險溝通可提供民眾進行知情風險判斷所需的資訊。",
+      "subject": "化學物質風險溝通",
+      "predicate": "可提供",
+      "object": "知情風險判斷所需資訊",
+      "proposition_types": [
+        "agency_topic"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-006",
+      "quote": "如何透過風險溝通降低民眾暴露",
+      "status": "待審核",
+      "review_note": "原文直接談降低暴露；本命題改為較中性的風險溝通功能，須人工確認。",
+      "_suggested_tags": [
+        "風險溝通"
+      ]
+    },
+    {
+      "ref": "F074",
+      "statement": "化學物質風險溝通可協助民眾選擇適當的風險降低行動。",
+      "subject": "化學物質風險溝通",
+      "predicate": "可協助",
+      "object": "民眾選擇風險降低行動",
+      "proposition_types": [
+        "agency_topic"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-006",
+      "quote": "如何透過風險溝通降低民眾暴露",
+      "status": "待審核",
+      "review_note": "將『降低暴露』改寫為溝通可協助行動選擇，避免保證效果。",
+      "_suggested_tags": [
+        "風險溝通",
+        "暴露降低"
+      ]
+    },
+    {
+      "ref": "F075",
+      "statement": "法規管理可用於限制或管理有害化學物質的製造、使用、排放或流布。",
+      "subject": "法規管理",
+      "predicate": "可用於限制或管理",
+      "object": "有害化學物質的生命週期活動",
+      "proposition_types": [
+        "agency_topic"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-006",
+      "quote": "透過法規從源頭控制有害物質",
+      "status": "待審核",
+      "review_note": "原文只寫源頭控制；列舉製造、使用、排放或流布屬一般化重寫。",
+      "_suggested_tags": [
+        "法規管理",
+        "源頭管理"
+      ]
+    },
+    {
+      "ref": "F076",
+      "statement": "綠色化學旨在設計可減少或消除有害物質使用或產生的化學產品及製程。",
+      "subject": "綠色化學",
+      "predicate": "旨在設計",
+      "object": "減少或消除有害物質的產品及製程",
+      "proposition_types": [
+        "agency_topic",
+        "chemistry_concept"
+      ],
+      "risk_level": "低",
+      "paragraph_id": "P-006",
+      "quote": "綠色化學設計從源頭減少有害物質",
+      "status": "待審核",
+      "review_note": "以通行定義補足產品及製程，須人工確認。",
+      "_suggested_tags": [
+        "綠色化學",
+        "源頭減量"
+      ]
+    }
+  ],
+  "review_records": [
+    {
+      "candidate_fact_id": "F001",
+      "action": "待審核",
+      "note": "原文屬政府機關來源，但為健康判斷內容，建議併同政府衛生機關資料人工確認。"
+    },
+    {
+      "candidate_fact_id": "F002",
+      "action": "待審核",
+      "note": "原文列舉影響因素，但未提供衛生機關專門佐證；不宜批次核定。"
+    },
+    {
+      "candidate_fact_id": "F005",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F006",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F007",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F008",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F009",
+      "action": "待審核",
+      "note": "將原文的絕對化語氣限縮為『一定程度的選擇性』，須人工確認修正文字符合預期。"
+    },
+    {
+      "candidate_fact_id": "F011",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F012",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F013",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F014",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F015",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F016",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F019",
+      "action": "待審核",
+      "note": "原文支持代謝途徑，但未明載排除；整句保留待審核。"
+    },
+    {
+      "candidate_fact_id": "F022",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F023",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F024",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F025",
+      "action": "待審核",
+      "note": "以『通俗稱呼之一』限縮原文的等同表述。"
+    },
+    {
+      "candidate_fact_id": "F028",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F031",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F033",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F034",
+      "action": "待審核",
+      "note": "原文隱含親和力是影響因素，但未直接表述一般原理。"
+    },
+    {
+      "candidate_fact_id": "F037",
+      "action": "待審核",
+      "note": "保留原意並修正濃度概念；須人工核定修正文句。"
+    },
+    {
+      "candidate_fact_id": "F038",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F039",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F040",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F041",
+      "action": "待審核",
+      "note": "原文只支持部分物質可在體內停留；『環境持久性』為外部擴充。"
+    },
+    {
+      "candidate_fact_id": "F042",
+      "action": "待審核",
+      "note": "將『持久效應』改寫為較可驗證的毒物動力學表述。"
+    },
+    {
+      "candidate_fact_id": "F044",
+      "action": "待審核",
+      "note": "原文以DDT為內分泌干擾物例子；修正版保留『可能』及物種範圍。"
+    },
+    {
+      "candidate_fact_id": "F047",
+      "action": "待審核",
+      "note": "將原文對PFAS整類的概括限縮為部分已研究物質。"
+    },
+    {
+      "candidate_fact_id": "F053",
+      "action": "待審核",
+      "note": "將有機汞精確化為甲基汞，須依日本官方來源核定。"
+    },
+    {
+      "candidate_fact_id": "F055",
+      "action": "待審核",
+      "note": "將污染物精確化為甲基汞。"
+    },
+    {
+      "candidate_fact_id": "F056",
+      "action": "待審核",
+      "note": "疾病定義來自日本政府官方資料；因屬醫學健康內容，仍列待審核。"
+    },
+    {
+      "candidate_fact_id": "F058",
+      "action": "待審核",
+      "note": "原文未附統計截止日期；正式核定前應補指定日期與數值。"
+    },
+    {
+      "candidate_fact_id": "F059",
+      "action": "待審核",
+      "note": "以TCDD精確化原文的戴奧辛；須依歐盟官方資料核定。"
+    },
+    {
+      "candidate_fact_id": "F063",
+      "action": "核定",
+      "note": "原文可定位，命題與原文一致。"
+    },
+    {
+      "candidate_fact_id": "F066",
+      "action": "待審核",
+      "note": "將情緒性『奇蹟農藥』改為中性歷史表述。"
+    },
+    {
+      "candidate_fact_id": "F067",
+      "action": "待審核",
+      "note": "以DDE精確化原文DDT，且將老鷹限縮為部分猛禽及其他鳥類。"
+    },
+    {
+      "candidate_fact_id": "F068",
+      "action": "待審核",
+      "note": "將『漫天灑落』中性化；正式核定須補政府或國家級資料。"
+    },
+    {
+      "candidate_fact_id": "F069",
+      "action": "待審核",
+      "note": "中性化並精確化用途；須外部來源核定。"
+    },
+    {
+      "candidate_fact_id": "F073",
+      "action": "待審核",
+      "note": "原文直接談降低暴露；本命題改為較中性的風險溝通功能，須人工確認。"
+    },
+    {
+      "candidate_fact_id": "F074",
+      "action": "待審核",
+      "note": "將『降低暴露』改寫為溝通可協助行動選擇，避免保證效果。"
+    },
+    {
+      "candidate_fact_id": "F075",
+      "action": "待審核",
+      "note": "原文只寫源頭控制；列舉製造、使用、排放或流布屬一般化重寫。"
+    },
+    {
+      "candidate_fact_id": "F076",
+      "action": "待審核",
+      "note": "以通行定義補足產品及製程，須人工確認。"
+    }
+  ],
+  "knowledge_facts": [
+    {
+      "candidate_fact_id": "F005",
+      "tags": [
+        "內分泌系統",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "candidate_fact_id": "F006",
+      "tags": [
+        "荷爾蒙",
+        "內分泌系統"
+      ]
+    },
+    {
+      "candidate_fact_id": "F007",
+      "tags": [
+        "荷爾蒙",
+        "生理調節"
+      ]
+    },
+    {
+      "candidate_fact_id": "F008",
+      "tags": [
+        "荷爾蒙受體",
+        "細胞反應"
+      ]
+    },
+    {
+      "candidate_fact_id": "F011",
+      "tags": [
+        "內分泌干擾物",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "candidate_fact_id": "F012",
+      "tags": [
+        "受體作用",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "candidate_fact_id": "F013",
+      "tags": [
+        "內分泌干擾物",
+        "模仿作用"
+      ]
+    },
+    {
+      "candidate_fact_id": "F014",
+      "tags": [
+        "受體活化",
+        "內分泌干擾物"
+      ]
+    },
+    {
+      "candidate_fact_id": "F015",
+      "tags": [
+        "受體阻斷",
+        "內分泌干擾物"
+      ]
+    },
+    {
+      "candidate_fact_id": "F016",
+      "tags": [
+        "受體競爭",
+        "內分泌干擾物"
+      ]
+    },
+    {
+      "candidate_fact_id": "F022",
+      "tags": [
+        "生殖毒性",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "candidate_fact_id": "F023",
+      "tags": [
+        "發育毒性",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "candidate_fact_id": "F024",
+      "tags": [
+        "代謝影響",
+        "環境荷爾蒙"
+      ]
+    },
+    {
+      "candidate_fact_id": "F028",
+      "tags": [
+        "荷爾蒙受體",
+        "細胞反應"
+      ]
+    },
+    {
+      "candidate_fact_id": "F031",
+      "tags": [
+        "結構活性",
+        "受體"
+      ]
+    },
+    {
+      "candidate_fact_id": "F033",
+      "tags": [
+        "受體",
+        "配體"
+      ]
+    },
+    {
+      "candidate_fact_id": "F038",
+      "tags": [
+        "基因轉錄",
+        "受體訊號"
+      ]
+    },
+    {
+      "candidate_fact_id": "F039",
+      "tags": [
+        "細胞功能",
+        "受體訊號"
+      ]
+    },
+    {
+      "candidate_fact_id": "F040",
+      "tags": [
+        "膜受體",
+        "非基因體作用"
+      ]
+    },
+    {
+      "candidate_fact_id": "F063",
+      "tags": [
+        "塞維索指令",
+        "歐盟",
+        "化學事故"
+      ]
+    }
+  ]
+}

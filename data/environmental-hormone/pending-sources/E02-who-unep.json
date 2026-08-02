@@ -1,0 +1,67 @@
+{
+  "_說明": "這 2 筆原子命題整理自下列外部文獻，不在環境部那篇文章裡，所以沒有可引用的原文段落。要收進資料庫的話：先把 _來源文件 的網址（或 PDF）當成獨立來源匯入 /import，等解析完成後再用「原文＋原子命題包」把 facts 掛上去，系統會用內容比對找出每一筆屬於哪一段。",
+  "_來源文件": [
+    {
+      "title": "State of the Science of Endocrine Disrupting Chemicals 2012",
+      "publisher": "World Health Organization / UNEP",
+      "url": "https://iris.who.int/bitstreams/173c5e04-99fd-4f83-972f-7913d7d8e6b1/download",
+      "source_type": "intergovernmental"
+    }
+  ],
+  "_待辦": [
+    "1. 到 /import 貼上 _來源文件 的網址（或上傳 PDF），等狀態變成 ready",
+    "2. 在同一頁選擇這個檔案當作原子命題包送出",
+    "3. 系統定位出的引句一律強制待審核，到 /review 逐筆確認"
+  ],
+  "source": {
+    "title": "State of the Science of Endocrine Disrupting Chemicals 2012",
+    "url": "https://iris.who.int/bitstreams/173c5e04-99fd-4f83-972f-7913d7d8e6b1/download",
+    "source_type": "url"
+  },
+  "facts": [
+    {
+      "ref": "F026",
+      "statement": "依世界衛生組織採用的定義，內分泌干擾物會改變內分泌系統功能，並因而在完整生物體、其後代或族群造成不良影響。",
+      "subject": "內分泌干擾物",
+      "predicate": "定義為",
+      "object": "改變內分泌功能並造成不良影響的外源物質或混合物",
+      "proposition_types": [
+        "foreign_policy",
+        "agency_topic",
+        "chemistry_concept"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "外部正式定義，不是原文直接陳述。",
+      "_supporting_source_ids": [
+        "E02"
+      ],
+      "_suggested_tags": [
+        "WHO",
+        "內分泌干擾物定義"
+      ]
+    },
+    {
+      "ref": "F027",
+      "statement": "僅證明物質可與荷爾蒙受體結合，通常不足以確認該物質符合完整的內分泌干擾物定義。",
+      "subject": "受體結合證據",
+      "predicate": "通常不足以單獨確認",
+      "object": "完整的內分泌干擾物分類",
+      "proposition_types": [
+        "foreign_policy",
+        "research_literature",
+        "chemistry_concept"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "依WHO定義作成的審核推論；須人工確認是否納入正式知識層。",
+      "_supporting_source_ids": [
+        "E02"
+      ],
+      "_suggested_tags": [
+        "證據判定",
+        "內分泌干擾物"
+      ]
+    }
+  ]
+}

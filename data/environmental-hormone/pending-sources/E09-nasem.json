@@ -1,0 +1,91 @@
+{
+  "_說明": "這 3 筆原子命題整理自下列外部文獻，不在環境部那篇文章裡，所以沒有可引用的原文段落。要收進資料庫的話：先把 _來源文件 的網址（或 PDF）當成獨立來源匯入 /import，等解析完成後再用「原文＋原子命題包」把 facts 掛上去，系統會用內容比對找出每一筆屬於哪一段。",
+  "_來源文件": [
+    {
+      "title": "Veterans and Agent Orange: Update 11 (2018)",
+      "publisher": "National Academies of Sciences, Engineering, and Medicine",
+      "url": "https://nap.nationalacademies.org/catalog/25137/veterans-and-agent-orange-update-11-2018",
+      "source_type": "national_academy"
+    }
+  ],
+  "_待辦": [
+    "1. 到 /import 貼上 _來源文件 的網址（或上傳 PDF），等狀態變成 ready",
+    "2. 在同一頁選擇這個檔案當作原子命題包送出",
+    "3. 系統定位出的引句一律強制待審核，到 /review 逐筆確認"
+  ],
+  "source": {
+    "title": "Veterans and Agent Orange: Update 11 (2018)",
+    "url": "https://nap.nationalacademies.org/catalog/25137/veterans-and-agent-orange-update-11-2018",
+    "source_type": "url"
+  },
+  "facts": [
+    {
+      "ref": "F070",
+      "statement": "越戰期間使用的部分橙劑受到TCDD污染。",
+      "subject": "部分橙劑",
+      "predicate": "受到污染",
+      "object": "TCDD",
+      "proposition_types": [
+        "event",
+        "substance_property",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "高",
+      "status": "待審核",
+      "review_note": "外部補充的重要暴露背景，原文未直接說明。",
+      "_supporting_source_ids": [
+        "E09"
+      ],
+      "_suggested_tags": [
+        "橙劑",
+        "TCDD"
+      ]
+    },
+    {
+      "ref": "F071",
+      "statement": "橙劑及其TCDD污染所涉及的長期健康效應，仍依不同健康終點持續受到研究。",
+      "subject": "橙劑及其TCDD污染",
+      "predicate": "持續受到研究",
+      "object": "不同長期健康效應",
+      "proposition_types": [
+        "research_literature",
+        "event",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "高",
+      "status": "待審核",
+      "review_note": "研究狀態命題；不得將所有健康終點概括為已確認因果。",
+      "_supporting_source_ids": [
+        "E09"
+      ],
+      "_suggested_tags": [
+        "橙劑",
+        "TCDD",
+        "健康研究"
+      ]
+    },
+    {
+      "ref": "F072",
+      "statement": "美國國家科學院2018年評估認為，現有證據不足以判定越戰除草劑暴露與暴露者後代先天異常之間存在關聯。",
+      "subject": "美國國家科學院2018年評估",
+      "predicate": "認為證據不足以判定",
+      "object": "越戰除草劑暴露與後代先天異常的關聯",
+      "proposition_types": [
+        "research_literature",
+        "event",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "高",
+      "status": "待審核",
+      "review_note": "用於更正原文『使孩子畸形』的過度因果敘述。",
+      "_supporting_source_ids": [
+        "E09"
+      ],
+      "_suggested_tags": [
+        "橙劑",
+        "先天異常",
+        "證據等級"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "_說明": "這 1 筆原子命題整理自下列外部文獻，不在環境部那篇文章裡，所以沒有可引用的原文段落。要收進資料庫的話：先把 _來源文件 的網址（或 PDF）當成獨立來源匯入 /import，等解析完成後再用「原文＋原子命題包」把 facts 掛上去，系統會用內容比對找出每一筆屬於哪一段。",
+  "_來源文件": [
+    {
+      "title": "Long-term cancer follow-up after the Seveso accident",
+      "publisher": "Peer-reviewed research indexed by PubMed",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/19754930/",
+      "source_type": "peer_reviewed_journal"
+    }
+  ],
+  "_待辦": [
+    "1. 到 /import 貼上 _來源文件 的網址（或上傳 PDF），等狀態變成 ready",
+    "2. 在同一頁選擇這個檔案當作原子命題包送出",
+    "3. 系統定位出的引句一律強制待審核，到 /review 逐筆確認"
+  ],
+  "source": {
+    "title": "Long-term cancer follow-up after the Seveso accident",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/19754930/",
+    "source_type": "url"
+  },
+  "facts": [
+    {
+      "ref": "F061",
+      "statement": "塞維索長期追蹤研究發現，較高暴露地區的部分淋巴及造血系統腫瘤風險增加。",
+      "subject": "塞維索長期追蹤研究",
+      "predicate": "發現",
+      "object": "部分淋巴及造血系統腫瘤風險增加",
+      "proposition_types": [
+        "research_literature",
+        "event",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "高",
+      "status": "待審核",
+      "review_note": "研究結果命題；不可改寫成所有癌症均增加。",
+      "_supporting_source_ids": [
+        "E13"
+      ],
+      "_suggested_tags": [
+        "塞維索事故",
+        "癌症風險",
+        "世代研究"
+      ]
+    }
+  ]
+}

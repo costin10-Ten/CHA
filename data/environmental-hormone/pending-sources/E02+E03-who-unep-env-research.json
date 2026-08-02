@@ -1,0 +1,51 @@
+{
+  "_說明": "這 1 筆原子命題整理自下列外部文獻，不在環境部那篇文章裡，所以沒有可引用的原文段落。要收進資料庫的話：先把 _來源文件 的網址（或 PDF）當成獨立來源匯入 /import，等解析完成後再用「原文＋原子命題包」把 facts 掛上去，系統會用內容比對找出每一筆屬於哪一段。",
+  "_來源文件": [
+    {
+      "title": "State of the Science of Endocrine Disrupting Chemicals 2012",
+      "publisher": "World Health Organization / UNEP",
+      "url": "https://iris.who.int/bitstreams/173c5e04-99fd-4f83-972f-7913d7d8e6b1/download",
+      "source_type": "intergovernmental"
+    },
+    {
+      "title": "Exposure, toxicological mechanism of endocrine disrupting compounds and future direction of identification using nano-architectonics",
+      "publisher": "Environmental Research",
+      "url": "https://doi.org/10.1016/j.envres.2023.115577",
+      "source_type": "peer_reviewed_journal"
+    }
+  ],
+  "_待辦": [
+    "1. 到 /import 貼上 _來源文件 的網址（或上傳 PDF），等狀態變成 ready",
+    "2. 在同一頁選擇這個檔案當作原子命題包送出",
+    "3. 系統定位出的引句一律強制待審核，到 /review 逐筆確認"
+  ],
+  "source": {
+    "title": "State of the Science of Endocrine Disrupting Chemicals 2012",
+    "url": "https://iris.who.int/bitstreams/173c5e04-99fd-4f83-972f-7913d7d8e6b1/download",
+    "source_type": "url"
+  },
+  "facts": [
+    {
+      "ref": "F032",
+      "statement": "芳香環、鹵素取代基、羥基或酯基等官能基本身，不能單獨證明物質具有內分泌干擾作用。",
+      "subject": "特定官能基",
+      "predicate": "不能單獨證明",
+      "object": "內分泌干擾作用",
+      "proposition_types": [
+        "chemistry_concept",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "為防止由結構特徵直接跳到分類結論而新增的審核命題。",
+      "_supporting_source_ids": [
+        "E02",
+        "E03"
+      ],
+      "_suggested_tags": [
+        "官能基",
+        "結構活性"
+      ]
+    }
+  ]
+}

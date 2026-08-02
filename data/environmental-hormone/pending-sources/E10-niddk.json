@@ -1,0 +1,64 @@
+{
+  "_說明": "這 2 筆原子命題整理自下列外部文獻，不在環境部那篇文章裡，所以沒有可引用的原文段落。要收進資料庫的話：先把 _來源文件 的網址（或 PDF）當成獨立來源匯入 /import，等解析完成後再用「原文＋原子命題包」把 facts 掛上去，系統會用內容比對找出每一筆屬於哪一段。",
+  "_來源文件": [
+    {
+      "title": "Hypothyroidism (Underactive Thyroid)",
+      "publisher": "U.S. National Institute of Diabetes and Digestive and Kidney Diseases (NIDDK)",
+      "url": "https://www.niddk.nih.gov/health-information/endocrine-diseases/hypothyroidism",
+      "source_type": "government_health"
+    }
+  ],
+  "_待辦": [
+    "1. 到 /import 貼上 _來源文件 的網址（或上傳 PDF），等狀態變成 ready",
+    "2. 在同一頁選擇這個檔案當作原子命題包送出",
+    "3. 系統定位出的引句一律強制待審核，到 /review 逐筆確認"
+  ],
+  "source": {
+    "title": "Hypothyroidism (Underactive Thyroid)",
+    "url": "https://www.niddk.nih.gov/health-information/endocrine-diseases/hypothyroidism",
+    "source_type": "url"
+  },
+  "facts": [
+    {
+      "ref": "F003",
+      "statement": "部分內分泌疾病可能出現疲勞等症狀。",
+      "subject": "部分內分泌疾病",
+      "predicate": "可能出現",
+      "object": "疲勞等症狀",
+      "proposition_types": [
+        "health_advice",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "高",
+      "status": "待審核",
+      "review_note": "外部補充命題，不是原文直接陳述；須以政府衛生機關來源單獨審核。",
+      "_supporting_source_ids": [
+        "E10"
+      ],
+      "_suggested_tags": [
+        "內分泌疾病",
+        "疲勞"
+      ]
+    },
+    {
+      "ref": "F004",
+      "statement": "不能僅憑疲勞等常見症狀判定是否罹患內分泌疾病。",
+      "subject": "疲勞等常見症狀",
+      "predicate": "不足以單獨判定",
+      "object": "內分泌疾病",
+      "proposition_types": [
+        "health_advice"
+      ],
+      "risk_level": "高",
+      "status": "待審核",
+      "review_note": "外部補充的診斷提醒；NIDDK指出部分甲狀腺疾病不能只依症狀診斷。",
+      "_supporting_source_ids": [
+        "E10"
+      ],
+      "_suggested_tags": [
+        "就醫判斷",
+        "內分泌疾病"
+      ]
+    }
+  ]
+}

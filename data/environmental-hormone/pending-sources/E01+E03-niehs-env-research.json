@@ -1,0 +1,73 @@
+{
+  "_說明": "這 2 筆原子命題整理自下列外部文獻，不在環境部那篇文章裡，所以沒有可引用的原文段落。要收進資料庫的話：先把 _來源文件 的網址（或 PDF）當成獨立來源匯入 /import，等解析完成後再用「原文＋原子命題包」把 facts 掛上去，系統會用內容比對找出每一筆屬於哪一段。",
+  "_來源文件": [
+    {
+      "title": "Endocrine Disruptors",
+      "publisher": "U.S. National Institute of Environmental Health Sciences (NIEHS)",
+      "url": "https://www.niehs.nih.gov/health/topics/agents/endocrine",
+      "source_type": "government"
+    },
+    {
+      "title": "Exposure, toxicological mechanism of endocrine disrupting compounds and future direction of identification using nano-architectonics",
+      "publisher": "Environmental Research",
+      "url": "https://doi.org/10.1016/j.envres.2023.115577",
+      "source_type": "peer_reviewed_journal"
+    }
+  ],
+  "_待辦": [
+    "1. 到 /import 貼上 _來源文件 的網址（或上傳 PDF），等狀態變成 ready",
+    "2. 在同一頁選擇這個檔案當作原子命題包送出",
+    "3. 系統定位出的引句一律強制待審核，到 /review 逐筆確認"
+  ],
+  "source": {
+    "title": "Endocrine Disruptors",
+    "url": "https://www.niehs.nih.gov/health/topics/agents/endocrine",
+    "source_type": "url"
+  },
+  "facts": [
+    {
+      "ref": "F010",
+      "statement": "荷爾蒙與受體的對應不一定是絕對的一對一關係。",
+      "subject": "荷爾蒙與受體",
+      "predicate": "不一定是",
+      "object": "絕對一對一對應",
+      "proposition_types": [
+        "chemistry_concept",
+        "toxicology_mechanism"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "為避免『一把鑰匙只開一把鎖』的過度簡化而新增；非原文直接命題。",
+      "_supporting_source_ids": [
+        "E01",
+        "E03"
+      ],
+      "_suggested_tags": [
+        "受體",
+        "配體"
+      ]
+    },
+    {
+      "ref": "F017",
+      "statement": "部分內分泌干擾物可能改變荷爾蒙的合成或分泌。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "可能改變",
+      "object": "荷爾蒙的合成或分泌",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "外部機制補充，原文未直接列出合成或分泌。",
+      "_supporting_source_ids": [
+        "E01",
+        "E03"
+      ],
+      "_suggested_tags": [
+        "荷爾蒙合成",
+        "荷爾蒙分泌"
+      ]
+    }
+  ]
+}

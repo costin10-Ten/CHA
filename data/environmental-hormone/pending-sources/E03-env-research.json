@@ -1,0 +1,125 @@
+{
+  "_說明": "這 5 筆原子命題整理自下列外部文獻，不在環境部那篇文章裡，所以沒有可引用的原文段落。要收進資料庫的話：先把 _來源文件 的網址（或 PDF）當成獨立來源匯入 /import，等解析完成後再用「原文＋原子命題包」把 facts 掛上去，系統會用內容比對找出每一筆屬於哪一段。",
+  "_來源文件": [
+    {
+      "title": "Exposure, toxicological mechanism of endocrine disrupting compounds and future direction of identification using nano-architectonics",
+      "publisher": "Environmental Research",
+      "url": "https://doi.org/10.1016/j.envres.2023.115577",
+      "source_type": "peer_reviewed_journal"
+    }
+  ],
+  "_待辦": [
+    "1. 到 /import 貼上 _來源文件 的網址（或上傳 PDF），等狀態變成 ready",
+    "2. 在同一頁選擇這個檔案當作原子命題包送出",
+    "3. 系統定位出的引句一律強制待審核，到 /review 逐筆確認"
+  ],
+  "source": {
+    "title": "Exposure, toxicological mechanism of endocrine disrupting compounds and future direction of identification using nano-architectonics",
+    "url": "https://doi.org/10.1016/j.envres.2023.115577",
+    "source_type": "url"
+  },
+  "facts": [
+    {
+      "ref": "F018",
+      "statement": "部分內分泌干擾物可能改變荷爾蒙的運輸。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "可能改變",
+      "object": "荷爾蒙的運輸",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "外部機制補充，原文未直接列出運輸。",
+      "_supporting_source_ids": [
+        "E03"
+      ],
+      "_suggested_tags": [
+        "荷爾蒙運輸"
+      ]
+    },
+    {
+      "ref": "F020",
+      "statement": "部分內分泌干擾物可能改變基因體訊號傳遞。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "可能改變",
+      "object": "基因體訊號傳遞",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "外部機制補充；原文僅泛稱荷爾蒙訊號傳遞。",
+      "_supporting_source_ids": [
+        "E03"
+      ],
+      "_suggested_tags": [
+        "基因體訊號"
+      ]
+    },
+    {
+      "ref": "F021",
+      "statement": "部分內分泌干擾物可能改變非基因體訊號傳遞。",
+      "subject": "部分內分泌干擾物",
+      "predicate": "可能改變",
+      "object": "非基因體訊號傳遞",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "外部機制補充；原文未直接使用非基因體一詞。",
+      "_supporting_source_ids": [
+        "E03"
+      ],
+      "_suggested_tags": [
+        "非基因體訊號"
+      ]
+    },
+    {
+      "ref": "F035",
+      "statement": "外源性物質與受體競爭的程度受到靶組織有效濃度影響。",
+      "subject": "靶組織有效濃度",
+      "predicate": "影響",
+      "object": "外源性物質與受體競爭程度",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "chemistry_concept"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "以科學上較精確的『有效濃度』取代原文『分子數量龐大』。",
+      "_supporting_source_ids": [
+        "E03"
+      ],
+      "_suggested_tags": [
+        "有效濃度",
+        "受體競爭"
+      ]
+    },
+    {
+      "ref": "F036",
+      "statement": "外源性物質在靶組織中的生體可用率會影響其受體作用。",
+      "subject": "生體可用率",
+      "predicate": "會影響",
+      "object": "外源性物質的受體作用",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "chemistry_concept"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "外部補充命題，原文未直接陳述生體可用率。",
+      "_supporting_source_ids": [
+        "E03"
+      ],
+      "_suggested_tags": [
+        "生體可用率",
+        "受體作用"
+      ]
+    }
+  ]
+}

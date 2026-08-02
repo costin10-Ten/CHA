@@ -1,0 +1,87 @@
+{
+  "_說明": "這 3 筆原子命題整理自下列外部文獻，不在環境部那篇文章裡，所以沒有可引用的原文段落。要收進資料庫的話：先把 _來源文件 的網址（或 PDF）當成獨立來源匯入 /import，等解析完成後再用「原文＋原子命題包」把 facts 掛上去，系統會用內容比對找出每一筆屬於哪一段。",
+  "_來源文件": [
+    {
+      "title": "DDE and eggshell thinning references",
+      "publisher": "U.S. Environmental Protection Agency HERO",
+      "url": "https://hero.epa.gov/reference/3064007/",
+      "source_type": "government_research_index"
+    }
+  ],
+  "_待辦": [
+    "1. 到 /import 貼上 _來源文件 的網址（或上傳 PDF），等狀態變成 ready",
+    "2. 在同一頁選擇這個檔案當作原子命題包送出",
+    "3. 系統定位出的引句一律強制待審核，到 /review 逐筆確認"
+  ],
+  "source": {
+    "title": "DDE and eggshell thinning references",
+    "url": "https://hero.epa.gov/reference/3064007/",
+    "source_type": "url"
+  },
+  "facts": [
+    {
+      "ref": "F043",
+      "statement": "DDT及其部分代謝物具有環境持久性。",
+      "subject": "DDT及其部分代謝物",
+      "predicate": "具有",
+      "object": "環境持久性",
+      "proposition_types": [
+        "substance_property",
+        "agency_topic"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "外部補充命題；原文僅將DDT列為典型例子。",
+      "_supporting_source_ids": [
+        "E08"
+      ],
+      "_suggested_tags": [
+        "DDT",
+        "持久性有機污染物"
+      ]
+    },
+    {
+      "ref": "F045",
+      "statement": "DDE會干擾部分鳥類的蛋殼形成。",
+      "subject": "DDE",
+      "predicate": "會干擾",
+      "object": "部分鳥類的蛋殼形成",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "substance_property"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "以主要相關代謝物DDE取代原文籠統的DDT；不是原文直接引句。",
+      "_supporting_source_ids": [
+        "E08"
+      ],
+      "_suggested_tags": [
+        "DDE",
+        "蛋殼變薄"
+      ]
+    },
+    {
+      "ref": "F046",
+      "statement": "DDE造成的蛋殼變薄曾與部分猛禽繁殖成功率及族群下降有關。",
+      "subject": "DDE造成的蛋殼變薄",
+      "predicate": "曾與之相關",
+      "object": "部分猛禽繁殖成功率及族群下降",
+      "proposition_types": [
+        "toxicology_mechanism",
+        "research_literature"
+      ],
+      "risk_level": "中",
+      "status": "待審核",
+      "review_note": "外部研究命題，須保留關聯語氣。",
+      "_supporting_source_ids": [
+        "E08"
+      ],
+      "_suggested_tags": [
+        "DDE",
+        "猛禽",
+        "生態風險"
+      ]
+    }
+  ]
+}
