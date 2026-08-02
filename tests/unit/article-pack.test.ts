@@ -732,3 +732,139 @@ describe("命題分類可複選", () => {
     );
   });
 });
+
+/**
+ * 沒寫段落編號時不可以「猜」一個。
+ *
+ * 起因：真實的原子命題包裡有 33 筆是從外部文獻整理的，沒有 paragraph_id。
+ * 原本的做法是「第 n 筆就當作 P-00n」，結果其中兩筆剛好撞上存在的段號，
+ * 被掛到完全無關的段落上——一句講內分泌疾病症狀的話被掛到圖片說明那一段，
+ * 而且引句會變成那一整段。段落編號是可回溯性的一環，猜錯比留白嚴重得多。
+ */
+describe("沒有段落編號時不猜段落", () => {
+  const chunks = [
+    { paragraph_id: "P-001", text: PARAGRAPH },
+    { paragraph_id: "P-002", text: "第二段：與賽滅寧完全無關的圖片說明。" },
+    { paragraph_id: "P-003", text: "第三段：另一段無關的文字內容說明。" },
+  ];
+
+  it("沒寫段落也沒自帶原文的，一律跳過並說明原因", () => {
+    const result = validateArticlePack({
+      source: { title: "缺段落" },
+      document_chunks: chunks,
+      facts: [
+        {
+          ref: "F001",
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          paragraph_id: "P-001",
+          quote: "作用於昆蟲神經系統的鈉離子通道",
+        },
+        // 這一筆若照索引推算會變成 P-002，掛到完全無關的段落。
+        { ref: "F002", statement: "這句話出自另一份文獻，本文沒有。" },
+        { ref: "F003", statement: "這句話也出自另一份文獻。" },
+      ],
+    });
+
+    expect(result.articles[0].candidates.map((c) => c.ref)).toEqual(["F001"]);
+
+    const skipped = result.issues.filter((issue) => issue.level === "error");
+    expect(skipped).toHaveLength(2);
+    for (const issue of skipped) {
+      expect(issue.message).toContain("沒有指定段落");
+    }
+  });
+
+  it("自帶原文時仍然可以不寫段落編號", () => {
+    const result = validateArticlePack({
+      source: { title: "自帶原文" },
+      facts: [
+        {
+          ref: "F001",
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          paragraph_text: PARAGRAPH,
+          quote: "作用於昆蟲神經系統的鈉離子通道",
+        },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.articles[0].candidates[0].source_quote).toBe(
+      "作用於昆蟲神經系統的鈉離子通道",
+    );
+  });
+});
+
+/**
+ * 用別名對上不是「無法辨識」。
+ *
+ * 起因：一份 90 筆的原子命題包把 risk_level 寫成「中」「高」、status 寫成
+ * 「核定」「待審核」——全部都是支援的寫法，卻產生一百多條
+ * 「無法辨識」警告，把真正需要看的 33 筆錯誤埋掉了。
+ */
+describe("別名對上時不發警告", () => {
+  it("中文的風險等級與狀態不會被當成無法辨識", () => {
+    const result = validateArticlePack({
+      source: { title: "中文列舉值" },
+      document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
+      facts: [
+        {
+          ref: "F001",
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          paragraph_id: "P-004",
+          quote: "作用於昆蟲神經系統的鈉離子通道",
+          risk_level: "高",
+          status: "核定",
+        },
+      ],
+      review_records: [{ candidate_fact_id: "F001", action: "核定" }],
+    });
+
+    expect(result.articles[0].candidates[0].risk_level).toBe("high");
+    expect(result.articles[0].candidates[0].status).toBe("approved");
+    expect(
+      result.issues.filter((issue) => issue.message.includes("無法辨識")),
+    ).toEqual([]);
+  });
+
+  it("真的認不得時才警告", () => {
+    const result = validateArticlePack({
+      source: { title: "認不得" },
+      document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
+      facts: [
+        {
+          ref: "F001",
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          paragraph_id: "P-004",
+          quote: "作用於昆蟲神經系統的鈉離子通道",
+          risk_level: "爆表",
+        },
+      ],
+    });
+
+    expect(result.articles[0].candidates[0].risk_level).toBe("medium");
+    expect(
+      result.issues.some((issue) => issue.message.includes("risk_level 無法辨識")),
+    ).toBe(true);
+  });
+
+  it("把狀態寫進 action 欄位時對應到退回待審核", () => {
+    const result = validateArticlePack({
+      source: { title: "狀態當動作" },
+      document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
+      facts: [
+        {
+          ref: "F001",
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          paragraph_id: "P-004",
+          quote: "作用於昆蟲神經系統的鈉離子通道",
+        },
+      ],
+      review_records: [{ candidate_fact_id: "F001", action: "待審核" }],
+    });
+
+    expect(result.articles[0].reviews[0].action).toBe("reopen");
+    expect(
+      result.issues.some((issue) => issue.message.includes("審核動作無法辨識")),
+    ).toBe(false);
+  });
+});

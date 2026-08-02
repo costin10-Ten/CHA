@@ -28,7 +28,7 @@ describe("最小範例 fact-pack-minimal.json", () => {
     const result = validateArticlePack(minimal);
     expect(result.ok).toBe(false);
     expect(
-      result.issues.some((issue) => issue.message.includes("找不到段落")),
+      result.issues.some((issue) => issue.message.includes("沒有指定段落")),
     ).toBe(true);
   });
 

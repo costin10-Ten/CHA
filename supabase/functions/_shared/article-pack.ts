@@ -184,6 +184,11 @@ const ACTION_ALIASES: Record<string, string> = {
   重新抽取: "reextract",
   reextract: "reextract",
   退回待審核: "reopen",
+  // 整理者常把「狀態」寫進 action 欄位。待審核代表這一筆最後沒有做決定，
+  // 對應到的動作就是退回待審核（ACTION_RESULT_STATUS.reopen === "pending"）。
+  待審核: "reopen",
+  未審核: "reopen",
+  保留: "reopen",
   reopen: "reopen",
   外部校正: "external_correction",
   external_correction: "external_correction",
@@ -333,20 +338,31 @@ function pick(row: Record<string, unknown>, ...keys: string[]): unknown {
   return undefined;
 }
 
+/**
+ * 把一個列舉值正規化。
+ *
+ * 三種結果要分清楚，因為只有第三種需要提醒使用者：
+ *   exact     已經是允許值
+ *   alias     用別名對上了（例如「高」→ high）——這是正常用法，不是問題
+ *   fallback  完全認不得，退回預設值——這一種才要警告
+ *
+ * 原本 alias 與 fallback 都回報「無法辨識」，一份 90 筆的原子命題包
+ * 光是把 risk_level 寫成中文就產生一百多條假警告，真正的問題被埋掉了。
+ */
 function coerce(
   raw: unknown,
   aliases: Record<string, string>,
   allowed: string[],
   fallback: string,
-): { value: string; coerced: boolean } {
+): { value: string; how: "exact" | "alias" | "fallback" } {
   const input = text(raw).trim();
-  if (!input) return { value: fallback, coerced: false };
-  if (allowed.includes(input)) return { value: input, coerced: false };
+  if (!input) return { value: fallback, how: "exact" };
+  if (allowed.includes(input)) return { value: input, how: "exact" };
 
   const mapped = aliases[input] ?? aliases[input.toLowerCase()];
-  if (mapped) return { value: mapped, coerced: true };
+  if (mapped) return { value: mapped, how: "alias" };
 
-  return { value: fallback, coerced: true };
+  return { value: fallback, how: "fallback" };
 }
 
 /**
@@ -428,11 +444,18 @@ export function quoteMatches(quote: string, paragraph: string): boolean {
   return segments.every((segment) => quoteExistsInParagraph(segment, paragraph));
 }
 
-function normalizeParagraphId(raw: unknown, index: number): string {
+/**
+ * 統一段落編號寫法：P-001、P001、1、第1段 都變成 P-001。
+ *
+ * 沒填時回傳 null，**不從索引編一個出來**。
+ * 曾經是「第 n 筆就當作 P-00n」，結果沒寫段落的原子命題被掛到剛好同號的段落上——
+ * 一句講內分泌疾病症狀的話被掛到圖片說明那一段。
+ * 段落編號是可回溯性的一環，猜錯比留白嚴重得多。
+ */
+function normalizeParagraphId(raw: unknown): string | null {
   const value = text(raw).trim();
-  if (!value) return `P-${String(index + 1).padStart(3, "0")}`;
+  if (!value) return null;
 
-  // 接受 P-001、P001、1、第1段 等寫法，統一成 P-001。
   const digits = /(\d+)/.exec(value);
   if (/^P-\d+$/i.test(value)) return value.toUpperCase();
   if (digits) return `P-${digits[1].padStart(3, "0")}`;
@@ -582,10 +605,10 @@ function normalizeArticle(
     const row = asRecord(item);
     if (!row) return;
 
-    const paragraphId = normalizeParagraphId(
-      pick(row, "paragraph_id", "ref", "id", "pid"),
-      index,
-    );
+    // 段落清單本身沒給編號時才自動編號：這裡的順序就是它在文件中的位置。
+    const paragraphId =
+      normalizeParagraphId(pick(row, "paragraph_id", "ref", "id", "pid")) ??
+      `P-${String(index + 1).padStart(3, "0")}`;
 
     const body = pick(row, "text", "paragraph_text", "content", "body", "原文");
 
@@ -701,7 +724,6 @@ function normalizeArticle(
     // 段落：用指定的編號找；找不到就看這筆原子命題有沒有自帶原文。
     const paragraphId = normalizeParagraphId(
       pick(row, "source_paragraph_id", "paragraph_id", "paragraph", "段落"),
-      index,
     );
 
     const inlineText = pick(
@@ -712,12 +734,16 @@ function normalizeArticle(
       "段落原文",
     );
 
-    let chunk = chunks.get(paragraphId);
+    const hasInlineText =
+      !isContentPlaceholder(inlineText) && text(inlineText).trim().length > 0;
 
-    if (!chunk && !isContentPlaceholder(inlineText) && text(inlineText).trim()) {
+    let chunk = paragraphId ? chunks.get(paragraphId) : undefined;
+
+    if (!chunk && hasInlineText) {
       // 原子命題自帶原文時就地補一個段落，不需要另外寫 document_chunks。
+      const id = paragraphId ?? `P-${String(chunks.size + 1).padStart(3, "0")}`;
       chunk = {
-        paragraph_id: paragraphId,
+        paragraph_id: id,
         position: chunks.size,
         block_type: "paragraph",
         heading_path: [],
@@ -725,14 +751,16 @@ function normalizeArticle(
         char_start: 0,
         char_end: 0,
       };
-      chunks.set(paragraphId, chunk);
+      chunks.set(id, chunk);
     }
 
     if (!chunk) {
       issues.push({
         level: "error",
         where,
-        message: `找不到段落 ${paragraphId} 的原文，這一筆跳過`,
+        message: paragraphId
+          ? `找不到段落 ${paragraphId} 的原文，這一筆跳過`
+          : "沒有指定段落，也沒有自帶原文，這一筆跳過",
         hint: NO_SOURCE_HINT,
       });
       return;
@@ -789,7 +817,7 @@ function normalizeArticle(
       RISK_LEVELS,
       "medium",
     );
-    if (riskLevel.coerced) {
+    if (riskLevel.how === "fallback") {
       issues.push({
         level: "warning",
         where,
@@ -797,7 +825,7 @@ function normalizeArticle(
       });
     }
 
-    if (statusResult.coerced) {
+    if (statusResult.how === "fallback") {
       issues.push({
         level: "warning",
         where,
@@ -911,7 +939,7 @@ function normalizeArticle(
             : "needs_fix",
       );
 
-      if (action.coerced) {
+      if (action.how === "fallback") {
         issues.push({
           level: "warning",
           where: `${label}.審核紀錄 ${index + 1}`,
