@@ -172,6 +172,7 @@ supabase/
   seed.sql          本機示範資料
   config.toml       Supabase CLI 設定
 docs/
+  ARCHITECTURE.md   資料結構、關係圖與功能總覽
   ARTICLE-PACK.md   文章包匯入格式
   BACKUP.md         備份與還原操作
   DEPLOY.md         部署設定與上線檢查清單
