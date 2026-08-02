@@ -11,7 +11,7 @@ export const JOB_STATUS_LABEL: Record<JobStatus, string> = {
 
 export const JOB_TYPE_LABEL: Record<string, string> = {
   parse_document: "文件解析",
-  extract_facts: "候選事實抽取",
+  extract_facts: "候選原子命題抽取",
   generate_embeddings: "向量產生",
   verify_answer: "回答驗證",
   generate_content: "素材產製",

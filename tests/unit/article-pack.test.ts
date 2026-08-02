@@ -14,7 +14,7 @@ import {
  *
  * 「寬」= 欄位別名、列舉值、段落編號、缺漏欄位都自動處理，
  *        一筆有問題只跳過那一筆，不會整包擋下。
- * 「嚴」= 引句對不上原文的事實一律退回待審核，不會被當成已核定。
+ * 「嚴」= 引句對不上原文的原子命題一律退回待審核，不會被當成已核定。
  */
 
 const PARAGRAPH =
@@ -44,7 +44,7 @@ function pack(overrides: Record<string, unknown> = {}) {
       {
         ref: "C001",
         statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
-        knowledge_type: "substance",
+        proposition_types: ["substance_property"],
         risk_level: "medium",
         conditions: { population: null },
         source_paragraph_id: "P-004",
@@ -134,7 +134,7 @@ describe("合法的文章包", () => {
 });
 
 describe("寬鬆處理：欄位別名", () => {
-  it("接受精簡寫法：source + facts + 事實自帶原文", () => {
+  it("接受精簡寫法：source + facts + 原子命題自帶原文", () => {
     const result = validateArticlePack({
       source: { title: "精簡寫法", url: "https://example.test/b" },
       facts: [
@@ -160,7 +160,7 @@ describe("寬鬆處理：欄位別名", () => {
   it("中文欄位名與中文列舉值都接受", () => {
     const result = validateArticlePack({
       source: { title: "中文欄位" },
-      事實: [
+      原子命題: [
         {
           敘述: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
           段落: "P-004",
@@ -168,7 +168,7 @@ describe("寬鬆處理：欄位別名", () => {
           原文片段: "作用於昆蟲神經系統的鈉離子通道",
           審核狀態: "核定",
           風險等級: "高",
-          知識類型: "物質",
+          分類: "物質、毒理",
         },
       ],
     });
@@ -176,7 +176,10 @@ describe("寬鬆處理：欄位別名", () => {
     const candidate = result.articles[0].candidates[0];
     expect(candidate.status).toBe("approved");
     expect(candidate.risk_level).toBe("high");
-    expect(candidate.knowledge_type).toBe("substance");
+    expect(candidate.proposition_types).toEqual([
+      "substance_property",
+      "toxicology_mechanism",
+    ]);
   });
 
   it("沒有 ref 時自動編號，段落編號寫法不一也能對上", () => {
@@ -206,7 +209,7 @@ describe("寬鬆處理：欄位別名", () => {
             statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
             source_paragraph_id: "P-004",
             source_quote: "作用於昆蟲神經系統的鈉離子通道",
-            knowledge_type: "外星分類",
+            proposition_types: ["外星分類"],
             risk_level: "爆表",
             status: "不知道",
           },
@@ -217,7 +220,8 @@ describe("寬鬆處理：欄位別名", () => {
 
     expect(result.ok).toBe(true);
     const candidate = result.articles[0].candidates[0];
-    expect(candidate.knowledge_type).toBe("other");
+    // 分類認不得就是未分類，不回落成某一類。
+    expect(candidate.proposition_types).toEqual([]);
     expect(candidate.risk_level).toBe("medium");
     expect(candidate.status).toBe("pending");
     expect(result.issues.every((issue) => issue.level === "warning")).toBe(true);
@@ -280,7 +284,7 @@ describe("寬鬆處理：引句", () => {
     }
   });
 
-  it("退回整段的事實不會產生正式事實", () => {
+  it("退回整段的原子命題不會產生正式原子命題", () => {
     const result = validateArticlePack(
       pack({
         candidate_facts: [
@@ -303,7 +307,7 @@ describe("寬鬆處理：引句", () => {
 });
 
 describe("寬鬆處理：部分匯入", () => {
-  it("一筆事實沒有原文時只跳過該筆，其餘照常匯入", () => {
+  it("一筆原子命題沒有原文時只跳過該筆，其餘照常匯入", () => {
     const result = validateArticlePack(
       pack({
         candidate_facts: [
@@ -332,7 +336,7 @@ describe("寬鬆處理：部分匯入", () => {
     ).toBe(true);
   });
 
-  it("段落文字是佔位符時，事實可用自帶原文救回來", () => {
+  it("段落文字是佔位符時，原子命題可用自帶原文救回來", () => {
     const result = validateArticlePack(
       pack({
         document_chunks: [
@@ -356,7 +360,7 @@ describe("寬鬆處理：部分匯入", () => {
     expect(result.articles[0].candidates[0].quote_fallback).toBe(false);
   });
 
-  it("完全沒有原文時該筆跳過，整篇沒有事實才判定不可匯入", () => {
+  it("完全沒有原文時該筆跳過，整篇沒有原子命題才判定不可匯入", () => {
     const result = validateArticlePack(
       pack({
         document_chunks: [
@@ -365,7 +369,7 @@ describe("寬鬆處理：部分匯入", () => {
         candidate_facts: [
           {
             ref: "C001",
-            statement: "沒有任何原文可以對照的事實。",
+            statement: "沒有任何原文可以對照的原子命題。",
             source_paragraph_id: "P-004",
             source_quote: "$resolve_quote(P-004,C001)",
           },
@@ -441,8 +445,8 @@ describe("多篇文章", () => {
   });
 });
 
-describe("正式事實", () => {
-  it("對應不到事實時只略過，不擋下整包", () => {
+describe("正式原子命題", () => {
+  it("對應不到原子命題時只略過，不擋下整包", () => {
     const result = validateArticlePack(
       pack({
         knowledge_facts: [
@@ -458,7 +462,7 @@ describe("正式事實", () => {
     );
   });
 
-  it("對應的事實不是已核定時略過", () => {
+  it("對應的原子命題不是已核定時略過", () => {
     const result = validateArticlePack(
       pack({
         candidate_facts: [
@@ -493,24 +497,24 @@ describe("整份無法使用時", () => {
     expect(result.issues[0].message).toContain("缺少文章標題");
   });
 
-  it("沒有事實", () => {
+  it("沒有原子命題", () => {
     const result = validateArticlePack({ source: { title: "空的" } });
     expect(result.ok).toBe(false);
     expect(
-      result.issues.some((issue) => issue.message.includes("沒有任何事實")),
+      result.issues.some((issue) => issue.message.includes("沒有任何原子命題")),
     ).toBe(true);
   });
 });
 
 /**
- * 駁回的事實不匯入。
+ * 駁回的原子命題不匯入。
  *
- * 起因：使用者匯入另一個 AI 產出的事實包，包內已標為駁回的事實仍被建成
- * 候選事實，之後在審核清單被全選批次核定，一起寫進了正式事實庫。
- * 根因有兩處，這裡守住入口這一處：駁回的事實根本不該進資料庫。
+ * 起因：使用者匯入另一個 AI 產出的原子命題包，包內已標為駁回的原子命題仍被建成
+ * 候選原子命題，之後在審核清單被全選批次核定，一起寫進了正式原子命題庫。
+ * 根因有兩處，這裡守住入口這一處：駁回的原子命題根本不該進資料庫。
  */
-describe("駁回的事實不匯入", () => {
-  it("標為駁回的事實不會變成候選事實", () => {
+describe("駁回的原子命題不匯入", () => {
+  it("標為駁回的原子命題不會變成候選原子命題", () => {
     const result = validateArticlePack({
       source: { title: "含駁回" },
       document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
@@ -545,7 +549,7 @@ describe("駁回的事實不匯入", () => {
       const result = validateArticlePack({
         source: { title: "中文駁回" },
         document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
-        事實: [
+        原子命題: [
           {
             ref: "F-1",
             敘述: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
@@ -586,11 +590,11 @@ describe("駁回的事實不匯入", () => {
     expect(notice).toBeDefined();
     expect(notice?.message).toContain("F-2");
     expect(notice?.message).toContain("F-3");
-    // 駁回的事實不必有可對應的段落，不該因此產生錯誤。
+    // 駁回的原子命題不必有可對應的段落，不該因此產生錯誤。
     expect(result.issues.some((issue) => issue.level === "error")).toBe(false);
   });
 
-  it("駁回的事實不會被寫成正式事實", () => {
+  it("駁回的原子命題不會被寫成正式原子命題", () => {
     const result = validateArticlePack({
       source: { title: "含駁回" },
       document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
@@ -617,5 +621,114 @@ describe("駁回的事實不匯入", () => {
       (fact) => fact.candidate_fact_id,
     );
     expect(refs).not.toContain("F-1");
+  });
+});
+
+/**
+ * 原子命題的分類：九類、可複選。
+ *
+ * 九類同時涵蓋知識內容、事件類型與治理層級，彼此本來就會重疊，
+ * 所以匯入時不強迫單選，也不把認不得的值回落成某一類。
+ */
+describe("命題分類可複選", () => {
+  function withTypes(types: unknown) {
+    return validateArticlePack({
+      source: { title: "分類" },
+      document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
+      facts: [
+        {
+          ref: "C001",
+          statement: "賽滅寧作用於昆蟲神經系統的鈉離子通道。",
+          paragraph_id: "P-004",
+          quote: "作用於昆蟲神經系統的鈉離子通道",
+          proposition_types: types,
+        },
+      ],
+    });
+  }
+
+  it("一條命題可以有多個分類", () => {
+    const result = withTypes(["substance_property", "toxicology_mechanism"]);
+    expect(result.articles[0].candidates[0].proposition_types).toEqual([
+      "substance_property",
+      "toxicology_mechanism",
+    ]);
+  });
+
+  it("沒填就是未分類，不硬塞一個類別", () => {
+    for (const value of [undefined, [], ""]) {
+      const result = withTypes(value);
+      expect(result.ok, String(value)).toBe(true);
+      expect(result.articles[0].candidates[0].proposition_types).toEqual([]);
+    }
+  });
+
+  it("中文寫法都認得，包含九類的全名", () => {
+    const result = withTypes([
+      "物質與物理化學性質",
+      "化學基本概念",
+      "事件",
+      "化學署主題",
+      "毒理與反應機制",
+      "國內治理政策",
+      "國外治理政策",
+      "研究與期刊",
+      "醫學健康建議",
+    ]);
+    expect(result.articles[0].candidates[0].proposition_types).toEqual([
+      "substance_property",
+      "chemistry_concept",
+      "event",
+      "agency_topic",
+      "toxicology_mechanism",
+      "domestic_policy",
+      "foreign_policy",
+      "research_literature",
+      "health_advice",
+    ]);
+  });
+
+  it("寫成一個字串、用頓號或斜線分隔也可以", () => {
+    for (const value of ["物質、毒理", "物質／毒理", "物質,毒理"]) {
+      const result = withTypes(value);
+      expect(result.articles[0].candidates[0].proposition_types, value).toEqual([
+        "substance_property",
+        "toxicology_mechanism",
+      ]);
+    }
+  });
+
+  it("舊的六類寫法仍然匯得進來", () => {
+    const result = withTypes(["substance", "policy", "topic"]);
+    expect(result.articles[0].candidates[0].proposition_types).toEqual([
+      "substance_property",
+      "domestic_policy",
+      "agency_topic",
+    ]);
+  });
+
+  it("認不得的只丟掉那一個並回報，其餘照常匯入", () => {
+    const result = withTypes(["外星分類", "毒理"]);
+    expect(result.articles[0].candidates[0].proposition_types).toEqual([
+      "toxicology_mechanism",
+    ]);
+    expect(result.issues.some((issue) => issue.message.includes("外星分類"))).toBe(
+      true,
+    );
+  });
+
+  it("重複的分類只留一份", () => {
+    const result = withTypes(["物質", "substance_property", "物質與物理化學性質"]);
+    expect(result.articles[0].candidates[0].proposition_types).toEqual([
+      "substance_property",
+    ]);
+  });
+
+  it("舊的「其他」代表沒有分類，不算辨識失敗", () => {
+    const result = withTypes(["other"]);
+    expect(result.articles[0].candidates[0].proposition_types).toEqual([]);
+    expect(result.issues.some((issue) => issue.message.includes("無法辨識"))).toBe(
+      false,
+    );
   });
 });

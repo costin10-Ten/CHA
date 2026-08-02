@@ -32,7 +32,7 @@ const FACT: ExportFact = {
   subject: "孕婦",
   predicate: "不宜超過",
   object: "35 公克",
-  knowledge_type: "substance",
+  proposition_types: ["substance_property"],
   risk_level: "medium",
   status: "active",
   version: 2,
@@ -64,7 +64,7 @@ describe("CSV 逸出", () => {
   });
 });
 
-describe("事實匯出", () => {
+describe("原子命題匯出", () => {
   it("CSV 帶有來源標題與網址，且條件被攤平", () => {
     const csv = factsToCsv(BUNDLE);
     const [header, row] = csv.split("\r\n");
@@ -77,7 +77,7 @@ describe("事實匯出", () => {
     expect(row).toContain("示範文件");
   });
 
-  it("JSON 同時輸出來源與事實，可完整還原對照關係", () => {
+  it("JSON 同時輸出來源與原子命題，可完整還原對照關係", () => {
     const parsed = JSON.parse(factsToJson(BUNDLE));
 
     expect(parsed.fact_count).toBe(1);
@@ -101,8 +101,8 @@ describe("事實匯出", () => {
   });
 });
 
-describe("事實與來源對照表", () => {
-  it("每一列都指出事實出自哪一份文件的哪一段", () => {
+describe("原子命題與來源對照表", () => {
+  it("每一列都指出原子命題出自哪一份文件的哪一段", () => {
     const [row] = mappingRows(BUNDLE);
 
     expect(row.fact_id).toBe("fact-1");
@@ -123,7 +123,7 @@ describe("事實與來源對照表", () => {
 });
 
 describe("單篇文件匯出", () => {
-  it("包含原文段落與由本文產生的事實", () => {
+  it("包含原文段落與由本文產生的原子命題", () => {
     const markdown = documentToMarkdown({
       ...BUNDLE,
       source: SOURCE,
@@ -134,7 +134,7 @@ describe("單篇文件匯出", () => {
 
     expect(markdown).toContain("# 示範文件，含逗號");
     expect(markdown).toContain("**P-001**");
-    expect(markdown).toContain("由本文產生的正式事實（1 筆）");
+    expect(markdown).toContain("由本文產生的正式原子命題（1 筆）");
   });
 });
 

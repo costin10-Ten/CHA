@@ -40,7 +40,7 @@ async function loadFact(id: string): Promise<CandidateFactRow> {
     .eq("id", id)
     .single();
 
-  if (error || !data) throw new Error("找不到候選事實");
+  if (error || !data) throw new Error("找不到候選原子命題");
   return data;
 }
 
@@ -75,7 +75,7 @@ async function recordReview(log: ReviewLog): Promise<void> {
 }
 
 /**
- * 核定後立即寫入正式事實庫。
+ * 核定後立即寫入正式原子命題庫。
  * 失敗不回滾核定狀態，只把原因回報給使用者（可在 /knowledge 重試）。
  */
 async function promoteApproved(candidateId: string): Promise<string | null> {
@@ -143,9 +143,9 @@ async function applySimpleAction(
     return {
       status: "success",
       message: promoteError
-        ? `已核定，但寫入正式事實庫失敗：${promoteError}`
+        ? `已核定，但寫入正式原子命題庫失敗：${promoteError}`
         : action === "approve"
-          ? "已核定並寫入正式事實庫。"
+          ? "已核定並寫入正式原子命題庫。"
           : "已更新審核狀態。",
     };
   } catch (cause) {
@@ -206,7 +206,7 @@ export async function approveWithEdit(
       subject: input.subject,
       predicate: input.predicate,
       object: input.object,
-      knowledge_type: input.knowledge_type,
+      proposition_types: input.proposition_types,
       conditions: {
         population: input.conditions.population ?? null,
         exposure_route: input.conditions.exposure_route ?? null,
@@ -221,14 +221,22 @@ export async function approveWithEdit(
       confidence: fact.confidence,
     };
 
+    // 來源網址要一起帶進去，「醫學健康建議須為政府機關來源」才檢查得到。
+    const { data: source } = await supabase
+      .from("sources")
+      .select("origin_url")
+      .eq("id", fact.source_id)
+      .maybeSingle();
+
     const quality = checkFactQuality(edited, {
       paragraphText: chunk?.text ?? fact.source_quote,
+      sourceUrl: source?.origin_url ?? null,
     });
 
     if (quality.fatal) {
       return {
         status: "error",
-        message: "修正後的事實仍缺少有效的原文片段，無法核定。",
+        message: "修正後的原子命題仍缺少有效的原文片段，無法核定。",
       };
     }
 
@@ -238,7 +246,7 @@ export async function approveWithEdit(
         subject: fact.subject,
         predicate: fact.predicate,
         object: fact.object,
-        knowledge_type: fact.knowledge_type,
+        proposition_types: fact.proposition_types,
         risk_level: fact.risk_level,
         conditions: fact.conditions as unknown as Record<string, string | null>,
       },
@@ -247,7 +255,7 @@ export async function approveWithEdit(
         subject: edited.subject,
         predicate: edited.predicate,
         object: edited.object,
-        knowledge_type: edited.knowledge_type,
+        proposition_types: input.proposition_types,
         risk_level: edited.risk_level,
         conditions: edited.conditions as unknown as Record<string, string | null>,
       },
@@ -260,7 +268,7 @@ export async function approveWithEdit(
         subject: edited.subject,
         predicate: edited.predicate,
         object: edited.object,
-        knowledge_type: edited.knowledge_type as CandidateFactRow["knowledge_type"],
+        proposition_types: edited.proposition_types as CandidateFactRow["proposition_types"],
         risk_level: edited.risk_level as CandidateFactRow["risk_level"],
         conditions: edited.conditions,
         quality_flags: quality.flags,
@@ -274,7 +282,7 @@ export async function approveWithEdit(
       })
       .eq("id", id);
 
-    if (error) throw new Error(`更新事實失敗：${error.message}`);
+    if (error) throw new Error(`更新原子命題失敗：${error.message}`);
 
     await recordReview({
       ownerId: user.id,
@@ -295,15 +303,15 @@ export async function approveWithEdit(
     return {
       status: "success",
       message: promoteError
-        ? `已修正並核定，但寫入正式事實庫失敗：${promoteError}`
-        : "已修正並核定，已寫入正式事實庫。",
+        ? `已修正並核定，但寫入正式原子命題庫失敗：${promoteError}`
+        : "已修正並核定，已寫入正式原子命題庫。",
     };
   } catch (cause) {
     return toResult(cause);
   }
 }
 
-/** 拆成多筆：原事實標為 split，每一行建立一筆新的待審核事實。 */
+/** 拆成多筆：原原子命題標為 split，每一行建立一筆新的待審核原子命題。 */
 export async function splitCandidate(
   id: string,
   input: string,
@@ -331,7 +339,7 @@ export async function splitCandidate(
         subject: fact.subject,
         predicate: fact.predicate,
         object: fact.object,
-        knowledge_type: fact.knowledge_type,
+        proposition_types: fact.proposition_types,
         conditions: fact.conditions,
         source_quote: fact.source_quote,
         source_paragraph_id: fact.source_paragraph_id,
@@ -357,7 +365,7 @@ export async function splitCandidate(
       })
       .select("id");
 
-    if (error) throw new Error(`建立拆分後的事實失敗：${error.message}`);
+    if (error) throw new Error(`建立拆分後的原子命題失敗：${error.message}`);
 
     await supabase
       .from("candidate_facts")
@@ -379,14 +387,14 @@ export async function splitCandidate(
     revalidateReview(fact.source_id);
     return {
       status: "success",
-      message: `已拆成 ${created?.length ?? 0} 筆待審核事實。`,
+      message: `已拆成 ${created?.length ?? 0} 筆待審核原子命題。`,
     };
   } catch (cause) {
     return toResult(cause);
   }
 }
 
-/** 合併多筆：建立一筆新的待審核事實，來源事實標為 merged。 */
+/** 合併多筆：建立一筆新的待審核原子命題，來源原子命題標為 merged。 */
 export async function mergeCandidates(
   ids: string[],
   statement: string,
@@ -408,14 +416,14 @@ export async function mergeCandidates(
       .in("id", ids);
 
     if (loadError || !facts || facts.length < 2) {
-      return { status: "error", message: "找不到要合併的候選事實" };
+      return { status: "error", message: "找不到要合併的候選原子命題" };
     }
 
     const sameVersion = facts.every(
       (fact) => fact.source_version_id === facts[0].source_version_id,
     );
     if (!sameVersion) {
-      return { status: "error", message: "只能合併同一份文件版本內的候選事實" };
+      return { status: "error", message: "只能合併同一份文件版本內的候選原子命題" };
     }
 
     for (const fact of facts) {
@@ -440,7 +448,7 @@ export async function mergeCandidates(
         subject: base.subject,
         predicate: base.predicate,
         object: base.object,
-        knowledge_type: base.knowledge_type,
+        proposition_types: base.proposition_types,
         conditions: base.conditions,
         source_quote: mergedQuote,
         source_paragraph_id: base.source_paragraph_id,
@@ -459,7 +467,7 @@ export async function mergeCandidates(
       .single();
 
     if (error || !created)
-      throw new Error(`建立合併後的事實失敗：${error?.message}`);
+      throw new Error(`建立合併後的原子命題失敗：${error?.message}`);
 
     await supabase
       .from("candidate_facts")
@@ -484,7 +492,7 @@ export async function mergeCandidates(
     revalidateReview(base.source_id);
     return {
       status: "success",
-      message: `已將 ${ids.length} 筆合併為一筆待審核事實。`,
+      message: `已將 ${ids.length} 筆合併為一筆待審核原子命題。`,
     };
   } catch (cause) {
     return toResult(cause);
@@ -507,9 +515,9 @@ export async function batchReview(
       .select("id, status, source_id")
       .in("id", ids);
 
-    if (loadError || !facts) throw new Error("讀取候選事實失敗");
+    if (loadError || !facts) throw new Error("讀取候選原子命題失敗");
 
-    // 批次操作只作用於「還沒做決定」的候選事實。
+    // 批次操作只作用於「還沒做決定」的候選原子命題。
     // 已核定／已駁回要改判，必須到單筆審核頁明確操作。
     const allowed = facts.filter(
       (fact) =>
@@ -520,7 +528,7 @@ export async function batchReview(
       return {
         status: "error",
         message:
-          "選取的項目都不是待審核或待確認狀態。已核定或已駁回的事實要改判，請進入單筆審核頁。",
+          "選取的項目都不是待審核或待確認狀態。已核定或已駁回的原子命題要改判，請進入單筆審核頁。",
       };
     }
 
@@ -578,7 +586,7 @@ export async function batchReview(
   }
 }
 
-/** 重新抽取某個段落的候選事實。 */
+/** 重新抽取某個段落的候選原子命題。 */
 export async function reextractParagraph(
   sourceId: string,
   paragraphId: string,

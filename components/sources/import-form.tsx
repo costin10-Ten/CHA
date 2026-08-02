@@ -78,7 +78,7 @@ function TextForm() {
           required
           minLength={20}
           rows={10}
-          placeholder="貼上要建立知識庫的原始文字。系統會保存原文、切成段落並標上段落編號，之後每一筆事實都能回溯到這裡。"
+          placeholder="貼上要建立知識庫的原始文字。系統會保存原文、切成段落並標上段落編號，之後每一筆原子命題都能回溯到這裡。"
         />
       </div>
       <SubmitButton label="建立來源" />

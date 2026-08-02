@@ -72,13 +72,13 @@ describe("素材產製提示詞", () => {
   });
 
   it("提示詞明確禁止補充自身知識並要求標註知識編號", () => {
-    expect(GENERATION_SYSTEM_PROMPT).toContain("只使用清單中的事實");
+    expect(GENERATION_SYSTEM_PROMPT).toContain("只使用清單中的原子命題");
     expect(GENERATION_SYSTEM_PROMPT).toContain("[K-0001]");
     expect(GENERATION_SYSTEM_PROMPT).toContain("不得改動數字");
     expect(GENERATION_SYSTEM_PROMPT).toContain("不聳動");
   });
 
-  it("訊息中只帶入證據包內的事實", () => {
+  it("訊息中只帶入證據包內的原子命題", () => {
     const pack = buildEvidencePack("孕婦吃魚", FACTS);
     const messages = buildGenerationMessages(pack, {
       draftType: "faq",
@@ -108,7 +108,7 @@ describe("素材產製提示詞", () => {
 });
 
 describe("Mock Provider 產製素材", () => {
-  it("只引用證據包裡的事實，且產出可通過逐句驗證", async () => {
+  it("只引用證據包裡的原子命題，且產出可通過逐句驗證", async () => {
     const pack = buildEvidencePack("孕婦吃魚", FACTS);
     const provider = new MockProvider();
     const response = await provider.complete({
@@ -129,7 +129,7 @@ describe("Mock Provider 產製素材", () => {
     expect(summary.publishable).toBe(true);
   });
 
-  it("沒有核定事實時說明資料不足，不會自行編寫內容", async () => {
+  it("沒有核定原子命題時說明資料不足，不會自行編寫內容", async () => {
     const pack = buildEvidencePack("完全沒有資料的主題", []);
     const provider = new MockProvider();
     const response = await provider.complete({
@@ -140,7 +140,7 @@ describe("Mock Provider 產製素材", () => {
       }),
     });
 
-    expect(response.text).toContain("核定事實不足");
+    expect(response.text).toContain("核定原子命題不足");
     expect(response.text).not.toMatch(/\[K-\d{4}\]/);
   });
 });
@@ -174,7 +174,7 @@ describe("素材的體裁結構與紅色句子", () => {
     expect(summary.publishable).toBe(true);
   });
 
-  it("加入沒有事實支持的句子後就不可發布", () => {
+  it("加入沒有原子命題支持的句子後就不可發布", () => {
     const body = [
       "1. 孕婦每週攝取旗魚不宜超過 35 公克。 [K-0001]",
       "2. 喝咖啡可以完全清除體內的汞。",
@@ -197,7 +197,7 @@ describe("素材的體裁結構與紅色句子", () => {
     expect(claim?.verdict).toBe("unsupported");
   });
 
-  it("整份都是結構、沒有任何事實主張時不可發布", () => {
+  it("整份都是結構、沒有任何原子命題主張時不可發布", () => {
     const summary = summarizeDraft(
       verifyDraftBody("# 標題\n\n## 小標", verificationFacts()),
     );

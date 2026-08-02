@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { KnowledgeToolbar } from "@/components/knowledge/knowledge-actions";
+import { TypeBadges } from "@/components/facts/type-badges";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -12,11 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  KNOWLEDGE_TYPE_LABEL,
-  RISK_LEVEL_CLASS,
-  RISK_LEVEL_LABEL,
-} from "@/lib/facts/labels";
+import { RISK_LEVEL_CLASS, RISK_LEVEL_LABEL } from "@/lib/facts/labels";
 import { formatDateTime } from "@/lib/jobs/labels";
 import {
   getEmbeddingStatus,
@@ -26,7 +23,7 @@ import {
 import { getCurrentUser } from "@/lib/supabase/server";
 import type { FactStatus, RiskLevel } from "@/lib/supabase/types";
 
-export const metadata: Metadata = { title: "正式事實" };
+export const metadata: Metadata = { title: "正式原子命題" };
 export const dynamic = "force-dynamic";
 
 const STATUS_VALUES: FactStatus[] = ["active", "inactive", "superseded"];
@@ -67,13 +64,13 @@ export default async function KnowledgePage({
 
   return (
     <AppShell
-      title="正式事實"
-      description="經核定的事實。修改會建立新版本，舊版保留並退出搜尋；向量只針對變動的事實重做。"
+      title="正式原子命題"
+      description="經核定的原子命題。修改會建立新版本，舊版保留並退出搜尋；向量只針對變動的原子命題重做。"
       actions={<KnowledgeToolbar pendingCount={stats.approvedPendingPromotion} />}
     >
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-6">
-          <StatTile label="現行事實" value={stats.active} />
+          <StatTile label="現行原子命題" value={stats.active} />
           <StatTile label="已停用" value={stats.inactive} />
           <StatTile label="已被取代" value={stats.superseded} />
           <StatTile label="高風險" value={stats.highRisk} />
@@ -84,7 +81,8 @@ export default async function KnowledgePage({
         {stats.approvedPendingPromotion > 0 && (
           <p className="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
             有 {stats.approvedPendingPromotion}{" "}
-            筆已核定的候選事實尚未寫入正式事實庫， 可用右上角的按鈕批次寫入。
+            筆已核定的候選原子命題尚未寫入正式原子命題庫，
+            可用右上角的按鈕批次寫入。
           </p>
         )}
 
@@ -92,7 +90,7 @@ export default async function KnowledgePage({
           <CardHeader>
             <CardTitle>篩選</CardTitle>
             <CardDescription>
-              預設只顯示現行事實；被取代的版本仍可查閱但不會進入搜尋。
+              預設只顯示現行原子命題；被取代的版本仍可查閱但不會進入搜尋。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -139,7 +137,7 @@ export default async function KnowledgePage({
                 <input
                   name="q"
                   defaultValue={params.q ?? ""}
-                  placeholder="在事實敘述中搜尋"
+                  placeholder="在原子命題敘述中搜尋"
                   className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400"
                 />
               </label>
@@ -166,9 +164,9 @@ export default async function KnowledgePage({
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm text-slate-500">
-                還沒有正式事實。到
+                還沒有正式原子命題。到
                 <Link href="/review" className="mx-1 underline">
-                  候選事實
+                  候選原子命題
                 </Link>
                 核定幾筆，系統會自動寫入這裡並建立向量與關聯。
               </p>
@@ -187,9 +185,7 @@ export default async function KnowledgePage({
                       <Badge className={RISK_LEVEL_CLASS[fact.risk_level]}>
                         {RISK_LEVEL_LABEL[fact.risk_level]}
                       </Badge>
-                      <Badge className="bg-slate-100 text-slate-700">
-                        {KNOWLEDGE_TYPE_LABEL[fact.knowledge_type]}
-                      </Badge>
+                      <TypeBadges types={fact.proposition_types} />
                       <span className="text-xs text-slate-500">
                         v{fact.version}
                       </span>

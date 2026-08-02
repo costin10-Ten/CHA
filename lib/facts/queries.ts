@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type {
   CandidateFactRow,
   CandidateStatus,
-  KnowledgeType,
+  PropositionType,
   ReviewRecordRow,
   RiskLevel,
   SimilarCandidate,
@@ -13,8 +13,8 @@ export interface CandidateFilters {
   sourceId?: string;
   status?: CandidateStatus;
   riskLevel?: RiskLevel;
-  knowledgeType?: KnowledgeType;
-  /** 只列出帶有特定品質標記的候選事實。 */
+  propositionType?: PropositionType;
+  /** 只列出帶有特定品質標記的候選原子命題。 */
   flag?: string;
   limit?: number;
 }
@@ -33,12 +33,12 @@ export async function listCandidateFacts(
   if (filters.sourceId) query = query.eq("source_id", filters.sourceId);
   if (filters.status) query = query.eq("status", filters.status);
   if (filters.riskLevel) query = query.eq("risk_level", filters.riskLevel);
-  if (filters.knowledgeType)
-    query = query.eq("knowledge_type", filters.knowledgeType);
+  if (filters.propositionType)
+    query = query.contains("proposition_types", [filters.propositionType]);
   if (filters.flag) query = query.contains("quality_flags", [filters.flag]);
 
   const { data, error } = await query;
-  if (error) throw new Error(`讀取候選事實失敗：${error.message}`);
+  if (error) throw new Error(`讀取候選原子命題失敗：${error.message}`);
   return data ?? [];
 }
 
@@ -126,11 +126,11 @@ export async function getCandidateFact(
     .eq("id", id)
     .maybeSingle();
 
-  if (error) throw new Error(`讀取候選事實失敗：${error.message}`);
+  if (error) throw new Error(`讀取候選原子命題失敗：${error.message}`);
   return data;
 }
 
-/** 取回段落前後文，讓審核時能判斷事實是否超出原文。 */
+/** 取回段落前後文，讓審核時能判斷原子命題是否超出原文。 */
 export async function getParagraphContext(
   sourceVersionId: string,
   paragraphId: string,
@@ -173,7 +173,7 @@ export async function listReviewRecords(
   return data ?? [];
 }
 
-/** 以三元組相似度找出相似的既有事實，避免重複核定。 */
+/** 以三元組相似度找出相似的既有原子命題，避免重複核定。 */
 export async function findSimilarCandidates(
   ownerId: string,
   statement: string,

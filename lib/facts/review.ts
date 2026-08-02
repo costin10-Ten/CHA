@@ -1,4 +1,4 @@
-import type { CandidateStatus } from "@/lib/supabase/types";
+import type { CandidateStatus, PropositionType } from "@/lib/supabase/types";
 
 /**
  * 審核流程的純邏輯：狀態轉換規則、輸入驗證與差異計算。
@@ -26,7 +26,7 @@ export const REVIEW_ACTION_LABEL: Record<ReviewAction, string> = {
   reopen: "退回待審核",
 };
 
-/** 每個動作完成後候選事實的狀態。 */
+/** 每個動作完成後候選原子命題的狀態。 */
 export const ACTION_RESULT_STATUS: Record<ReviewAction, CandidateStatus | null> = {
   approve: "approved",
   approve_with_edit: "approved",
@@ -40,9 +40,9 @@ export const ACTION_RESULT_STATUS: Record<ReviewAction, CandidateStatus | null> 
 
 /**
  * 允許的狀態轉換。
- * 已合併或已拆分的事實是歷史紀錄，不可再直接審核，只能退回待審核。
+ * 已合併或已拆分的原子命題是歷史紀錄，不可再直接審核，只能退回待審核。
  *
- * 已駁回的事實**不能一步核定**：必須先「退回待審核」，
+ * 已駁回的原子命題**不能一步核定**：必須先「退回待審核」，
  * 讓人重新看過一次原文與敘述，才能核定。
  * 駁回代表「這句話不成立」，推翻這個判斷應該是有意識的兩個動作，
  * 不該和一般核定混在同一批操作裡。
@@ -68,7 +68,7 @@ const ALLOWED_ACTIONS: Record<CandidateStatus, ReviewAction[]> = {
  *
  * 單筆審核頁可以推翻既有決定（畫面上看得到目前狀態、要按到那一筆）；
  * 批次操作不行——一次幾十筆的動作不該有能力翻掉已經做過的判斷。
- * 這是全選誤把已駁回事實一起核定的防線。
+ * 這是全選誤把已駁回原子命題一起核定的防線。
  */
 export const BATCH_REVIEWABLE_STATUSES: CandidateStatus[] = [
   "pending",
@@ -101,10 +101,10 @@ export const MAX_STATEMENT_LENGTH = 500;
 export function validateStatement(statement: string): string | null {
   const trimmed = statement.trim();
   if (trimmed.length < MIN_STATEMENT_LENGTH) {
-    return `事實敘述至少需要 ${MIN_STATEMENT_LENGTH} 個字`;
+    return `原子命題敘述至少需要 ${MIN_STATEMENT_LENGTH} 個字`;
   }
   if (trimmed.length > MAX_STATEMENT_LENGTH) {
-    return `事實敘述不可超過 ${MAX_STATEMENT_LENGTH} 個字`;
+    return `原子命題敘述不可超過 ${MAX_STATEMENT_LENGTH} 個字`;
   }
   return null;
 }
@@ -118,7 +118,7 @@ export function parseSplitStatements(input: string): string[] {
 }
 
 export function validateSplit(statements: string[]): string | null {
-  if (statements.length < 2) return "拆分至少要有兩筆事實，每行一筆";
+  if (statements.length < 2) return "拆分至少要有兩筆原子命題，每行一筆";
   for (const statement of statements) {
     const error = validateStatement(statement);
     if (error) return `「${statement.slice(0, 20)}」：${error}`;
@@ -127,7 +127,7 @@ export function validateSplit(statements: string[]): string | null {
 }
 
 export function validateMerge(ids: string[]): string | null {
-  if (ids.length < 2) return "合併至少要選取兩筆候選事實";
+  if (ids.length < 2) return "合併至少要選取兩筆候選原子命題";
   return null;
 }
 
@@ -136,7 +136,7 @@ export interface EditableFields {
   subject: string | null;
   predicate: string | null;
   object: string | null;
-  knowledge_type: string;
+  proposition_types: PropositionType[];
   risk_level: string;
   conditions: Record<string, string | null>;
 }

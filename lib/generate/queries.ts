@@ -42,7 +42,7 @@ export interface DraftFact {
   source_quote: string;
 }
 
-/** 草稿使用的核定事實，依知識編號排序，供介面對照。 */
+/** 草稿使用的核定原子命題，依知識編號排序，供介面對照。 */
 export async function listDraftFacts(
   draft: CommunicationDraftRow,
 ): Promise<DraftFact[]> {

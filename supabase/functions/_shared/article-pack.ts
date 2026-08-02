@@ -1,13 +1,13 @@
 import { quoteExistsInParagraph } from "./quality.ts";
 
 /**
- * 文章包：在對話或其他工具中整理好的文章，連同段落、候選事實、
- * 審核紀錄與正式事實一次匯入。
+ * 文章包：在對話或其他工具中整理好的文章，連同段落、候選原子命題、
+ * 審核紀錄與正式原子命題一次匯入。
  *
  * 設計原則是「寬進嚴審」：
  * - 能自動補的就自動補（欄位別名、列舉值、段落編號、字元位置）
  * - 補不了的只跳過那一筆，其餘照常匯入，不會整包擋下
- * - 唯一不放寬的是可回溯性：每一筆事實都要有真正的原文可對照
+ * - 唯一不放寬的是可回溯性：每一筆原子命題都要有真正的原文可對照
  *
  * 引句對不上原文時不再擋下，而是退回「以整段原文為依據」並強制回到待審核。
  * 這樣既不會因為引句抓得不精準就匯不進來，也不會讓對不上的引句被當成已核定。
@@ -33,13 +33,16 @@ export function isContentPlaceholder(value: unknown): boolean {
   );
 }
 
-export const KNOWLEDGE_TYPES = [
-  "substance",
-  "concept",
-  "policy",
+export const PROPOSITION_TYPES = [
+  "substance_property",
+  "chemistry_concept",
   "event",
-  "topic",
-  "other",
+  "agency_topic",
+  "toxicology_mechanism",
+  "domestic_policy",
+  "foreign_policy",
+  "research_literature",
+  "health_advice",
 ];
 export const RISK_LEVELS = ["low", "medium", "high"];
 export const CANDIDATE_STATUSES = [
@@ -62,24 +65,70 @@ export const REVIEW_ACTIONS = [
   "external_correction",
 ];
 
-/** 中文與常見寫法一律接受，對不上才回落預設值。 */
-const KNOWLEDGE_TYPE_ALIASES: Record<string, string> = {
-  物質: "substance",
-  化學物質: "substance",
-  substance: "substance",
-  概念: "concept",
-  機制: "concept",
-  concept: "concept",
-  法規: "policy",
-  政策: "policy",
-  法規政策: "policy",
-  policy: "policy",
+/**
+ * 分類的中文與常見寫法一律接受。
+ *
+ * 分類可複選，所以認不得的值是「丟掉這一個」而不是「整筆回落成某一類」；
+ * 全部認不得就是空陣列＝未分類。舊的六類寫法也留著對應，
+ * 讓早期整理的原子命題包還匯得進來。
+ */
+const PROPOSITION_TYPE_ALIASES: Record<string, string> = {
+  物質與物理化學性質: "substance_property",
+  物質: "substance_property",
+  化學物質: "substance_property",
+  物理化學性質: "substance_property",
+  substance: "substance_property",
+  substance_property: "substance_property",
+
+  化學基本概念: "chemistry_concept",
+  基本概念: "chemistry_concept",
+  概念: "chemistry_concept",
+  concept: "chemistry_concept",
+  chemistry_concept: "chemistry_concept",
+
   事件: "event",
   event: "event",
-  主題: "topic",
-  topic: "topic",
-  其他: "other",
-  other: "other",
+
+  化學署主題: "agency_topic",
+  署內主題: "agency_topic",
+  主題: "agency_topic",
+  topic: "agency_topic",
+  agency_topic: "agency_topic",
+
+  毒理與反應機制: "toxicology_mechanism",
+  毒理: "toxicology_mechanism",
+  毒理機制: "toxicology_mechanism",
+  反應機制: "toxicology_mechanism",
+  機制: "toxicology_mechanism",
+  toxicology: "toxicology_mechanism",
+  toxicology_mechanism: "toxicology_mechanism",
+
+  國內治理政策: "domestic_policy",
+  國內政策: "domestic_policy",
+  國內法規: "domestic_policy",
+  法規: "domestic_policy",
+  政策: "domestic_policy",
+  法規政策: "domestic_policy",
+  policy: "domestic_policy",
+  domestic_policy: "domestic_policy",
+
+  國外治理政策: "foreign_policy",
+  國外政策: "foreign_policy",
+  國外法規: "foreign_policy",
+  國際政策: "foreign_policy",
+  foreign_policy: "foreign_policy",
+
+  研究與期刊: "research_literature",
+  研究: "research_literature",
+  期刊: "research_literature",
+  文獻: "research_literature",
+  research: "research_literature",
+  research_literature: "research_literature",
+
+  醫學健康建議: "health_advice",
+  健康建議: "health_advice",
+  醫療建議: "health_advice",
+  health_advice: "health_advice",
 };
 
 const RISK_LEVEL_ALIASES: Record<string, string> = {
@@ -156,7 +205,7 @@ export interface PackCandidate {
   subject: string | null;
   predicate: string | null;
   object: string | null;
-  knowledge_type: string;
+  proposition_types: string[];
   conditions: Record<string, string | null>;
   source_quote: string;
   source_paragraph_id: string;
@@ -222,7 +271,7 @@ export interface NormalizedArticle {
   reviews: PackReview[];
   knowledgeFacts: PackKnowledgeFact[];
   jobs: PackJob[];
-  /** 事實包裡標為駁回、因此沒有匯入的編號。 */
+  /** 原子命題包裡標為駁回、因此沒有匯入的編號。 */
   droppedRejected: string[];
 }
 
@@ -239,7 +288,7 @@ export interface PackSummary {
   chunks: number;
   candidates: number;
   approved: number;
-  /** 事實包裡標為駁回、被略過不匯入的筆數。 */
+  /** 原子命題包裡標為駁回、被略過不匯入的筆數。 */
   rejected: number;
   needsFix: number;
   knowledgeFacts: number;
@@ -300,6 +349,50 @@ function coerce(
   return { value: fallback, coerced: true };
 }
 
+/**
+ * 分類專用的正規化：可複選，所以回傳陣列。
+ *
+ * 接受單一字串、以頓號／逗號／斜線分隔的字串，或字串陣列。
+ * 認不得的值放進 dropped 回報，不會拖垮整筆——分類本來就可以是空的。
+ */
+export function coerceTypes(raw: unknown): {
+  value: string[];
+  dropped: string[];
+} {
+  const candidates: string[] = [];
+
+  if (Array.isArray(raw)) {
+    for (const item of raw) candidates.push(text(item));
+  } else {
+    const single = text(raw).trim();
+    if (single) candidates.push(...single.split(/[、，,／/|]/u));
+  }
+
+  const value: string[] = [];
+  const dropped: string[] = [];
+
+  for (const candidate of candidates) {
+    const input = candidate.trim();
+    if (!input) continue;
+
+    const mapped = PROPOSITION_TYPES.includes(input)
+      ? input
+      : (PROPOSITION_TYPE_ALIASES[input] ??
+        PROPOSITION_TYPE_ALIASES[input.toLowerCase()]);
+
+    if (!mapped) {
+      // 舊的「其他」不是分類，是「沒有分類」，靜靜丟掉不必回報。
+      if (input !== "其他" && input.toLowerCase() !== "other") {
+        dropped.push(input);
+      }
+      continue;
+    }
+    if (!value.includes(mapped)) value.push(mapped);
+  }
+
+  return { value, dropped };
+}
+
 /** 解析參照：$candidate_facts[C001].id → C001，也接受直接寫 C001。 */
 export function candidateRef(value: unknown): string | null {
   const raw = text(value).trim();
@@ -349,8 +442,8 @@ function normalizeParagraphId(raw: unknown, index: number): string {
 // --- 主流程 ----------------------------------------------------------------
 
 const NO_SOURCE_HINT =
-  "每一筆事實都要有可對照的原文：在 document_chunks 提供該段落的文字，" +
-  "或直接在這筆事實裡加 paragraph_text 欄位。";
+  "每一筆原子命題都要有可對照的原文：在 document_chunks 提供該段落的文字，" +
+  "或直接在這筆原子命題裡加 paragraph_text 欄位。";
 
 /**
  * 驗證並正規化文章包。
@@ -501,7 +594,7 @@ function normalizeArticle(
         level: "warning",
         where: `${label}.段落 ${paragraphId}`,
         message:
-          "段落沒有實際文字，改由引用它的事實自帶原文（若也沒有就跳過該筆事實）",
+          "段落沒有實際文字，改由引用它的原子命題自帶原文（若也沒有就跳過該筆原子命題）",
         hint: NO_SOURCE_HINT,
       });
       return;
@@ -529,22 +622,22 @@ function normalizeArticle(
     });
   });
 
-  // --- 候選事實 -----------------------------------------------------------
+  // --- 候選原子命題 -----------------------------------------------------------
   const candidateRows = asArray(
-    pick(raw, "candidate_facts", "facts", "candidates", "事實"),
+    pick(raw, "candidate_facts", "facts", "candidates", "原子命題", "命題", "事實"),
   );
 
   if (candidateRows.length === 0) {
     issues.push({
       level: "error",
       where: `${label}.candidate_facts`,
-      message: "沒有任何事實，這一篇整篇跳過",
+      message: "沒有任何原子命題，這一篇整篇跳過",
     });
     return null;
   }
 
   const candidates = new Map<string, PackCandidate>();
-  /** 事實包裡標為駁回、因此不匯入的編號。 */
+  /** 原子命題包裡標為駁回、因此不匯入的編號。 */
   const rejectedRefs: string[] = [];
 
   candidateRows.forEach((item, index) => {
@@ -566,14 +659,24 @@ function normalizeArticle(
     }
 
     const statement = text(
-      pick(row, "statement", "fact", "sentence", "text", "事實", "敘述"),
+      pick(
+        row,
+        "statement",
+        "fact",
+        "sentence",
+        "text",
+        "原子命題",
+        "命題",
+        "事實",
+        "敘述",
+      ),
     ).trim();
 
     if (statement.length < 2) {
       issues.push({
         level: "error",
         where,
-        message: "沒有事實敘述，這一筆跳過",
+        message: "沒有原子命題敘述，這一筆跳過",
       });
       return;
     }
@@ -585,17 +688,17 @@ function normalizeArticle(
       "pending",
     );
 
-    // 標為駁回的事實不匯入。
+    // 標為駁回的原子命題不匯入。
     //
-    // 駁回代表整理者已經判定「這句話不成立」。把它建成候選事實只會讓
+    // 駁回代表整理者已經判定「這句話不成立」。把它建成候選原子命題只會讓
     // 不成立的句子躺在待審清單裡，等著被全選批次核定一起放行——
-    // 這正是先前發生過的事。要留紀錄請留在事實包裡，不要進資料庫。
+    // 這正是先前發生過的事。要留紀錄請留在原子命題包裡，不要進資料庫。
     if (statusResult.value === "rejected") {
       rejectedRefs.push(ref);
       return;
     }
 
-    // 段落：用指定的編號找；找不到就看這筆事實有沒有自帶原文。
+    // 段落：用指定的編號找；找不到就看這筆原子命題有沒有自帶原文。
     const paragraphId = normalizeParagraphId(
       pick(row, "source_paragraph_id", "paragraph_id", "paragraph", "段落"),
       index,
@@ -612,7 +715,7 @@ function normalizeArticle(
     let chunk = chunks.get(paragraphId);
 
     if (!chunk && !isContentPlaceholder(inlineText) && text(inlineText).trim()) {
-      // 事實自帶原文時就地補一個段落，不需要另外寫 document_chunks。
+      // 原子命題自帶原文時就地補一個段落，不需要另外寫 document_chunks。
       chunk = {
         paragraph_id: paragraphId,
         position: chunks.size,
@@ -659,17 +762,24 @@ function normalizeArticle(
       });
     }
 
-    const knowledgeType = coerce(
-      pick(row, "knowledge_type", "type", "知識類型"),
-      KNOWLEDGE_TYPE_ALIASES,
-      KNOWLEDGE_TYPES,
-      "other",
+    const typeResult = coerceTypes(
+      pick(
+        row,
+        "proposition_types",
+        "knowledge_type",
+        "type",
+        "types",
+        "分類",
+        "知識類型",
+        "命題分類",
+      ),
     );
-    if (knowledgeType.coerced) {
+    if (typeResult.dropped.length > 0) {
       issues.push({
         level: "warning",
         where,
-        message: `knowledge_type 無法辨識，改用 ${knowledgeType.value}`,
+        message: `分類「${typeResult.dropped.join("、")}」無法辨識，已略過`,
+        hint: "分類可複選，認不得的值只會被丟掉，其餘照常匯入；全部認不得就是未分類。",
       });
     }
 
@@ -717,7 +827,7 @@ function normalizeArticle(
       subject: text(pick(row, "subject", "主體")) || null,
       predicate: text(pick(row, "predicate", "關係")) || null,
       object: text(pick(row, "object", "客體")) || null,
-      knowledge_type: knowledgeType.value,
+      proposition_types: typeResult.value,
       conditions,
       source_quote: quote,
       source_paragraph_id: chunk.paragraph_id,
@@ -749,10 +859,12 @@ function normalizeArticle(
     issues.push({
       level: "warning",
       where: `${label}.facts`,
-      message: `略過 ${rejectedRefs.length} 筆標為駁回的事實（${rejectedRefs
+      message: `略過 ${rejectedRefs.length} 筆標為駁回的原子命題（${rejectedRefs
         .slice(0, 5)
-        .join("、")}${rejectedRefs.length > 5 ? " 等" : ""}），駁回的事實不會匯入`,
-      hint: "駁回代表這句話不成立，建立成候選事實只會增加被誤放行的機會。要保留紀錄請留在事實包檔案裡。",
+        .join(
+          "、",
+        )}${rejectedRefs.length > 5 ? " 等" : ""}），駁回的原子命題不會匯入`,
+      hint: "駁回代表這句話不成立，建立成候選原子命題只會增加被誤放行的機會。要保留紀錄請留在原子命題包檔案裡。",
     });
   }
 
@@ -762,8 +874,8 @@ function normalizeArticle(
       where: `${label}`,
       message:
         rejectedRefs.length > 0
-          ? "這一篇的事實全部標為駁回，沒有可匯入的內容"
-          : "沒有任何可用的事實，這一篇整篇跳過",
+          ? "這一篇的原子命題全部標為駁回，沒有可匯入的內容"
+          : "沒有任何可用的原子命題，這一篇整篇跳過",
     });
     return null;
   }
@@ -782,7 +894,7 @@ function normalizeArticle(
         issues.push({
           level: "warning",
           where: `${label}.審核紀錄 ${index + 1}`,
-          message: "對應不到事實，略過這筆紀錄",
+          message: "對應不到原子命題，略過這筆紀錄",
         });
         return;
       }
@@ -818,14 +930,14 @@ function normalizeArticle(
     },
   );
 
-  // --- 正式事實 -----------------------------------------------------------
+  // --- 正式原子命題 -----------------------------------------------------------
   const knowledgeFacts: PackKnowledgeFact[] = [];
-  asArray(pick(raw, "knowledge_facts", "final_facts", "正式事實")).forEach(
+  asArray(pick(raw, "knowledge_facts", "final_facts", "正式原子命題")).forEach(
     (item, index) => {
       const row = asRecord(item);
       if (!row) return;
 
-      const where = `${label}.正式事實 ${text(pick(row, "ref")) || index + 1}`;
+      const where = `${label}.正式原子命題 ${text(pick(row, "ref")) || index + 1}`;
       const ref = candidateRef(
         pick(row, "candidate_fact_id", "candidate_ref", "from", "編號"),
       );
@@ -834,7 +946,8 @@ function normalizeArticle(
         issues.push({
           level: "warning",
           where,
-          message: "對應不到事實，略過。正式事實必須由某一筆事實核定而來。",
+          message:
+            "對應不到原子命題，略過。正式原子命題必須由某一筆原子命題核定而來。",
         });
         return;
       }
@@ -844,9 +957,9 @@ function normalizeArticle(
         issues.push({
           level: "warning",
           where,
-          message: `對應的事實 ${ref} 目前是${candidate.status}，略過這筆正式事實`,
+          message: `對應的原子命題 ${ref} 目前是${candidate.status}，略過這筆正式原子命題`,
           hint: candidate.quote_fallback
-            ? "因為引句對不上原文而退回待審核，核定後就會產生正式事實。"
+            ? "因為引句對不上原文而退回待審核，核定後就會產生正式原子命題。"
             : undefined,
         });
         return;

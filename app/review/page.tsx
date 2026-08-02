@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import {
   CANDIDATE_STATUS_LABEL,
-  KNOWLEDGE_TYPE_LABEL,
+  PROPOSITION_TYPE_LABEL,
   RISK_LEVEL_LABEL,
   qualityFlagLabel,
 } from "@/lib/facts/labels";
@@ -23,13 +23,13 @@ import {
   listSourceOptions,
 } from "@/lib/facts/queries";
 import { getCurrentUser } from "@/lib/supabase/server";
-import type {
-  CandidateStatus,
-  KnowledgeType,
-  RiskLevel,
+import {
+  PROPOSITION_TYPES,
+  type CandidateStatus,
+  type RiskLevel,
 } from "@/lib/supabase/types";
 
-export const metadata: Metadata = { title: "候選事實審核" };
+export const metadata: Metadata = { title: "候選原子命題審核" };
 export const dynamic = "force-dynamic";
 
 const STATUS_VALUES: CandidateStatus[] = [
@@ -39,14 +39,7 @@ const STATUS_VALUES: CandidateStatus[] = [
   "needs_fix",
 ];
 const RISK_VALUES: RiskLevel[] = ["low", "medium", "high"];
-const TYPE_VALUES: KnowledgeType[] = [
-  "substance",
-  "concept",
-  "policy",
-  "event",
-  "topic",
-  "other",
-];
+const TYPE_VALUES = PROPOSITION_TYPES;
 const FLAG_VALUES = [
   "number_mismatch",
   "incomplete_subject",
@@ -98,8 +91,8 @@ export default async function ReviewPage({
 
   return (
     <AppShell
-      title="候選事實"
-      description="AI 拆出的候選事實與自動品質檢查結果。核定、修正與駁回等操作在 Phase 4 加入。"
+      title="候選原子命題"
+      description="AI 拆出的候選原子命題與自動品質檢查結果。核定、修正與駁回等操作在 Phase 4 加入。"
     >
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -114,7 +107,7 @@ export default async function ReviewPage({
           <CardHeader>
             <CardTitle>篩選</CardTitle>
             <CardDescription>
-              可依來源文件、審核狀態、風險等級、知識類型與品質標記篩選。
+              可依來源文件、審核狀態、風險等級、命題分類與品質標記篩選。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -146,11 +139,11 @@ export default async function ReviewPage({
                 ))}
               </Select>
 
-              <Select name="type" label="知識類型" value={params.type}>
+              <Select name="type" label="命題分類" value={params.type}>
                 <option value="">全部</option>
                 {TYPE_VALUES.map((value) => (
                   <option key={value} value={value}>
-                    {KNOWLEDGE_TYPE_LABEL[value]}
+                    {PROPOSITION_TYPE_LABEL[value]}
                   </option>
                 ))}
               </Select>
@@ -186,7 +179,7 @@ export default async function ReviewPage({
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm text-slate-500">
-                沒有符合條件的候選事實。先到
+                沒有符合條件的候選原子命題。先到
                 <Link href="/sources" className="mx-1 underline">
                   來源
                 </Link>

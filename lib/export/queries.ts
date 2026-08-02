@@ -17,7 +17,7 @@ import type { CandidateFilters } from "@/lib/facts/queries";
  */
 
 const FACT_COLUMNS =
-  "id, statement, subject, predicate, object, knowledge_type, risk_level, status, version, conditions, source_id, source_paragraph_id, source_quote, created_at";
+  "id, statement, subject, predicate, object, proposition_types, risk_level, status, version, conditions, source_id, source_paragraph_id, source_quote, created_at";
 const SOURCE_COLUMNS =
   "id, title, source_type, origin_url, content_hash, created_at";
 
@@ -40,7 +40,7 @@ export async function loadFactBundle(sourceId?: string): Promise<ExportBundle> {
   if (sourceId) query = query.eq("source_id", sourceId);
 
   const { data: facts, error } = await query;
-  if (error) throw new Error(`讀取正式事實失敗：${error.message}`);
+  if (error) throw new Error(`讀取正式原子命題失敗：${error.message}`);
 
   const sourceIds = [...new Set((facts ?? []).map((fact) => fact.source_id))];
   const { data: sources } = sourceIds.length
@@ -94,7 +94,7 @@ export async function loadDocumentExport(
   };
 }
 
-/** 待選事實包：候選事實 + 原文段落全文。 */
+/** 待選原子命題包：候選原子命題 + 原文段落全文。 */
 export async function loadCandidatePackFacts(
   filters: CandidateFilters = {},
 ): Promise<PackFact[]> {
@@ -109,13 +109,13 @@ export async function loadCandidatePackFacts(
   query = query.eq("status", filters.status ?? "pending");
   if (filters.sourceId) query = query.eq("source_id", filters.sourceId);
   if (filters.riskLevel) query = query.eq("risk_level", filters.riskLevel);
-  if (filters.knowledgeType) {
-    query = query.eq("knowledge_type", filters.knowledgeType);
+  if (filters.propositionType) {
+    query = query.contains("proposition_types", [filters.propositionType]);
   }
   if (filters.flag) query = query.contains("quality_flags", [filters.flag]);
 
   const { data: candidates, error } = await query;
-  if (error) throw new Error(`讀取候選事實失敗：${error.message}`);
+  if (error) throw new Error(`讀取候選原子命題失敗：${error.message}`);
   if (!candidates || candidates.length === 0) return [];
 
   const sourceIds = [...new Set(candidates.map((fact) => fact.source_id))];
@@ -145,7 +145,7 @@ export async function loadCandidatePackFacts(
       subject: fact.subject,
       predicate: fact.predicate,
       object: fact.object,
-      knowledge_type: fact.knowledge_type,
+      proposition_types: fact.proposition_types,
       risk_level: fact.risk_level,
       conditions: (fact.conditions ?? {}) as Record<string, string | null>,
       source_quote: fact.source_quote,

@@ -14,9 +14,9 @@ import { getCurrentUser } from "@/lib/supabase/server";
 const PIPELINE = [
   "貼入文字／上傳檔案／輸入網址",
   "保存原始資料與版本",
-  "AI 拆成一句一事的候選事實",
+  "AI 拆成一句一事的候選原子命題",
   "單人審核、修正、駁回、拆分或合併",
-  "建立正式事實知識庫",
+  "建立正式原子命題知識庫",
   "標籤、實體、關聯與向量索引",
   "混合搜尋與 AI 問答",
   "回答逐句驗證",
@@ -39,7 +39,7 @@ export default async function HomePage() {
             個人知識庫與風險溝通產製系統
           </h1>
           <p className="max-w-2xl text-slate-600">
-            所有對外內容都必須回溯到「經你核定的事實」與其原始來源片段。AI
+            所有對外內容都必須回溯到「經你核定的原子命題」與其原始來源片段。AI
             負責拆解與草擬，核定權在你手上。
           </p>
           <div className="flex flex-wrap gap-3 pt-2">

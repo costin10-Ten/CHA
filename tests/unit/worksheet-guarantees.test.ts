@@ -66,7 +66,7 @@ describe("混合搜尋", () => {
     expect(fn).toContain("operator(extensions.<=>)");
   });
 
-  it("只回傳現行事實，舊版本不會混進搜尋結果", () => {
+  it("只回傳現行原子命題，舊版本不會混進搜尋結果", () => {
     const fn = sql.slice(sql.indexOf("function public.search_knowledge_facts"));
     expect(fn).toContain("'active'");
   });
@@ -89,11 +89,11 @@ describe("發布阻擋", () => {
     expect(fn).toContain("'blocked'");
   });
 
-  it("沒有原文片段的候選事實不得寫入正式事實庫", () => {
+  it("沒有原文片段的候選原子命題不得寫入正式原子命題庫", () => {
     const fn = sql.slice(sql.indexOf("function public.promote_candidate_fact"));
 
-    expect(fn).toContain("缺少原文片段的事實不得寫入正式事實庫");
-    expect(fn).toContain("只有已核定的候選事實可以寫入正式事實庫");
+    expect(fn).toContain("缺少原文片段的原子命題不得寫入正式原子命題庫");
+    expect(fn).toContain("只有已核定的候選原子命題可以寫入正式原子命題庫");
   });
 });
 

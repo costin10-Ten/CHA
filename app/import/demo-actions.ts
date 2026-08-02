@@ -15,7 +15,7 @@ import { createClient, getCurrentUser } from "@/lib/supabase/server";
  * 載入示範資料（工作單第 22 節）。
  *
  * 走與一般匯入完全相同的路徑：同一個驗證器、同一個匯入流程、
- * 正式事實一樣經 promote_candidate_fact 產生。
+ * 正式原子命題一樣經 promote_candidate_fact 產生。
  * 示範資料因此不是特例，而是這條流程本身的證明。
  */
 
@@ -46,10 +46,10 @@ export async function loadDemoData(): Promise<DemoResult> {
 
       imported += 1;
       details.push(
-        `${article.title}：${result.created.chunks} 段原文、${result.created.candidates} 筆候選事實、${result.created.knowledgeFacts} 筆正式事實`,
+        `${article.title}：${result.created.chunks} 段原文、${result.created.candidates} 筆候選原子命題、${result.created.knowledgeFacts} 筆正式原子命題`,
       );
 
-      // 用這篇文章的核定事實產製素材，不做跨文章檢索，
+      // 用這篇文章的核定原子命題產製素材，不做跨文章檢索，
       // 示範資料才會與來源一一對應。
       const supabase = await createClient();
       const { data: facts } = await supabase
@@ -93,7 +93,7 @@ export async function loadDemoData(): Promise<DemoResult> {
     return {
       status: "success",
       details,
-      message: `已載入 ${imported} 篇示範文章與 ${drafts} 份素材草稿。可到候選事實、正式事實與素材頁檢視。`,
+      message: `已載入 ${imported} 篇示範文章與 ${drafts} 份素材草稿。可到候選原子命題、正式原子命題與素材頁檢視。`,
     };
   } catch (cause) {
     return {

@@ -65,7 +65,7 @@ export function SourceActions({ sourceId }: { sourceId: string }) {
         onClick={handleExtract}
         disabled={pending}
       >
-        抽取候選事實
+        抽取候選原子命題
       </Button>
       <Button
         variant="destructive"

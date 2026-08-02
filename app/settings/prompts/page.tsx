@@ -144,7 +144,7 @@ export default async function PromptSettingsPage() {
           <CardContent>
             {feedback.length === 0 ? (
               <p className="text-sm text-slate-500">
-                目前沒有回報。到候選事實審核時，按「回報抽取問題」即可記錄。
+                目前沒有回報。到候選原子命題審核時，按「回報抽取問題」即可記錄。
               </p>
             ) : (
               <ul className="space-y-3">

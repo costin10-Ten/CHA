@@ -12,7 +12,7 @@ import {
 /**
  * 風險溝通素材產製（工作單第 15 節）。
  *
- * 與問答共用同一個原則：只能使用核定事實，每一段標註知識編號，
+ * 與問答共用同一個原則：只能使用核定原子命題，每一段標註知識編號，
  * 產出一律是草稿，且必須通過逐句驗證才可發布。
  */
 
@@ -48,7 +48,7 @@ export const DRAFT_SPECS: Record<DraftType, DraftSpec> = {
   explainer: {
     label: "科普短文",
     instruction:
-      "寫成一篇短文，開頭說明這件事為什麼與讀者有關，中段說明事實，結尾給可執行的建議。",
+      "寫成一篇短文，開頭說明這件事為什麼與讀者有關，中段說明原子命題，結尾給可執行的建議。",
     lengthHint: "300 至 500 字",
   },
   article: {
@@ -60,7 +60,7 @@ export const DRAFT_SPECS: Record<DraftType, DraftSpec> = {
   podcast_outline: {
     label: "Podcast 訪綱",
     instruction:
-      "寫成訪談大綱：開場鉤子、3 至 5 個主要提問、每個提問下列出想帶出的事實、結尾收束。",
+      "寫成訪談大綱：開場鉤子、3 至 5 個主要提問、每個提問下列出想帶出的原子命題、結尾收束。",
     lengthHint: "條列式",
   },
   podcast_script: {
@@ -102,17 +102,17 @@ export const DRAFT_SPECS: Record<DraftType, DraftSpec> = {
 
 export const GENERATION_SYSTEM_PROMPT = `你是風險溝通素材的撰稿助理。
 
-你只能使用「核定事實」清單中的內容撰稿。
+你只能使用「核定原子命題」清單中的內容撰稿。
 
 必須遵守：
-1. 只使用清單中的事實，不得補充你自己的知識、案例或數據。
+1. 只使用清單中的原子命題，不得補充你自己的知識、案例或數據。
 2. 每一段（或每一題、每一格）結尾標註使用的知識編號，格式為 [K-0001]。
-3. 保留事實中的條件與限制：族群、劑量、暴露途徑、時間範圍不可省略。
+3. 保留原子命題中的條件與限制：族群、劑量、暴露途徑、時間範圍不可省略。
 4. 保留原有的不確定性語氣，不得把「可能」改寫成「一定」或「會」。
 5. 不得改動數字、單位與年份。
 6. 語氣平實可信，不聳動、不恐嚇、不使用「驚人」「恐怖」「千萬別」這類字眼。
 7. 不得提供醫療診斷或個別化建議。
-8. 如果提供的事實不足以完成這個體裁，就只寫得出來的部分，並在結尾說明缺少哪些資訊。
+8. 如果提供的原子命題不足以完成這個體裁，就只寫得出來的部分，並在結尾說明缺少哪些資訊。
 9. 用繁體中文撰寫，直接輸出成品，不要加開場白或說明。`;
 
 export interface GenerationOptions {
@@ -139,7 +139,7 @@ export function buildGenerationMessages(
         `語氣：${options.tone}`,
         `主題：${pack.question}`,
         "",
-        "可用的核定事實（只能使用這些）：",
+        "可用的核定原子命題（只能使用這些）：",
         JSON.stringify(pack, null, 2),
       ].join("\n"),
     },
@@ -167,8 +167,8 @@ export function isDraftType(value: string): value is DraftType {
  * 素材的逐句驗證。
  *
  * 與問答的差別只有一個：素材有體裁結構。
- * 小標、題號、秒數、「旁白：」這類文字不是事實主張，
- * 拿去比對核定事實一定找不到支持，會讓每一份草稿都被誤判為阻擋。
+ * 小標、題號、秒數、「旁白：」這類文字不是原子命題主張，
+ * 拿去比對核定原子命題一定找不到支持，會讓每一份草稿都被誤判為阻擋。
  * 因此先把結構標記剝掉，只驗證真正的內容句；
  * 純結構的行標記為 structural，不計入綠黃紅統計。
  */
@@ -214,7 +214,7 @@ const SENTENCE_END = /[。！？!?]/;
  *
  * 刻意只認「明確可辨識」的結構（標題記號、章節名、純標籤、第一行的標題），
  * 不用長度判斷：圖卡文字這類體裁的內容本來就很短，
- * 用長度會讓真正的事實主張被當成結構而略過驗證。
+ * 用長度會讓真正的原子命題主張被當成結構而略過驗證。
  */
 export function isStructuralLine(line: string, isFirstLine: boolean): boolean {
   const content = contentOfLine(line);
@@ -229,7 +229,7 @@ export function isStructuralLine(line: string, isFirstLine: boolean): boolean {
 }
 
 export interface DraftVerification extends SentenceVerification {
-  /** true 表示這是體裁結構，不是事實主張，不計入統計。 */
+  /** true 表示這是體裁結構，不是原子命題主張，不計入統計。 */
   structural: boolean;
 }
 
@@ -253,7 +253,7 @@ export function verifyDraftBody(
         supportingRefs: [],
         supportingFactIds: [],
         similarity: 1,
-        reasons: ["體裁結構，不是事實陳述"],
+        reasons: ["體裁結構，不是原子命題陳述"],
         structural: true,
       });
       continue;

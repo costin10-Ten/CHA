@@ -102,7 +102,7 @@ export function textToBlocks(input: string): RawBlock[] {
   }));
 }
 
-/** 移除行內 Markdown 記號，讓事實抽取讀到的是乾淨句子。 */
+/** 移除行內 Markdown 記號，讓原子命題抽取讀到的是乾淨句子。 */
 export function stripInlineMarkdown(input: string): string {
   return input
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")

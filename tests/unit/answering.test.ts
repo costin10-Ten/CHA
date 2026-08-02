@@ -36,7 +36,7 @@ describe("formatKnowledgeRef", () => {
 });
 
 describe("buildEvidencePack", () => {
-  it("包含問題與每筆事實的來源定位與版本", () => {
+  it("包含問題與每筆原子命題的來源定位與版本", () => {
     const pack = buildEvidencePack("孕婦吃魚要注意什麼？", [fact()]);
 
     expect(pack.question).toBe("孕婦吃魚要注意什麼？");
@@ -54,7 +54,7 @@ describe("buildEvidencePack", () => {
     expect(pack.facts[0].conditions).toEqual({ population: "孕婦" });
   });
 
-  it("沒有事實時 facts 為空陣列", () => {
+  it("沒有原子命題時 facts 為空陣列", () => {
     expect(buildEvidencePack("問題", []).facts).toEqual([]);
   });
 });
@@ -107,12 +107,12 @@ describe("findUnknownCitations", () => {
 });
 
 describe("declaresInsufficient", () => {
-  it.each(["現有核定事實不足以回答這個問題。", "知識庫中沒有足夠的核定事實。"])(
-    "辨識資料不足的說法：%s",
-    (answer) => {
-      expect(declaresInsufficient(answer)).toBe(true);
-    },
-  );
+  it.each([
+    "現有核定原子命題不足以回答這個問題。",
+    "知識庫中沒有足夠的核定原子命題。",
+  ])("辨識資料不足的說法：%s", (answer) => {
+    expect(declaresInsufficient(answer)).toBe(true);
+  });
 
   it("正常回答不會被誤判", () => {
     expect(declaresInsufficient("甲基汞會累積於大型魚類 [K-0001]。")).toBe(false);
@@ -142,7 +142,7 @@ describe("Mock Provider 的問答模式", () => {
     expect(isAnswerPrompt(messages[1].content)).toBe(true);
   });
 
-  it("只引用證據包中的事實，不捏造內容", async () => {
+  it("只引用證據包中的原子命題，不捏造內容", async () => {
     const pack = buildEvidencePack("孕婦吃魚要注意什麼？", [
       fact(),
       fact({ knowledgeId: "K-0002", statement: "孕婦每週不應攝取超過兩份。" }),

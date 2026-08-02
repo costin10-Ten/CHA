@@ -19,7 +19,7 @@ import {
 import { getCurrentUser } from "@/lib/supabase/server";
 import type {
   CandidateStatus,
-  KnowledgeType,
+  PropositionType,
   RiskLevel,
 } from "@/lib/supabase/types";
 
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
       sourceId,
       status: (params.get("status") as CandidateStatus) || undefined,
       riskLevel: (params.get("risk") as RiskLevel) || undefined,
-      knowledgeType: (params.get("type") as KnowledgeType) || undefined,
+      propositionType: (params.get("type") as PropositionType) || undefined,
       flag: params.get("flag") || undefined,
     });
 
@@ -88,7 +88,7 @@ interface BuildOptions {
   sourceId?: string;
   status?: CandidateStatus;
   riskLevel?: RiskLevel;
-  knowledgeType?: KnowledgeType;
+  propositionType?: PropositionType;
   flag?: string;
 }
 
@@ -109,18 +109,18 @@ async function build(
   }
 
   if (kind === "candidates") {
-    // 待選事實包一律是 JSON：內含欄位說明與校正目標，其他格式承載不了。
+    // 待選原子命題包一律是 JSON：內含欄位說明與校正目標，其他格式承載不了。
     const facts = await loadCandidatePackFacts({
       sourceId: options.sourceId,
       status: options.status ?? "pending",
       riskLevel: options.riskLevel,
-      knowledgeType: options.knowledgeType,
+      propositionType: options.propositionType,
       flag: options.flag,
     });
 
     const scope = options.sourceId
-      ? `來源文件 ${options.sourceId} 的${options.status ?? "pending"}候選事實`
-      : `全部${options.status ?? "pending"}候選事實`;
+      ? `來源文件 ${options.sourceId} 的${options.status ?? "pending"}候選原子命題`
+      : `全部${options.status ?? "pending"}候選原子命題`;
 
     const pack = buildCandidatePack(facts, { scope });
     return {

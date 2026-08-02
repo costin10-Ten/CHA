@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 5：正式事實庫、版本管理、實體與關聯、pgvector 增量索引
+-- Phase 5：正式原子命題庫、版本管理、實體與關聯、pgvector 增量索引
 -- =============================================================================
 
 -- 1. 列舉型別 ---------------------------------------------------------------
@@ -16,7 +16,7 @@ create table if not exists public.knowledge_facts (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users (id) on delete cascade,
 
-  -- 來源溯源：正式事實一定要能回到原文
+  -- 來源溯源：正式原子命題一定要能回到原文
   source_id uuid not null references public.sources (id) on delete cascade,
   source_version_id uuid not null references public.source_versions (id) on delete cascade,
   candidate_fact_id uuid references public.candidate_facts (id) on delete set null,
@@ -44,8 +44,8 @@ create table if not exists public.knowledge_facts (
 );
 
 comment on table public.knowledge_facts is
-  '經人工核定的正式事實。修改時建立新版本並把舊版標為 superseded，歷史完整保留。';
-comment on column public.knowledge_facts.supersedes is '本版取代的舊版事實。';
+  '經人工核定的正式原子命題。修改時建立新版本並把舊版標為 superseded，歷史完整保留。';
+comment on column public.knowledge_facts.supersedes is '本版取代的舊版原子命題。';
 
 create index if not exists knowledge_facts_owner_idx
   on public.knowledge_facts (owner_id, created_at desc);
@@ -57,7 +57,7 @@ create index if not exists knowledge_facts_fts_idx
   on public.knowledge_facts using gin (to_tsvector('simple', statement));
 create index if not exists knowledge_facts_trgm_idx
   on public.knowledge_facts using gin (statement extensions.gin_trgm_ops);
--- 同一位使用者的現行事實不得重複。
+-- 同一位使用者的現行原子命題不得重複。
 create unique index if not exists knowledge_facts_active_statement_key
   on public.knowledge_facts (owner_id, statement_hash)
   where status = 'active';
@@ -79,7 +79,7 @@ create table if not exists public.fact_versions (
   unique (knowledge_fact_id, version)
 );
 
-comment on table public.fact_versions is '正式事實的每一版快照，供追溯內容變動。';
+comment on table public.fact_versions is '正式原子命題的每一版快照，供追溯內容變動。';
 
 -- 4. entities ---------------------------------------------------------------
 create table if not exists public.entities (
@@ -96,7 +96,7 @@ create table if not exists public.entities (
   unique (owner_id, normalized_name)
 );
 
-comment on table public.entities is '從正式事實的主體與客體整理出的實體。';
+comment on table public.entities is '從正式原子命題的主體與客體整理出的實體。';
 
 create index if not exists entities_owner_idx on public.entities (owner_id, name);
 
@@ -114,7 +114,7 @@ create table if not exists public.relations (
   unique (owner_id, subject_entity_id, predicate, object_entity_id, knowledge_fact_id)
 );
 
-comment on table public.relations is '實體之間的關聯，每一筆都指向支持它的正式事實。';
+comment on table public.relations is '實體之間的關聯，每一筆都指向支持它的正式原子命題。';
 
 create index if not exists relations_owner_idx on public.relations (owner_id);
 create index if not exists relations_subject_idx on public.relations (subject_entity_id);
@@ -135,7 +135,7 @@ create table if not exists public.embedding_records (
 );
 
 comment on table public.embedding_records is
-  '事實向量。修改事實時只停用該筆的舊向量並產生新向量，不重建全部索引。';
+  '原子命題向量。修改原子命題時只停用該筆的舊向量並產生新向量，不重建全部索引。';
 
 create index if not exists embedding_records_fact_idx
   on public.embedding_records (knowledge_fact_id, is_active);
@@ -250,7 +250,7 @@ $$;
 grant execute on function public.upsert_entity(uuid, text, public.knowledge_type) to authenticated;
 grant execute on function public.normalize_entity_name(text) to authenticated;
 
--- 10. 核定候選事實 → 正式事實 -------------------------------------------------
+-- 10. 核定候選原子命題 → 正式原子命題 -------------------------------------------------
 create or replace function public.promote_candidate_fact(p_candidate_id uuid)
 returns uuid
 language plpgsql
@@ -268,18 +268,18 @@ begin
   where id = p_candidate_id and owner_id = (select auth.uid());
 
   if not found then
-    raise exception '找不到候選事實或無權限';
+    raise exception '找不到候選原子命題或無權限';
   end if;
 
   if v_candidate.status <> 'approved' then
-    raise exception '只有已核定的候選事實可以寫入正式事實庫';
+    raise exception '只有已核定的候選原子命題可以寫入正式原子命題庫';
   end if;
 
   if coalesce(btrim(v_candidate.source_quote), '') = '' then
-    raise exception '缺少原文片段的事實不得寫入正式事實庫';
+    raise exception '缺少原文片段的原子命題不得寫入正式原子命題庫';
   end if;
 
-  -- 已經轉過就直接回傳既有的正式事實。
+  -- 已經轉過就直接回傳既有的正式原子命題。
   select id into v_fact_id
   from public.knowledge_facts
   where owner_id = v_candidate.owner_id
@@ -307,7 +307,7 @@ begin
   do nothing
   returning id into v_fact_id;
 
-  -- 內容重複時沿用既有的現行事實。
+  -- 內容重複時沿用既有的現行原子命題。
   if v_fact_id is null then
     select id into v_fact_id
     from public.knowledge_facts
@@ -324,7 +324,7 @@ begin
   )
   values (
     v_candidate.owner_id, v_fact_id, 1, v_candidate.statement, v_candidate.conditions,
-    v_candidate.risk_level, v_candidate.source_quote, '由候選事實核定建立'
+    v_candidate.risk_level, v_candidate.source_quote, '由候選原子命題核定建立'
   );
 
   -- 主體與客體整理成實體，並建立關聯。
@@ -359,7 +359,7 @@ $$;
 
 grant execute on function public.promote_candidate_fact(uuid) to authenticated;
 
--- 11. 修改正式事實：建立新版並停用舊向量 ---------------------------------------
+-- 11. 修改正式原子命題：建立新版並停用舊向量 ---------------------------------------
 create or replace function public.revise_knowledge_fact(
   p_fact_id uuid,
   p_statement text,
@@ -382,7 +382,7 @@ begin
   where id = p_fact_id and owner_id = (select auth.uid());
 
   if not found then
-    raise exception '找不到正式事實或無權限';
+    raise exception '找不到正式原子命題或無權限';
   end if;
 
   if v_old.status = 'superseded' then
@@ -421,7 +421,7 @@ begin
     jsonb_build_object('statement', jsonb_build_object('from', v_old.statement, 'to', p_statement))
   );
 
-  -- 只停用這一筆事實的舊向量，其他事實的索引完全不動。
+  -- 只停用這一筆原子命題的舊向量，其他原子命題的索引完全不動。
   update public.embedding_records
   set is_active = false
   where knowledge_fact_id = v_old.id and is_active;
@@ -439,7 +439,7 @@ $$;
 
 grant execute on function public.revise_knowledge_fact(uuid, text, jsonb, public.risk_level, text) to authenticated;
 
--- 12. 停用／恢復正式事實 -------------------------------------------------------
+-- 12. 停用／恢復正式原子命題 -------------------------------------------------------
 create or replace function public.set_knowledge_fact_status(
   p_fact_id uuid,
   p_status public.fact_status
@@ -458,7 +458,7 @@ begin
   set status = p_status
   where id = p_fact_id and owner_id = (select auth.uid()) and status <> 'superseded';
 
-  -- 停用事實時，其向量一併退出搜尋。
+  -- 停用原子命題時，其向量一併退出搜尋。
   update public.embedding_records
   set is_active = (p_status = 'active')
   where knowledge_fact_id = p_fact_id

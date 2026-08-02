@@ -1,7 +1,7 @@
 import { hasAnyCondition, type RawFact } from "./extraction.ts";
 
 /**
- * 候選事實的自動品質檢查（工作單第 8.3 節）。
+ * 候選原子命題的自動品質檢查（工作單第 8.3 節）。
  *
  * 分兩級：
  * - fatal：無來源片段或片段不在原文 → 直接拒絕，不得進入核定流程
@@ -20,11 +20,13 @@ export const QUALITY_FLAGS = {
   DUPLICATE: "duplicate",
   CONTRADICTION: "contradiction",
   LOW_CONFIDENCE: "low_confidence",
+  /** 分類為「醫學健康建議」但來源不是政府機關。 */
+  HEALTH_ADVICE_SOURCE_NOT_GOV: "health_advice_source_not_gov",
 } as const;
 
 export type QualityFlag = (typeof QUALITY_FLAGS)[keyof typeof QUALITY_FLAGS];
 
-/** 這兩個標記代表事實不可進入核定流程。 */
+/** 這兩個標記代表原子命題不可進入核定流程。 */
 export const FATAL_FLAGS: QualityFlag[] = [
   QUALITY_FLAGS.MISSING_QUOTE,
   QUALITY_FLAGS.QUOTE_NOT_IN_SOURCE,
@@ -42,6 +44,7 @@ const FLAG_PENALTY: Record<QualityFlag, number> = {
   duplicate: 10,
   contradiction: 20,
   low_confidence: 5,
+  health_advice_source_not_gov: 40,
 };
 
 /** 比對用正規化：去除空白與常見全形／半形標點差異。 */
@@ -87,10 +90,39 @@ const CONDITION_MARKERS = [
 ];
 
 export interface QualityContext {
-  /** 該事實所屬段落的原文。 */
+  /** 該原子命題所屬段落的原文。 */
   paragraphText: string;
-  /** 同一批次中先前已接受的事實，用於重複與矛盾偵測。 */
+  /** 同一批次中先前已接受的命題，用於重複與矛盾偵測。 */
   previousStatements?: { statement: string; subject: string | null }[];
+  /** 來源網址，用來判斷「醫學健康建議」是否來自政府機關。 */
+  sourceUrl?: string | null;
+  /**
+   * 來源是否為政府機關。有明確結論時直接給，會蓋過網址判斷——
+   * 上傳的部會 PDF 沒有網址可看，只有人知道它是哪裡來的。
+   */
+  sourceIsGovernment?: boolean | null;
+}
+
+/**
+ * 從網址判斷是否為政府機關。
+ *
+ * 只認網域，不猜內容。認不出來時回傳 false，由呼叫端用
+ * `sourceIsGovernment` 覆寫，或讓它留下標記交人工判斷——
+ * 這個標記的用途是「要人看一眼」，不是「擋下來」。
+ */
+export function isGovernmentSource(url: string | null | undefined): boolean {
+  const value = (url ?? "").trim().toLowerCase();
+  if (!value) return false;
+
+  const host = /^https?:\/\/([^/?#]+)/.exec(value)?.[1] ?? value;
+
+  return (
+    /(^|\.)gov\.tw$/.test(host) ||
+    /(^|\.)gov$/.test(host) ||
+    /(^|\.)gov\.[a-z]{2}$/.test(host) ||
+    /(^|\.)who\.int$/.test(host) ||
+    /(^|\.)europa\.eu$/.test(host)
+  );
 }
 
 export interface QualityResult {
@@ -191,6 +223,17 @@ export function checkFactQuality(
   }
   if (previous.some((item) => isContradiction(item.statement, fact.statement))) {
     flags.push(QUALITY_FLAGS.CONTRADICTION);
+  }
+
+  // 「醫學健康建議」依規定必須來自政府機關來源。
+  // 這裡只標記、不擋下：網域判斷是啟發式的，硬擋會誤傷上傳的部會文件。
+  // 帶著標記的命題不符合批次核定條件，一定要有人單獨看過。
+  if (fact.proposition_types.includes("health_advice")) {
+    const isGov =
+      context.sourceIsGovernment ?? isGovernmentSource(context.sourceUrl);
+    if (!isGov) {
+      flags.push(QUALITY_FLAGS.HEALTH_ADVICE_SOURCE_NOT_GOV);
+    }
   }
 
   const fatal = flags.some((flag) => FATAL_FLAGS.includes(flag));

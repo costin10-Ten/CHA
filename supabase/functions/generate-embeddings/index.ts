@@ -1,10 +1,10 @@
 // Supabase Edge Function：向量產生 worker
 //
-// 只為需要的事實產生向量，不重建全部索引：
-//   - payload.knowledge_fact_id 指定單筆（核定或修改事實時排入）
-//   - 沒有指定時，補齊所有「現行但沒有現行向量」的事實
+// 只為需要的原子命題產生向量，不重建全部索引：
+//   - payload.knowledge_fact_id 指定單筆（核定或修改原子命題時排入）
+//   - 沒有指定時，補齊所有「現行但沒有現行向量」的原子命題
 //
-// 寫入新向量前會先把該筆事實的舊向量停用，
+// 寫入新向量前會先把該筆原子命題的舊向量停用，
 // 因此搜尋永遠只會命中現行版本。
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -60,7 +60,7 @@ interface FactRow {
   conditions: Record<string, string | null> | null;
 }
 
-/** 向量的輸入文字：事實敘述加上條件，讓搜尋能區分不同族群或劑量的版本。 */
+/** 向量的輸入文字：原子命題敘述加上條件，讓搜尋能區分不同族群或劑量的版本。 */
 function buildEmbeddingInput(fact: FactRow): string {
   const conditions = Object.entries(fact.conditions ?? {})
     .filter(([, value]) => value)
@@ -91,11 +91,11 @@ async function processEmbeddingJob(job: {
   if (targetId) query = query.eq("id", targetId);
 
   const { data: facts, error } = await query;
-  if (error) throw new Error(`讀取正式事實失敗：${error.message}`);
+  if (error) throw new Error(`讀取正式原子命題失敗：${error.message}`);
 
   let pending = (facts ?? []) as FactRow[];
 
-  // 未指定單筆時，只補齊沒有現行向量的事實。
+  // 未指定單筆時，只補齊沒有現行向量的原子命題。
   if (!targetId && pending.length > 0) {
     const { data: existing } = await admin
       .from("embedding_records")
@@ -112,7 +112,7 @@ async function processEmbeddingJob(job: {
   }
 
   if (pending.length === 0) {
-    return { embedded: 0, reason: "沒有需要產生向量的事實" };
+    return { embedded: 0, reason: "沒有需要產生向量的原子命題" };
   }
 
   const provider = createEmbeddingProvider(EMBEDDING_CONFIG);
@@ -129,7 +129,7 @@ async function processEmbeddingJob(job: {
     for (let position = 0; position < slice.length; position += 1) {
       const fact = slice[position];
 
-      // 先停用這筆事實既有的向量，再寫入新的，避免同時有兩個現行向量。
+      // 先停用這筆原子命題既有的向量，再寫入新的，避免同時有兩個現行向量。
       await admin
         .from("embedding_records")
         .update({ is_active: false })

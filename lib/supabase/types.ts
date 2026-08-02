@@ -22,8 +22,34 @@ export type JobType =
 export type JobStatus =
   "pending" | "processing" | "completed" | "failed" | "retrying" | "cancelled";
 
-export type KnowledgeType =
-  "substance" | "concept" | "policy" | "event" | "topic" | "other";
+/**
+ * 原子命題的分類，可複選。
+ *
+ * 九類同時涵蓋知識內容、事件類型與治理層級三個面向，彼此本來就會重疊，
+ * 所以命題帶的是一個陣列而不是單一值。空陣列代表未分類。
+ */
+export type PropositionType =
+  | "substance_property"
+  | "chemistry_concept"
+  | "event"
+  | "agency_topic"
+  | "toxicology_mechanism"
+  | "domestic_policy"
+  | "foreign_policy"
+  | "research_literature"
+  | "health_advice";
+
+export const PROPOSITION_TYPES: PropositionType[] = [
+  "substance_property",
+  "chemistry_concept",
+  "event",
+  "agency_topic",
+  "toxicology_mechanism",
+  "domestic_policy",
+  "foreign_policy",
+  "research_literature",
+  "health_advice",
+];
 export type RiskLevel = "low" | "medium" | "high";
 export type CandidateStatus =
   "pending" | "approved" | "rejected" | "needs_fix" | "merged" | "split";
@@ -164,7 +190,7 @@ export type CandidateFactRow = {
   subject: string | null;
   predicate: string | null;
   object: string | null;
-  knowledge_type: KnowledgeType;
+  proposition_types: PropositionType[];
   conditions: FactConditions;
   source_quote: string;
   source_paragraph_id: string;
@@ -203,7 +229,7 @@ export type KnowledgeFactRow = {
   subject: string | null;
   predicate: string | null;
   object: string | null;
-  knowledge_type: KnowledgeType;
+  proposition_types: PropositionType[];
   conditions: FactConditions;
   risk_level: RiskLevel;
   tags: string[];
@@ -237,7 +263,7 @@ export type EntityRow = {
   owner_id: string;
   name: string;
   normalized_name: string;
-  entity_type: KnowledgeType;
+  primary_type: PropositionType | null;
   aliases: string[];
   description: string | null;
   fact_count: number;
@@ -281,7 +307,7 @@ export type SearchResultRow = {
   predicate: string | null;
   object: string | null;
   conditions: FactConditions;
-  knowledge_type: KnowledgeType;
+  proposition_types: PropositionType[];
   risk_level: RiskLevel;
   version: number;
   source_id: string;
@@ -699,7 +725,7 @@ export type Database = {
           p_query?: string;
           p_embedding?: string | null;
           p_source_id?: string | null;
-          p_knowledge_type?: KnowledgeType | null;
+          p_proposition_type?: PropositionType | null;
           p_risk_level?: RiskLevel | null;
           p_entity_id?: string | null;
           p_limit?: number;
@@ -726,7 +752,7 @@ export type Database = {
         Returns: undefined;
       };
       upsert_entity: {
-        Args: { p_owner: string; p_name: string; p_type?: KnowledgeType };
+        Args: { p_owner: string; p_name: string; p_type?: PropositionType | null };
         Returns: string;
       };
       requeue_stale_jobs: {
@@ -749,7 +775,7 @@ export type Database = {
       source_status: SourceStatus;
       job_type: JobType;
       job_status: JobStatus;
-      knowledge_type: KnowledgeType;
+      proposition_type: PropositionType;
       risk_level: RiskLevel;
       candidate_status: CandidateStatus;
       review_action: ReviewActionType;

@@ -27,14 +27,14 @@ export async function listKnowledgeFacts(
     .order("created_at", { ascending: false })
     .limit(filters.limit ?? 100);
 
-  // 預設只列現行事實，被取代的版本不會混進來。
+  // 預設只列現行原子命題，被取代的版本不會混進來。
   query = query.eq("status", filters.status ?? "active");
   if (filters.riskLevel) query = query.eq("risk_level", filters.riskLevel);
   if (filters.sourceId) query = query.eq("source_id", filters.sourceId);
   if (filters.search) query = query.ilike("statement", `%${filters.search}%`);
 
   const { data, error } = await query;
-  if (error) throw new Error(`讀取正式事實失敗：${error.message}`);
+  if (error) throw new Error(`讀取正式原子命題失敗：${error.message}`);
   return data ?? [];
 }
 
@@ -48,11 +48,11 @@ export async function getKnowledgeFact(
     .eq("id", id)
     .maybeSingle();
 
-  if (error) throw new Error(`讀取正式事實失敗：${error.message}`);
+  if (error) throw new Error(`讀取正式原子命題失敗：${error.message}`);
   return data;
 }
 
-/** 同一條事實的所有版本（沿著 supersedes 鏈往回找）。 */
+/** 同一條原子命題的所有版本（沿著 supersedes 鏈往回找）。 */
 export async function listFactHistory(
   fact: KnowledgeFactRow,
 ): Promise<KnowledgeFactRow[]> {
@@ -85,7 +85,7 @@ export async function listFactVersions(
     .eq("knowledge_fact_id", knowledgeFactId)
     .order("version", { ascending: false });
 
-  if (error) throw new Error(`讀取事實版本失敗：${error.message}`);
+  if (error) throw new Error(`讀取原子命題版本失敗：${error.message}`);
   return data ?? [];
 }
 
@@ -226,7 +226,7 @@ export async function listRelations(limit = 200): Promise<RelationWithNames[]> {
   }));
 }
 
-/** 尚未寫入正式事實庫的已核定候選事實。 */
+/** 尚未寫入正式原子命題庫的已核定候選原子命題。 */
 export async function listApprovedPendingPromotion(limit = 500) {
   const supabase = await createClient();
 

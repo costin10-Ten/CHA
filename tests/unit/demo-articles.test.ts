@@ -45,7 +45,7 @@ describe("示範資料（工作單第 22 節）", () => {
   );
 
   it.each(DEMO_ARTICLES.map((article) => [article.title, article] as const))(
-    "%s 的核定事實有主體與客體，才能產生實體與關聯",
+    "%s 的核定原子命題有主體與客體，才能產生實體與關聯",
     (_title, article) => {
       const approved = article.candidates.filter(
         (candidate) => candidate.status === "approved",
@@ -64,7 +64,7 @@ describe("示範資料（工作單第 22 節）", () => {
     },
   );
 
-  it("被駁回的示範事實都寫明了駁回理由", () => {
+  it("被駁回的示範原子命題都寫明了駁回理由", () => {
     for (const article of DEMO_ARTICLES) {
       for (const candidate of article.candidates) {
         if (candidate.status === "rejected" || candidate.status === "needs_fix") {

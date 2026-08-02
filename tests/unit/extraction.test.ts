@@ -52,7 +52,7 @@ describe("EXTRACTION_SYSTEM_PROMPT", () => {
 });
 
 describe("EXTRACTION_JSON_SCHEMA", () => {
-  it("要求每筆事實都有原文片段與段落編號", () => {
+  it("要求每筆原子命題都有原文片段與段落編號", () => {
     const item = (
       EXTRACTION_JSON_SCHEMA.schema.properties as Record<string, { items: unknown }>
     ).facts.items as { required: string[] };
@@ -121,7 +121,7 @@ describe("parseFactsResponse", () => {
             statement: "內容。",
             source_quote: "內容。",
             source_paragraph_id: "P-002",
-            knowledge_type: "不存在的類型",
+            proposition_types: ["不存在的類型", "substance_property"],
             risk_level: "extreme",
             confidence: 5,
           },
@@ -129,7 +129,8 @@ describe("parseFactsResponse", () => {
       }),
     );
 
-    expect(result.facts[0].knowledge_type).toBe("other");
+    // 分類可複選：認不得的丟掉，認得的留下。
+    expect(result.facts[0].proposition_types).toEqual(["substance_property"]);
     expect(result.facts[0].risk_level).toBe("low");
     expect(result.facts[0].confidence).toBe(1);
     expect(result.facts[0].conditions.population).toBeNull();
@@ -166,7 +167,7 @@ describe("MockProvider", () => {
     );
   });
 
-  it("以段落產生候選事實，每句一筆且附原文片段", async () => {
+  it("以段落產生候選原子命題，每句一筆且附原文片段", async () => {
     const provider = new MockProvider();
     const messages = buildExtractionMessages("氫氟酸", [
       {
@@ -185,7 +186,7 @@ describe("MockProvider", () => {
     expect(response.inputTokens).toBeGreaterThan(0);
   });
 
-  it("產出的事實能通過品質檢查（片段確實在原文中）", async () => {
+  it("產出的原子命題能通過品質檢查（片段確實在原文中）", async () => {
     const paragraph =
       "甲基汞可經由食物鏈累積於大型魚類。孕婦每週不應攝取超過兩份。";
     const provider = new MockProvider();

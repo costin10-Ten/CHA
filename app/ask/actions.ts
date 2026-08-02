@@ -22,14 +22,14 @@ import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import type {
   AnswerEvidenceRow,
   Json,
-  KnowledgeType,
+  PropositionType,
   RiskLevel,
 } from "@/lib/supabase/types";
 
 /**
  * AI 問答（工作單第 13 節）。
  *
- * 流程：混合搜尋取出核定事實 → 組證據包 → 送模型 → 保存 session、證據與拆句。
+ * 流程：混合搜尋取出核定原子命題 → 組證據包 → 送模型 → 保存 session、證據與拆句。
  * 模型只看得到證據包，看不到任何未核定內容。
  */
 
@@ -42,7 +42,7 @@ export type AskResult =
 
 export interface AskOptions {
   sourceId?: string;
-  knowledgeType?: KnowledgeType;
+  propositionType?: PropositionType;
   riskLevel?: RiskLevel;
 }
 
@@ -74,11 +74,11 @@ export async function askQuestion(
 
     const supabase = await createClient();
 
-    // 1. 混合搜尋取出候選證據（只會取到現行的核定事實）
+    // 1. 混合搜尋取出候選證據（只會取到現行的核定原子命題）
     const results = await searchKnowledgeFacts({
       query: trimmed,
       sourceId: options.sourceId,
-      knowledgeType: options.knowledgeType,
+      propositionType: options.propositionType,
       riskLevel: options.riskLevel,
       limit: EVIDENCE_LIMIT,
     });
@@ -157,13 +157,13 @@ export async function askQuestion(
       }
     }
 
-    // 4. 沒有任何核定事實時直接回覆資料不足，不呼叫模型
+    // 4. 沒有任何核定原子命題時直接回覆資料不足，不呼叫模型
     if (evidence.length === 0) {
       await supabase
         .from("answer_sessions")
         .update({
           answer:
-            "現有核定事實不足以回答這個問題：知識庫中沒有與這個問題相關的核定事實。請先匯入相關來源並核定事實。",
+            "現有核定原子命題不足以回答這個問題：知識庫中沒有與這個問題相關的核定原子命題。請先匯入相關來源並核定原子命題。",
           insufficient_evidence: true,
           status: "draft",
         })
@@ -173,7 +173,7 @@ export async function askQuestion(
       return {
         status: "success",
         sessionId: session.id,
-        message: "沒有可用的核定事實，已如實回覆資料不足。",
+        message: "沒有可用的核定原子命題，已如實回覆資料不足。",
       };
     }
 
@@ -263,7 +263,7 @@ export async function askQuestion(
     return {
       status: "success",
       sessionId: session.id,
-      message: `已依 ${evidence.length} 筆核定事實作答。`,
+      message: `已依 ${evidence.length} 筆核定原子命題作答。`,
     };
   } catch (cause) {
     return {

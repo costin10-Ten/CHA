@@ -34,7 +34,7 @@ function toError(cause: unknown): KnowledgeResult {
 }
 
 /**
- * 把單筆已核定的候選事實寫入正式事實庫。
+ * 把單筆已核定的候選原子命題寫入正式原子命題庫。
  * 資料庫函式會一併建立版本紀錄、實體與關聯，並排入向量工作。
  */
 export async function promoteCandidate(
@@ -49,16 +49,16 @@ export async function promoteCandidate(
     });
 
     if (error) throw new Error(error.message);
-    if (!data) throw new Error("寫入正式事實失敗");
+    if (!data) throw new Error("寫入正式原子命題失敗");
 
     revalidateKnowledge();
-    return { status: "success", message: "已寫入正式事實庫，並排入向量工作。" };
+    return { status: "success", message: "已寫入正式原子命題庫，並排入向量工作。" };
   } catch (cause) {
     return toError(cause);
   }
 }
 
-/** 把所有尚未寫入的已核定候選事實批次轉為正式事實。 */
+/** 把所有尚未寫入的已核定候選原子命題批次轉為正式原子命題。 */
 export async function promoteAllApproved(): Promise<KnowledgeResult> {
   try {
     await requireUser();
@@ -66,7 +66,7 @@ export async function promoteAllApproved(): Promise<KnowledgeResult> {
     const pending = await listApprovedPendingPromotion();
 
     if (pending.length === 0) {
-      return { status: "error", message: "沒有待寫入的已核定事實" };
+      return { status: "error", message: "沒有待寫入的已核定原子命題" };
     }
 
     let promoted = 0;
@@ -87,7 +87,7 @@ export async function promoteAllApproved(): Promise<KnowledgeResult> {
       message:
         failures.length > 0
           ? `已寫入 ${promoted} 筆，${failures.length} 筆失敗：${failures[0]}`
-          : `已寫入 ${promoted} 筆正式事實，並排入向量工作。`,
+          : `已寫入 ${promoted} 筆正式原子命題，並排入向量工作。`,
     };
   } catch (cause) {
     return toError(cause);
@@ -95,7 +95,7 @@ export async function promoteAllApproved(): Promise<KnowledgeResult> {
 }
 
 /**
- * 修改正式事實。
+ * 修改正式原子命題。
  * 舊版標記為 superseded、舊向量停用，只為新版產生向量。
  */
 export async function reviseFact(
@@ -134,7 +134,7 @@ export async function reviseFact(
   }
 }
 
-/** 停用或恢復正式事實；停用時其向量一併退出搜尋。 */
+/** 停用或恢復正式原子命題；停用時其向量一併退出搜尋。 */
 export async function setFactStatus(
   factId: string,
   status: Extract<FactStatus, "active" | "inactive">,
@@ -154,14 +154,14 @@ export async function setFactStatus(
     return {
       status: "success",
       message:
-        status === "active" ? "已恢復為現行事實。" : "已停用，向量退出搜尋。",
+        status === "active" ? "已恢復為現行原子命題。" : "已停用，向量退出搜尋。",
     };
   } catch (cause) {
     return toError(cause);
   }
 }
 
-/** 補齊缺少向量的事實（不會重建既有向量）。 */
+/** 補齊缺少向量的原子命題（不會重建既有向量）。 */
 export async function rebuildMissingEmbeddings(): Promise<KnowledgeResult> {
   try {
     const user = await requireUser();

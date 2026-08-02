@@ -36,10 +36,10 @@ export function AskForm({ defaultQuestion = "" }: { defaultQuestion?: string }) 
       />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending || question.trim().length < 4}>
-          {pending ? "查詢核定事實並作答中…" : "提問"}
+          {pending ? "查詢核定原子命題並作答中…" : "提問"}
         </Button>
         <p className="text-xs text-slate-500">
-          回答只會使用檢索到的核定事實；沒有相關事實時會直接說明資料不足。
+          回答只會使用檢索到的核定原子命題；沒有相關原子命題時會直接說明資料不足。
         </p>
       </div>
 

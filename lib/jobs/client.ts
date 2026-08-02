@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 
-/** 目前部署的背景 worker。順序即處理順序：解析文件 → 抽取候選事實 → 產生向量。 */
+/** 目前部署的背景 worker。順序即處理順序：解析文件 → 抽取候選原子命題 → 產生向量。 */
 export const WORKER_FUNCTIONS = [
   "process-document",
   "extract-facts",

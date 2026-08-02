@@ -8,7 +8,7 @@ import {
 /**
  * Mock Provider：不呼叫任何外部 API 的確定性實作。
  *
- * 行為刻意貼近真實抽取的輸出形狀：把段落切成句子，每句產生一筆候選事實，
+ * 行為刻意貼近真實抽取的輸出形狀：把段落切成句子，每句產生一筆候選原子命題，
  * 並以該句原文作為 source_quote。這樣品質檢查與整個流程都能在測試中跑完整條路徑。
  */
 export class MockProvider implements LlmProvider {
@@ -42,11 +42,11 @@ export class MockProvider implements LlmProvider {
 
 /** 素材產製提示詞由 generation.ts 產生。 */
 export function isGenerationPrompt(prompt: string): boolean {
-  return prompt.includes("可用的核定事實（只能使用這些）");
+  return prompt.includes("可用的核定原子命題（只能使用這些）");
 }
 
 /**
- * Mock 素材：依體裁排版並逐項引用核定事實，同樣不捏造內容。
+ * Mock 素材：依體裁排版並逐項引用核定原子命題，同樣不捏造內容。
  * 目的是讓產製、驗證與阻擋整條路徑都能在不呼叫付費 API 的情況下驗證。
  */
 export function buildMockDraft(prompt: string): string {
@@ -55,7 +55,7 @@ export function buildMockDraft(prompt: string): string {
   const topic = /^主題：(.+)$/m.exec(prompt)?.[1]?.trim() ?? "";
 
   if (facts.length === 0) {
-    return `現有核定事實不足以完成這份${genre}。請先匯入相關來源並核定事實。`;
+    return `現有核定原子命題不足以完成這份${genre}。請先匯入相關來源並核定原子命題。`;
   }
 
   const lines = facts
@@ -87,25 +87,25 @@ function parseFactsFromPrompt(
 
 /** 問答提示詞由 answering.ts 產生，內容一定包含證據包標題。 */
 export function isAnswerPrompt(prompt: string): boolean {
-  return prompt.includes("證據包（只能使用這些事實）");
+  return prompt.includes("證據包（只能使用這些原子命題）");
 }
 
 /**
- * Mock 回答：直接引用證據包裡的事實並標註知識編號。
+ * Mock 回答：直接引用證據包裡的原子命題並標註知識編號。
  * 不會捏造內容，因此可以用來驗證引用、逐句驗證與阻擋機制。
  */
 export function buildMockAnswer(prompt: string): string {
   const start = prompt.indexOf("{");
   const end = prompt.lastIndexOf("}");
   if (start === -1 || end === -1) {
-    return "現有核定事實不足以回答這個問題。";
+    return "現有核定原子命題不足以回答這個問題。";
   }
 
   let pack: { facts?: { knowledge_id?: string; statement?: string }[] };
   try {
     pack = JSON.parse(prompt.slice(start, end + 1));
   } catch {
-    return "現有核定事實不足以回答這個問題。";
+    return "現有核定原子命題不足以回答這個問題。";
   }
 
   const facts = (pack.facts ?? []).filter(
@@ -113,7 +113,7 @@ export function buildMockAnswer(prompt: string): string {
   );
 
   if (facts.length === 0) {
-    return "現有核定事實不足以回答這個問題，知識庫中沒有相關的核定事實。";
+    return "現有核定原子命題不足以回答這個問題，知識庫中沒有相關的核定原子命題。";
   }
 
   return facts
@@ -162,7 +162,8 @@ function buildMockFacts(prompt: string): Record<string, unknown>[] {
         subject: sentence.slice(0, Math.min(8, sentence.length)),
         predicate: null,
         object: null,
-        knowledge_type: "other",
+        // Mock 不做分類判斷：它不理解內容，硬給分類就是在編造。
+        proposition_types: [],
         conditions: {
           population: null,
           exposure_route: null,

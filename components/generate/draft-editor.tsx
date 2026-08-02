@@ -18,7 +18,7 @@ export interface DraftSentence {
   supportingRefs: string[];
   reasons: string[];
   similarity: number;
-  /** 體裁結構（小標、題號、秒數），不是事實主張。 */
+  /** 體裁結構（小標、題號、秒數），不是原子命題主張。 */
   structural: boolean;
 }
 
@@ -29,9 +29,9 @@ const VERDICT_CLASS: Record<DraftSentence["verdict"], string> = {
 };
 
 const VERDICT_LABEL: Record<DraftSentence["verdict"], string> = {
-  supported: "綠：有事實支持",
+  supported: "綠：有原子命題支持",
   partial: "黃：部分支持或需確認",
-  unsupported: "紅：無事實支持",
+  unsupported: "紅：無原子命題支持",
 };
 
 export function DraftEditor({
@@ -135,7 +135,7 @@ export function DraftEditor({
 
       {!publishable && (
         <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-          這份草稿有沒有事實支持的句子，無法定稿。請修掉紅色句子，或先補上對應的核定事實。
+          這份草稿有沒有原子命題支持的句子，無法定稿。請修掉紅色句子，或先補上對應的核定原子命題。
         </p>
       )}
 

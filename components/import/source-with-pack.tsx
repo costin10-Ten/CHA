@@ -30,11 +30,11 @@ const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 180_000;
 
 /**
- * 原文 + 事實包一次上傳。
+ * 原文 + 原子命題包一次上傳。
  *
  * 原文走的是既有的來源匯入流程（檔案直傳 Storage、網址由 worker 抓取），
- * 解析完成後再把事實包附加上去，由系統用內容比對找出每一筆事實對應的段落。
- * 事實包因此完全不需要自帶原文。
+ * 解析完成後再把原子命題包附加上去，由系統用內容比對找出每一筆原子命題對應的段落。
+ * 原子命題包因此完全不需要自帶原文。
  */
 export function SourceWithPack({ existing }: { existing: SourceOptionView[] }) {
   const router = useRouter();
@@ -187,7 +187,7 @@ export function SourceWithPack({ existing }: { existing: SourceOptionView[] }) {
       }
 
       setPhase("attaching");
-      setProgress("比對事實與原文段落中…");
+      setProgress("比對原子命題與原文段落中…");
 
       const outcome = await attachFactPack(sourceId, json, {
         trustHumanReview: trust,
@@ -307,7 +307,7 @@ export function SourceWithPack({ existing }: { existing: SourceOptionView[] }) {
       </section>
 
       <section className="space-y-3 border-t border-slate-100 pt-4">
-        <p className="text-sm font-medium text-slate-900">2. 事實包</p>
+        <p className="text-sm font-medium text-slate-900">2. 原子命題包</p>
 
         <input
           type="file"
@@ -324,7 +324,7 @@ export function SourceWithPack({ existing }: { existing: SourceOptionView[] }) {
           rows={5}
           value={json}
           onChange={(event) => setJson(event.target.value)}
-          placeholder="或直接貼上事實包 JSON。這條路徑不需要事實包自帶原文，只要有事實敘述。"
+          placeholder="或直接貼上原子命題包 JSON。這條路徑不需要原子命題包自帶原文，只要有原子命題敘述。"
           disabled={busy}
           className="font-mono text-xs"
         />
@@ -342,7 +342,7 @@ export function SourceWithPack({ existing }: { existing: SourceOptionView[] }) {
               沿用檔案中的人工核定結果
             </span>
             <span className="mt-1 block text-xs text-slate-600">
-              只有「引句直接命中原文」的事實才會沿用；
+              只有「引句直接命中原文」的原子命題才會沿用；
               由系統比對出段落的一律回到待審核，因為引句是系統推測的。
             </span>
           </span>
@@ -351,7 +351,11 @@ export function SourceWithPack({ existing }: { existing: SourceOptionView[] }) {
 
       <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
         <Button onClick={run} disabled={busy || !canRun}>
-          {busy ? "處理中…" : existingId ? "附加事實包" : "上傳原文並附加事實包"}
+          {busy
+            ? "處理中…"
+            : existingId
+              ? "附加原子命題包"
+              : "上傳原文並附加原子命題包"}
         </Button>
         {progress && <span className="text-xs text-slate-600">{progress}</span>}
       </div>

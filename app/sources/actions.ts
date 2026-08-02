@@ -263,7 +263,7 @@ export async function finalizeUpload(
   }
 }
 
-/** 手動排入候選事實抽取（解析完成後系統也會自動排一次）。 */
+/** 手動排入候選原子命題抽取（解析完成後系統也會自動排一次）。 */
 export async function extractFacts(sourceId: string): Promise<ImportActionResult> {
   try {
     const user = await requireUser();
@@ -290,7 +290,7 @@ export async function extractFacts(sourceId: string): Promise<ImportActionResult
     if (error) throw new Error(`建立抽取工作失敗：${error.message}`);
 
     revalidatePath(`/sources/${sourceId}`);
-    return { status: "success", message: "已排入候選事實抽取工作。", sourceId };
+    return { status: "success", message: "已排入候選原子命題抽取工作。", sourceId };
   } catch (cause) {
     return {
       status: "error",

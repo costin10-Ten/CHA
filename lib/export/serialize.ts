@@ -11,7 +11,7 @@ export interface ExportFact {
   subject: string | null;
   predicate: string | null;
   object: string | null;
-  knowledge_type: string;
+  proposition_types: string[];
   risk_level: string;
   status: string;
   version: number;
@@ -73,7 +73,7 @@ const FACT_COLUMNS = [
   "subject",
   "predicate",
   "object",
-  "knowledge_type",
+  "proposition_types",
   "risk_level",
   "status",
   "version",
@@ -111,6 +111,8 @@ export function factsToCsv(bundle: ExportBundle): string {
     return {
       ...fact,
       conditions: conditionText(fact.conditions),
+      // 陣列直接丟進 CSV 會變成 JSON 字串，Excel 打開很難讀。
+      proposition_types: fact.proposition_types.join("、"),
       source_title: source?.title ?? "",
       source_url: source?.origin_url ?? "",
     };
@@ -125,7 +127,7 @@ export function factsToJson(bundle: ExportBundle): string {
       exported_at: bundle.exportedAt ?? new Date().toISOString(),
       fact_count: bundle.facts.length,
       source_count: bundle.sources.length,
-      note: "每一筆事實都附帶 source_quote 與 source_paragraph_id，可回溯到原文段落。",
+      note: "每一筆原子命題都附帶 source_quote 與 source_paragraph_id，可回溯到原文段落。",
       sources: bundle.sources,
       facts: bundle.facts,
     },
@@ -146,10 +148,10 @@ export function factsToMarkdown(bundle: ExportBundle): string {
   }
 
   const lines: string[] = [
-    "# 正式事實匯出",
+    "# 正式原子命題匯出",
     "",
     `匯出時間：${bundle.exportedAt ?? new Date().toISOString()}`,
-    `事實筆數：${bundle.facts.length}．來源文件：${bundle.sources.length}`,
+    `原子命題筆數：${bundle.facts.length}．來源文件：${bundle.sources.length}`,
     "",
   ];
 
@@ -161,7 +163,7 @@ export function factsToMarkdown(bundle: ExportBundle): string {
     for (const fact of facts) {
       lines.push(`### ${fact.statement}`, "");
       lines.push(
-        `- 知識類型：${fact.knowledge_type}．風險等級：${fact.risk_level}．版本：v${fact.version}`,
+        `- 命題分類：${fact.proposition_types.join("、") || "未分類"}．風險等級：${fact.risk_level}．版本：v${fact.version}`,
       );
 
       const conditions = conditionText(fact.conditions);
@@ -183,8 +185,8 @@ export function serializeFacts(bundle: ExportBundle, format: ExportFormat): stri
 }
 
 /**
- * 正式事實與來源對照表（工作單第 17 節）。
- * 一列一筆事實，明確寫出它出自哪一份文件的哪一段、依據哪一句原文。
+ * 正式原子命題與來源對照表（工作單第 17 節）。
+ * 一列一筆原子命題，明確寫出它出自哪一份文件的哪一段、依據哪一句原文。
  */
 const MAPPING_COLUMNS = [
   "fact_id",
@@ -225,7 +227,7 @@ export function mappingToCsv(bundle: ExportBundle): string {
 
 export function mappingToMarkdown(bundle: ExportBundle): string {
   const rows = mappingRows(bundle);
-  const header = ["事實", "版本", "來源文件", "段落", "原文片段"];
+  const header = ["原子命題", "版本", "來源文件", "段落", "原文片段"];
 
   // Markdown 表格不能有未逸出的 |，也不能有換行。
   const cell = (value: unknown) =>
@@ -234,7 +236,7 @@ export function mappingToMarkdown(bundle: ExportBundle): string {
       .replaceAll("\n", " ");
 
   const lines = [
-    "# 正式事實與來源對照表",
+    "# 正式原子命題與來源對照表",
     "",
     `| ${header.join(" | ")} |`,
     `| ${header.map(() => "---").join(" | ")} |`,
@@ -283,7 +285,7 @@ export interface DocumentExport extends ExportBundle {
   paragraphs: { paragraph_id: string; text: string }[];
 }
 
-/** 單篇文件與其事實（工作單第 17 節）。 */
+/** 單篇文件與其原子命題（工作單第 17 節）。 */
 export function documentToMarkdown(input: DocumentExport): string {
   const lines: string[] = [
     `# ${input.source.title}`,
@@ -301,7 +303,7 @@ export function documentToMarkdown(input: DocumentExport): string {
     lines.push(`**${paragraph.paragraph_id}**　${paragraph.text}`, "");
   }
 
-  lines.push(`## 由本文產生的正式事實（${input.facts.length} 筆）`, "");
+  lines.push(`## 由本文產生的正式原子命題（${input.facts.length} 筆）`, "");
   for (const fact of input.facts) {
     lines.push(`- ${fact.statement}`);
     lines.push(`  - 段落：${fact.source_paragraph_id}`);

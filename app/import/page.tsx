@@ -23,9 +23,9 @@ const MINIMAL = `{
   "source": { "title": "文章標題", "url": "https://example.gov.tw/article" },
   "facts": [
     {
-      "statement": "一句一事的事實敘述。",
+      "statement": "一句一事的原子命題敘述。",
       "paragraph_id": "P-004",
-      "paragraph_text": "這一段的完整原文，讓事實有東西可以對照。",
+      "paragraph_text": "這一段的完整原文，讓原子命題有東西可以對照。",
       "quote": "段落中支持這句話的片段"
     }
   ]
@@ -41,7 +41,7 @@ const FULL = `{
   "facts": [
     {
       "ref": "C001",
-      "statement": "一句一事的事實敘述。",
+      "statement": "一句一事的原子命題敘述。",
       "subject": "主體", "predicate": "關係", "object": "客體",
       "knowledge_type": "物質",
       "risk_level": "中",
@@ -69,15 +69,15 @@ export default async function ImportPage() {
   return (
     <AppShell
       title="匯入文章包"
-      description="把在對話或其他工具中整理好的一篇文章，連同段落、候選事實、審核紀錄與正式事實一次匯入。"
+      description="把在對話或其他工具中整理好的一篇文章，連同段落、候選原子命題、審核紀錄與正式原子命題一次匯入。"
     >
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>原文 + 事實包（建議）</CardTitle>
+            <CardTitle>原文 + 原子命題包（建議）</CardTitle>
             <CardDescription>
               原文用檔案、網址或貼上文字提供，系統解析成段落後，
-              再用內容比對找出每一筆事實對應到哪一段。事實包因此不需要自帶原文。
+              再用內容比對找出每一筆原子命題對應到哪一段。原子命題包因此不需要自帶原文。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -87,9 +87,9 @@ export default async function ImportPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>只有事實包（事實包自帶原文）</CardTitle>
+            <CardTitle>只有原子命題包（原子命題包自帶原文）</CardTitle>
             <CardDescription>
-              事實包裡已經含有段落原文時用這個。匯入前會先驗證，驗證不會寫入任何資料。
+              原子命題包裡已經含有段落原文時用這個。匯入前會先驗證，驗證不會寫入任何資料。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -101,7 +101,7 @@ export default async function ImportPage() {
           <CardHeader>
             <CardTitle>示範資料</CardTitle>
             <CardDescription>
-              三篇自行撰寫的短文（氫氟酸、汞、蘇丹紅），每篇含 12 筆候選事實（6
+              三篇自行撰寫的短文（氫氟酸、汞、蘇丹紅），每篇含 12 筆候選原子命題（6
               核定、2 待修正、2 駁回、2 待審核）與 3 份素材草稿。
               走的是與上面完全相同的匯入路徑。
             </CardDescription>
@@ -115,24 +115,24 @@ export default async function ImportPage() {
           <CardHeader>
             <CardTitle>只有一個硬性要求</CardTitle>
             <CardDescription>
-              每一筆事實都要找得到原文——原文可以另外上傳，也可以寫在事實包裡。
+              每一筆原子命題都要找得到原文——原文可以另外上傳，也可以寫在原子命題包裡。
               其他欄位不合就自動補，補不了只跳過那一筆。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-slate-700">
             <div className="rounded-md border border-red-200 bg-red-50 p-3">
-              <p className="font-medium text-red-900">事實必須對得到原文</p>
+              <p className="font-medium text-red-900">原子命題必須對得到原文</p>
               <p className="mt-2 text-red-900">兩種寫法擇一：</p>
               <ul className="mt-1 list-disc space-y-1 pl-5 text-red-900">
                 <li>
-                  在該筆事實加 <code>paragraph_text</code>
+                  在該筆原子命題加 <code>paragraph_text</code>
                 </li>
                 <li>
                   或在 <code>document_chunks</code> 提供該段落的 <code>text</code>
                 </li>
               </ul>
               <p className="mt-2 text-xs text-red-800">
-                兩者都沒有的事實只會跳過那一筆；整篇都沒有才會整篇跳過。
+                兩者都沒有的原子命題只會跳過那一筆；整篇都沒有才會整篇跳過。
               </p>
             </div>
 
@@ -144,7 +144,7 @@ export default async function ImportPage() {
               </p>
               <p className="mt-2 text-xs text-amber-800">
                 即使檔案寫 approved
-                也不會變成正式事實——它會出現在候選事實頁等你確認。
+                也不會變成正式原子命題——它會出現在候選原子命題頁等你確認。
                 引句可用刪節號串接多段，例如「甲…乙」。
               </p>
             </div>
@@ -179,21 +179,21 @@ export default async function ImportPage() {
           <CardHeader>
             <CardTitle>格式範例</CardTitle>
             <CardDescription>
-              上面是最小可用格式，下面是完整寫法。除了標題與事實敘述，其他欄位都可省略。
+              上面是最小可用格式，下面是完整寫法。除了標題與原子命題敘述，其他欄位都可省略。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
               <a
                 href="/examples/fact-pack-minimal.json"
-                download="事實包範例-最小.json"
+                download="原子命題包範例-最小.json"
                 className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
               >
                 下載最小範例
               </a>
               <a
                 href="/examples/fact-pack-full.json"
-                download="事實包範例-完整.json"
+                download="原子命題包範例-完整.json"
                 className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
               >
                 下載完整範例
@@ -204,12 +204,12 @@ export default async function ImportPage() {
             </div>
 
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              <p className="font-medium">標為駁回的事實不會匯入</p>
+              <p className="font-medium">標為駁回的原子命題不會匯入</p>
               <p className="mt-1 text-xs">
                 <code>status</code> 是 <code>駁回</code>／<code>rejected</code>{" "}
-                的事實會被略過，匯入畫面會列出略過了哪幾筆。
-                駁回代表這句話不成立，建成候選事實只會讓它躺在待審清單裡等著被誤放行。
-                要保留紀錄請留在事實包檔案裡。
+                的原子命題會被略過，匯入畫面會列出略過了哪幾筆。
+                駁回代表這句話不成立，建成候選原子命題只會讓它躺在待審清單裡等著被誤放行。
+                要保留紀錄請留在原子命題包檔案裡。
               </p>
             </div>
 
@@ -236,20 +236,20 @@ export default async function ImportPage() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-slate-700">
             <p>
-              候選事實會出現在
+              候選原子命題會出現在
               <Link href="/review" className="mx-1 underline">
-                候選事實
+                候選原子命題
               </Link>
-              ；沿用人工核定結果時，正式事實會出現在
+              ；沿用人工核定結果時，正式原子命題會出現在
               <Link href="/knowledge" className="mx-1 underline">
-                正式事實
+                正式原子命題
               </Link>
               。
             </p>
             <p className="text-xs text-slate-500">
-              正式事實一律由候選事實經 <code>promote_candidate_fact</code> 產生，
-              版本與審核歷程才會與系統其他路徑一致。 產生後請到正式事實頁補齊向量，
-              新事實才會進入搜尋與問答。
+              正式原子命題一律由候選原子命題經 <code>promote_candidate_fact</code>{" "}
+              產生， 版本與審核歷程才會與系統其他路徑一致。
+              產生後請到正式原子命題頁補齊向量， 新原子命題才會進入搜尋與問答。
             </p>
           </CardContent>
         </Card>

@@ -16,16 +16,16 @@ import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import type {
   CandidateStatus,
   Json,
-  KnowledgeType,
+  PropositionType,
   ReviewActionType,
   RiskLevel,
 } from "@/lib/supabase/types";
 
 /**
- * 把事實包附加到「已經由系統解析過的來源」。
+ * 把原子命題包附加到「已經由系統解析過的來源」。
  *
- * 這條路徑讓事實包不必自帶原文：原文用一般的匯入流程（文字／檔案／網址）
- * 進系統並解析成段落，事實包只要有敘述，系統就能用內容比對找出對應段落。
+ * 這條路徑讓原子命題包不必自帶原文：原文用一般的匯入流程（文字／檔案／網址）
+ * 進系統並解析成段落，原子命題包只要有敘述，系統就能用內容比對找出對應段落。
  *
  * 三種對應方式的可信度不同，處理也不同：
  * - 引句直接命中原文 → 引句照用，可沿用檔案中的核定狀態
@@ -50,7 +50,7 @@ export interface SourceOption {
   status: string;
 }
 
-/** 已經解析完成、可以附加事實包的來源。 */
+/** 已經解析完成、可以附加原子命題包的來源。 */
 export async function listAttachableSources(): Promise<SourceOption[]> {
   const supabase = await createClient();
 
@@ -104,13 +104,13 @@ export async function attachFactPack(
     const user = await getCurrentUser();
     if (!user) throw new Error("尚未登入");
 
-    if (!json.trim()) return { status: "error", message: "請提供事實包 JSON" };
+    if (!json.trim()) return { status: "error", message: "請提供原子命題包 JSON" };
 
     let payload: unknown;
     try {
       payload = JSON.parse(json);
     } catch {
-      return { status: "error", message: "事實包不是合法的 JSON" };
+      return { status: "error", message: "原子命題包不是合法的 JSON" };
     }
 
     const supabase = await createClient();
@@ -126,7 +126,7 @@ export async function attachFactPack(
     if (!version) {
       return {
         status: "error",
-        message: "這份來源還沒有解析完成的版本，請等解析完成後再附加事實包。",
+        message: "這份來源還沒有解析完成的版本，請等解析完成後再附加原子命題包。",
       };
     }
 
@@ -140,13 +140,13 @@ export async function attachFactPack(
       return { status: "error", message: "這份來源沒有任何段落，無法比對。" };
     }
 
-    // 2. 解析事實包。這裡不要求它自帶原文，段落由來源提供。
+    // 2. 解析原子命題包。這裡不要求它自帶原文，段落由來源提供。
     const validation = validateArticlePack(payload);
     const packCandidates: PackCandidate[] = validation.articles.flatMap(
       (article) => article.candidates,
     );
 
-    // 事實包完全沒有原文時，validateArticlePack 會把事實全部跳過；
+    // 原子命題包完全沒有原文時，validateArticlePack 會把原子命題全部跳過；
     // 這條路徑本來就不需要它自帶原文，因此改用寬鬆解析取回敘述。
     const facts =
       packCandidates.length > 0
@@ -160,7 +160,7 @@ export async function attachFactPack(
         : readFactsLoosely(payload);
 
     if (facts.length === 0) {
-      return { status: "error", message: "事實包裡沒有任何事實敘述。" };
+      return { status: "error", message: "原子命題包裡沒有任何原子命題敘述。" };
     }
 
     // 3. 比對。
@@ -214,7 +214,7 @@ export async function attachFactPack(
         subject: source?.subject ?? null,
         predicate: source?.predicate ?? null,
         object: source?.object ?? null,
-        knowledge_type: (source?.knowledge_type ?? "other") as KnowledgeType,
+        proposition_types: (source?.proposition_types ?? []) as PropositionType[],
         conditions: normalizeConditions(source?.conditions ?? {}),
         source_quote: match.quote,
         source_paragraph_id: match.paragraphId,
@@ -245,7 +245,7 @@ export async function attachFactPack(
       return {
         status: "error",
         message:
-          "沒有任何一筆事實對應得到這份原文的段落。請確認事實包與原文是同一篇文章。",
+          "沒有任何一筆原子命題對應得到這份原文的段落。請確認原子命題包與原文是同一篇文章。",
       };
     }
 
@@ -255,7 +255,7 @@ export async function attachFactPack(
       .select("id");
 
     if (error || !created) {
-      throw new Error(`寫入候選事實失敗：${error?.message}`);
+      throw new Error(`寫入候選原子命題失敗：${error?.message}`);
     }
 
     const idByRef = new Map<string, string>();
@@ -264,7 +264,7 @@ export async function attachFactPack(
       if (row) idByRef.set(ref, row.id);
     });
 
-    // 4. 審核紀錄與正式事實：只有引句直接命中的才可能沿用核定結果。
+    // 4. 審核紀錄與正式原子命題：只有引句直接命中的才可能沿用核定結果。
     let reviews = 0;
     let promoted = 0;
 
@@ -303,7 +303,7 @@ export async function attachFactPack(
 
         if (promoteError || !factId) {
           problems.push(
-            `${fact.candidate_fact_id}：尚未寫入正式事實（${promoteError?.message ?? "引句由系統定位，需先人工核定"}）`,
+            `${fact.candidate_fact_id}：尚未寫入正式原子命題（${promoteError?.message ?? "引句由系統定位，需先人工核定"}）`,
           );
           continue;
         }
@@ -331,20 +331,20 @@ export async function attachFactPack(
       created: { candidates: created.length, reviews, knowledgeFacts: promoted },
       problems,
       message:
-        `已附加 ${created.length} 筆事實：引句直接命中 ${summary.byQuote} 筆、` +
+        `已附加 ${created.length} 筆原子命題：引句直接命中 ${summary.byQuote} 筆、` +
         `系統比對出段落 ${needsReviewCount} 筆（已設為待審核）、` +
         `找不到對應 ${summary.unmatched} 筆。`,
     };
   } catch (cause) {
     return {
       status: "error",
-      message: cause instanceof Error ? cause.message : "附加事實包失敗",
+      message: cause instanceof Error ? cause.message : "附加原子命題包失敗",
     };
   }
 }
 
 /**
- * 事實包完全沒有附原文時的寬鬆讀取：只取敘述、引句與段落編號。
+ * 原子命題包完全沒有附原文時的寬鬆讀取：只取敘述、引句與段落編號。
  * 其餘欄位交給人工在審核時補，不在這裡臆測。
  */
 function readFactsLoosely(payload: unknown): {
@@ -372,7 +372,7 @@ function readFactsLoosely(payload: unknown): {
     const article =
       item && typeof item === "object" ? (item as Record<string, unknown>) : {};
 
-    const list = ["facts", "candidate_facts", "candidates", "事實"]
+    const list = ["facts", "candidate_facts", "candidates", "原子命題", "命題", "事實"]
       .map((key) => article[key])
       .find((value) => Array.isArray(value));
 
@@ -380,7 +380,7 @@ function readFactsLoosely(payload: unknown): {
       const row =
         raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
 
-      const statement = ["statement", "fact", "sentence", "text", "敘述", "事實"]
+      const statement = ["statement", "fact", "sentence", "text", "敘述", "原子命題", "命題", "事實"]
         .map((key) => row[key])
         .find((value) => typeof value === "string" && value.trim().length > 1);
 

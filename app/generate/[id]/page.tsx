@@ -128,13 +128,13 @@ export default async function DraftPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>使用的核定事實</CardTitle>
+              <CardTitle>使用的核定原子命題</CardTitle>
               <CardDescription>撰稿時唯一可用的素材。</CardDescription>
             </CardHeader>
             <CardContent>
               {facts.length === 0 ? (
                 <p className="text-sm text-slate-500">
-                  找不到使用的核定事實（可能已被停用或刪除）。
+                  找不到使用的核定原子命題（可能已被停用或刪除）。
                 </p>
               ) : (
                 <ul className="space-y-3">

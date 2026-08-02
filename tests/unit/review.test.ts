@@ -47,8 +47,8 @@ describe("canApplyAction", () => {
   });
 
   /**
-   * 起因：匯入的事實包裡有已駁回的事實，在審核清單被全選後批次核定，
-   * 一步就寫進了正式事實庫。推翻一個「這句話不成立」的判斷，
+   * 起因：匯入的原子命題包裡有已駁回的原子命題，在審核清單被全選後批次核定，
+   * 一步就寫進了正式原子命題庫。推翻一個「這句話不成立」的判斷，
    * 應該要先退回待審核、重新看過。
    */
   it("已駁回不能一步核定，必須先退回待審核", () => {
@@ -110,22 +110,23 @@ describe("validateStatement", () => {
 
 describe("parseSplitStatements 與 validateSplit", () => {
   it("一行一筆並忽略空行", () => {
-    expect(parseSplitStatements("第一筆事實。\n\n  第二筆事實。  \n")).toEqual([
-      "第一筆事實。",
-      "第二筆事實。",
-    ]);
+    expect(
+      parseSplitStatements("第一筆原子命題。\n\n  第二筆原子命題。  \n"),
+    ).toEqual(["第一筆原子命題。", "第二筆原子命題。"]);
   });
 
   it("少於兩筆不允許拆分", () => {
-    expect(validateSplit(["只有一筆事實。"])).toContain("至少要有兩筆");
+    expect(validateSplit(["只有一筆原子命題。"])).toContain("至少要有兩筆");
   });
 
   it("任何一筆過短就擋下", () => {
-    expect(validateSplit(["完整的一筆事實。", "短"])).toContain("至少");
+    expect(validateSplit(["完整的一筆原子命題。", "短"])).toContain("至少");
   });
 
   it("合法拆分回傳 null", () => {
-    expect(validateSplit(["第一筆事實內容。", "第二筆事實內容。"])).toBeNull();
+    expect(
+      validateSplit(["第一筆原子命題內容。", "第二筆原子命題內容。"]),
+    ).toBeNull();
   });
 });
 
@@ -187,7 +188,7 @@ describe("isBatchApprovable", () => {
 
 describe("isBatchReviewable", () => {
   /**
-   * 批次操作只能作用於「還沒做決定」的候選事實。
+   * 批次操作只能作用於「還沒做決定」的候選原子命題。
    * 單筆審核頁看得到目前狀態、要按到那一筆，可以推翻決定；
    * 一次幾十筆的批次動作不該有這個能力。
    */

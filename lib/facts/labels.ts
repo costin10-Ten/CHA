@@ -1,17 +1,54 @@
 import type {
   CandidateStatus,
-  KnowledgeType,
+  PropositionType,
   RiskLevel,
 } from "@/lib/supabase/types";
 
-export const KNOWLEDGE_TYPE_LABEL: Record<KnowledgeType, string> = {
-  substance: "物質",
-  concept: "概念",
-  policy: "法規政策",
+/**
+ * 原子命題的九類分類。
+ *
+ * 這九類同時涵蓋「知識內容」「事件類型」與「治理層級」三個面向，
+ * 彼此本來就會重疊——例如一條講國內法規如何限制某物質的命題，
+ * 同時屬於「國內治理政策」與「物質與物理化學性質」。
+ * 因此一條命題可以有多個分類，不強迫單選。
+ */
+export const PROPOSITION_TYPE_LABEL: Record<PropositionType, string> = {
+  substance_property: "物質與物理化學性質",
+  chemistry_concept: "化學基本概念",
   event: "事件",
-  topic: "主題",
-  other: "其他",
+  agency_topic: "化學署主題",
+  toxicology_mechanism: "毒理與反應機制",
+  domestic_policy: "國內治理政策",
+  foreign_policy: "國外治理政策",
+  research_literature: "研究與期刊",
+  health_advice: "醫學健康建議",
 };
+
+/** 分類本身帶有的限制，顯示在選單旁提醒審核者。 */
+export const PROPOSITION_TYPE_NOTE: Partial<Record<PropositionType, string>> = {
+  health_advice: "須為政府機關來源",
+};
+
+export const PROPOSITION_TYPE_CLASS: Record<PropositionType, string> = {
+  substance_property: "bg-sky-100 text-sky-800",
+  chemistry_concept: "bg-sky-100 text-sky-800",
+  event: "bg-violet-100 text-violet-800",
+  agency_topic: "bg-violet-100 text-violet-800",
+  toxicology_mechanism: "bg-teal-100 text-teal-800",
+  domestic_policy: "bg-indigo-100 text-indigo-800",
+  foreign_policy: "bg-indigo-100 text-indigo-800",
+  research_literature: "bg-slate-100 text-slate-700",
+  health_advice: "bg-rose-100 text-rose-800",
+};
+
+/** 未分類時顯示這個，不要顯示成「其他」——那會看起來像已經分過類。 */
+export const UNCATEGORIZED_LABEL = "未分類";
+
+export function propositionTypeLabels(types: PropositionType[]): string[] {
+  return types.length === 0
+    ? [UNCATEGORIZED_LABEL]
+    : types.map((type) => PROPOSITION_TYPE_LABEL[type] ?? type);
+}
 
 export const RISK_LEVEL_LABEL: Record<RiskLevel, string> = {
   low: "低風險",
@@ -50,11 +87,13 @@ export const QUALITY_FLAG_LABEL: Record<string, string> = {
   number_mismatch: "數字或單位與原文不一致",
   incomplete_subject: "主詞不完整（以指代詞開頭）",
   multi_proposition: "一句包含多個命題",
+  health_advice_source_not_gov: "醫學健康建議但來源不是政府機關",
+  uncategorized: "尚未分類",
   condition_lost: "條件或限制可能遺失",
   certainty_escalated: "可能性被改寫成確定語氣",
   inference_suspected: "疑似推論而非原文陳述",
   duplicate: "疑似重複",
-  contradiction: "疑似與其他事實矛盾",
+  contradiction: "疑似與其他原子命題矛盾",
   low_confidence: "模型信心偏低",
 };
 

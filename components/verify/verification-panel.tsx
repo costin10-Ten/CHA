@@ -72,8 +72,8 @@ export function VerificationPanel({
 
       {blocked && (
         <p className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-          有句子沒有核定事實支持，這份回答不可作為發布稿。
-          請修正或刪除紅色句子，或先補足相關的核定事實。
+          有句子沒有核定原子命題支持，這份回答不可作為發布稿。
+          請修正或刪除紅色句子，或先補足相關的核定原子命題。
         </p>
       )}
 

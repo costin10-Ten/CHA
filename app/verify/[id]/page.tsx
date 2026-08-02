@@ -78,7 +78,7 @@ export default async function VerifyDetailPage({
         <Card>
           <CardHeader>
             <CardTitle>證據包</CardTitle>
-            <CardDescription>判定時比對的核定事實。</CardDescription>
+            <CardDescription>判定時比對的核定原子命題。</CardDescription>
           </CardHeader>
           <CardContent>
             {evidence.length === 0 ? (

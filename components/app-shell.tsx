@@ -18,8 +18,8 @@ const NAV_GROUPS: { label: string; items: { href: string; label: string }[] }[] 
   {
     label: "知識",
     items: [
-      { href: "/review", label: "候選事實" },
-      { href: "/knowledge", label: "正式事實" },
+      { href: "/review", label: "候選原子命題" },
+      { href: "/knowledge", label: "正式原子命題" },
       { href: "/entities", label: "實體" },
       { href: "/relations", label: "關聯" },
     ],

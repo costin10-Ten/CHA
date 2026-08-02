@@ -21,7 +21,7 @@ export const textImportSchema = z.object({
   text: z
     .string()
     .trim()
-    .min(20, "內容太短，至少 20 個字才能拆出可驗證的事實")
+    .min(20, "內容太短，至少 20 個字才能拆出可驗證的原子命題")
     .max(MAX_TEXT_LENGTH, "內容超過 50 萬字，請分批匯入"),
 });
 

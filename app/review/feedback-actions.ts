@@ -51,9 +51,9 @@ export async function reportExtractionIssue(
       .eq("id", candidateFactId)
       .single();
 
-    if (loadError || !fact) throw new Error("找不到候選事實");
+    if (loadError || !fact) throw new Error("找不到候選原子命題");
 
-    // 連同原文段落一起存下來，日後候選事實被改掉仍看得到問題現場。
+    // 連同原文段落一起存下來，日後候選原子命題被改掉仍看得到問題現場。
     const { data: chunk } = await supabase
       .from("document_chunks")
       .select("text")

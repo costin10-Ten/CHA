@@ -19,13 +19,13 @@ export default async function RelationsPage() {
   return (
     <AppShell
       title="關聯"
-      description="實體之間的關係。每一筆都指向支持它的正式事實，沒有事實支持的關聯不會存在。"
+      description="實體之間的關係。每一筆都指向支持它的正式原子命題，沒有原子命題支持的關聯不會存在。"
     >
       {relations.length === 0 ? (
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-slate-500">
-              還沒有關聯。候選事實若填有主體、關係與客體，核定後就會建立對應關聯。
+              還沒有關聯。候選原子命題若填有主體、關係與客體，核定後就會建立對應關聯。
             </p>
           </CardContent>
         </Card>

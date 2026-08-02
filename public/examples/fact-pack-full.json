@@ -1,5 +1,19 @@
 {
-  "_說明": "完整範例：事實包自帶原文，不需要另外上傳文件。除了 source.title 與 facts[].statement 之外全部可選。底線開頭的欄位系統會忽略。",
+  "_說明": "完整範例：原子命題包自帶原文，不需要另外上傳文件。除了 source.title 與 facts[].statement 之外全部可選。底線開頭的欄位系統會忽略。",
+
+  "_分類說明": "proposition_types 是原子命題的分類，可複選。九類同時涵蓋知識內容、事件類型與治理層級，彼此本來就會重疊（例如講國內法規如何限制某物質的一句，同時屬於 domestic_policy 與 substance_property），適用幾類就填幾類。判斷不出來就給空陣列或整個欄位不寫，會顯示為未分類，審核時再補。中文也可以直接寫，例如「國內治理政策」「毒理」。",
+
+  "_九類": {
+    "substance_property": "物質與物理化學性質",
+    "chemistry_concept": "化學基本概念",
+    "event": "事件",
+    "agency_topic": "化學署主題",
+    "toxicology_mechanism": "毒理與反應機制",
+    "domestic_policy": "國內治理政策",
+    "foreign_policy": "國外治理政策",
+    "research_literature": "研究與期刊",
+    "health_advice": "醫學健康建議——依規定須為政府機關來源。來源不是政府機關時仍可匯入，但會標上 health_advice_source_not_gov，且不符合批次核定條件，一定要有人單獨看過。"
+  },
 
   "export_meta": {
     "format_version": 2,
@@ -36,13 +50,13 @@
 
   "facts": [
     {
-      "_註": "最完整的一筆：引句是 P-001 裡真實存在的連續文字，所以可以沿用「核定」。",
+      "_註": "最完整的一筆：引句是 P-001 裡真實存在的連續文字，所以可以沿用「核定」。這一句同時講權責機關與法規，所以掛兩類。",
       "ref": "C001",
       "statement": "食品中污染物質及毒素衛生標準由衛生福利部食品藥物管理署訂定。",
       "subject": "食品中污染物質及毒素衛生標準",
       "predicate": "主管機關",
       "object": "衛生福利部食品藥物管理署",
-      "knowledge_type": "法規",
+      "proposition_types": ["domestic_policy", "agency_topic"],
       "risk_level": "低",
       "conditions": { "population": null, "dose": null, "route": null },
       "paragraph_id": "P-001",
@@ -51,13 +65,13 @@
       "review_note": "權責機關與原文一致。"
     },
     {
-      "_註": "數值類事實：數字、單位、對象都要能在引句裡查到。",
+      "_註": "數值類原子命題：數字、單位、對象都要能在引句裡查到。",
       "ref": "C002",
       "statement": "稻米的鎘限量標準為每公斤 0.4 毫克。",
       "subject": "稻米",
       "predicate": "鎘限量",
       "object": "每公斤 0.4 毫克",
-      "knowledge_type": "法規",
+      "proposition_types": ["domestic_policy", "substance_property"],
       "risk_level": "中",
       "conditions": { "population": null, "dose": "0.4 mg/kg", "route": "食入" },
       "paragraph_id": "P-002",
@@ -71,7 +85,7 @@
       "subject": "鎘",
       "predicate": "健康影響",
       "object": "腎小管功能損傷",
-      "knowledge_type": "物質",
+      "proposition_types": ["toxicology_mechanism", "substance_property"],
       "risk_level": "高",
       "conditions": {
         "population": "一般人",
@@ -85,17 +99,17 @@
       "review_note": "風險等級較高，保留給人工確認。"
     },
     {
-      "_註": "引句可以用刪節號串接同一段裡的兩處文字。",
+      "_註": "引句可以用刪節號串接同一段裡的兩處文字。分類這裡故意用中文寫，示範中文寫法一樣認得。",
       "ref": "C004",
       "statement": "鎘在人體內主要蓄積於腎臟，半衰期超過十年。",
-      "knowledge_type": "物質",
+      "proposition_types": ["毒理", "物質"],
       "risk_level": "中",
       "paragraph_id": "P-003",
       "quote": "鎘進入人體後主要蓄積於腎臟…半衰期長達十年以上",
       "status": "待審核"
     },
     {
-      "_註": "標為駁回的事實不會匯入。這一筆把「高劑量長期暴露」的結論擴大成一般飲食，是常見的抽取錯誤。匯入畫面會顯示「略過 1 筆標為駁回的事實」。要留紀錄請留在這個檔案裡，資料庫不會有它。",
+      "_註": "標為駁回的原子命題不會匯入。這一筆把「高劑量長期暴露」的結論擴大成一般飲食，是常見的抽取錯誤。匯入畫面會顯示「略過 1 筆標為駁回的原子命題」。要留紀錄請留在這個檔案裡，資料庫不會有它。",
       "ref": "C005",
       "statement": "吃米會導致腎臟損傷。",
       "paragraph_id": "P-003",
@@ -116,7 +130,7 @@
 
   "knowledge_facts": [
     {
-      "_註": "選填。只有 status 為核定的事實才會被寫成正式事實；其餘會略過並回報。",
+      "_註": "選填。只有 status 為核定的原子命題才會被寫成正式原子命題；其餘會略過並回報。",
       "candidate_fact_id": "C001",
       "tags": ["食品安全", "重金屬", "法規"]
     },

@@ -34,7 +34,7 @@ create table if not exists public.answer_sessions (
 );
 
 comment on table public.answer_sessions is
-  '每一次 AI 問答。答案只能由 answer_evidence 中的核定事實支持。';
+  '每一次 AI 問答。答案只能由 answer_evidence 中的核定原子命題支持。';
 
 create index if not exists answer_sessions_owner_idx
   on public.answer_sessions (owner_id, created_at desc);
@@ -50,7 +50,7 @@ create table if not exists public.answer_evidence (
   keyword_rank real not null default 0,
   vector_similarity real not null default 0,
   combined_score real not null default 0,
-  -- 快照：事實日後被修改時，仍看得到當時用了什麼
+  -- 快照：原子命題日後被修改時，仍看得到當時用了什麼
   statement text not null,
   conditions jsonb not null default '{}'::jsonb,
   source_title text,
@@ -63,7 +63,7 @@ create table if not exists public.answer_evidence (
 );
 
 comment on table public.answer_evidence is
-  '送進模型的證據包內容，含當時的事實快照與來源定位。';
+  '送進模型的證據包內容，含當時的原子命題快照與來源定位。';
 
 create index if not exists answer_evidence_session_idx
   on public.answer_evidence (answer_session_id, rank);

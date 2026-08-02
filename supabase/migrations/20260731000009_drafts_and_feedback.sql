@@ -49,7 +49,7 @@ create table if not exists public.communication_drafts (
   tone text not null default '平實',
   status public.draft_status not null default 'draft',
 
-  -- 使用了哪些核定事實（工作單第 15 節要求保存）
+  -- 使用了哪些核定原子命題（工作單第 15 節要求保存）
   knowledge_fact_ids uuid[] not null default '{}',
   knowledge_refs text[] not null default '{}',
 
@@ -71,7 +71,7 @@ create table if not exists public.communication_drafts (
 );
 
 comment on table public.communication_drafts is
-  '風險溝通素材草稿。所有產出預設為草稿，且必須記錄使用的核定事實與驗證結果。';
+  '風險溝通素材草稿。所有產出預設為草稿，且必須記錄使用的核定原子命題與驗證結果。';
 
 create index if not exists communication_drafts_owner_idx
   on public.communication_drafts (owner_id, created_at desc);
@@ -88,7 +88,7 @@ create table if not exists public.extraction_feedback (
   model_run_id uuid references public.model_runs (id) on delete set null,
   feedback_type public.feedback_type not null,
   description text,
-  -- 回報當下的快照，候選事實日後被修改或刪除仍看得到問題內容
+  -- 回報當下的快照，候選原子命題日後被修改或刪除仍看得到問題內容
   statement_snapshot text,
   quote_snapshot text,
   paragraph_snapshot text,

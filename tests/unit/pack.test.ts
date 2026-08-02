@@ -17,7 +17,7 @@ const FACT: PackFact = {
   subject: "孕婦",
   predicate: "不宜超過",
   object: "35 公克",
-  knowledge_type: "substance",
+  proposition_types: ["substance_property"],
   risk_level: "medium",
   conditions: { population: "孕婦", dose: "35 公克" },
   source_quote: "孕婦每週攝取旗魚不宜超過 35 公克。",
@@ -30,7 +30,7 @@ const FACT: PackFact = {
   status: "pending",
 };
 
-describe("待選事實包", () => {
+describe("待選原子命題包", () => {
   const pack = buildCandidatePack([FACT], { scope: "測試" });
 
   it("自帶欄位說明，且來源欄位標記為不可修改", () => {

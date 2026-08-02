@@ -19,10 +19,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   CONDITION_LABEL,
-  KNOWLEDGE_TYPE_LABEL,
+  PROPOSITION_TYPE_LABEL,
+  PROPOSITION_TYPE_NOTE,
   RISK_LEVEL_LABEL,
 } from "@/lib/facts/labels";
-import type { CandidateFactRow } from "@/lib/supabase/types";
+import {
+  PROPOSITION_TYPES,
+  type CandidateFactRow,
+  type PropositionType,
+} from "@/lib/supabase/types";
 
 const CONDITION_KEYS = [
   "population",
@@ -42,7 +47,7 @@ export function FactEditor({ fact }: { fact: CandidateFactRow }) {
   const [subject, setSubject] = useState(fact.subject ?? "");
   const [predicate, setPredicate] = useState(fact.predicate ?? "");
   const [object, setObject] = useState(fact.object ?? "");
-  const [knowledgeType, setKnowledgeType] = useState(fact.knowledge_type);
+  const [types, setTypes] = useState<PropositionType[]>(fact.proposition_types);
   const [riskLevel, setRiskLevel] = useState(fact.risk_level);
   const [note, setNote] = useState("");
   const [conditions, setConditions] = useState<Record<string, string>>(() => {
@@ -72,7 +77,7 @@ export function FactEditor({ fact }: { fact: CandidateFactRow }) {
         subject: subject.trim() || null,
         predicate: predicate.trim() || null,
         object: object.trim() || null,
-        knowledge_type: knowledgeType,
+        proposition_types: types,
         risk_level: riskLevel,
         conditions: Object.fromEntries(
           CONDITION_KEYS.map((key) => [key, conditions[key].trim() || null]),
@@ -87,7 +92,7 @@ export function FactEditor({ fact }: { fact: CandidateFactRow }) {
     subject !== (fact.subject ?? "") ||
     predicate !== (fact.predicate ?? "") ||
     object !== (fact.object ?? "") ||
-    knowledgeType !== fact.knowledge_type ||
+    types.join("|") !== fact.proposition_types.join("|") ||
     riskLevel !== fact.risk_level ||
     CONDITION_KEYS.some(
       (key) =>
@@ -98,7 +103,7 @@ export function FactEditor({ fact }: { fact: CandidateFactRow }) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="statement">事實敘述</Label>
+        <Label htmlFor="statement">原子命題敘述</Label>
         <Textarea
           id="statement"
           rows={3}
@@ -139,24 +144,41 @@ export function FactEditor({ fact }: { fact: CandidateFactRow }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor="knowledge-type">知識類型</Label>
-          <select
-            id="knowledge-type"
-            value={knowledgeType}
-            onChange={(event) =>
-              setKnowledgeType(
-                event.target.value as CandidateFactRow["knowledge_type"],
-              )
-            }
-            className="h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900"
-          >
-            {Object.entries(KNOWLEDGE_TYPE_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
+        <div className="space-y-1 sm:col-span-2">
+          <Label>命題分類（可複選）</Label>
+          <p className="text-xs text-slate-500">
+            九類同時涵蓋知識內容、事件類型與治理層級，本來就會重疊——
+            適用幾類就勾幾類。判斷不出來就一個都不勾，會顯示為未分類。
+          </p>
+          <div className="grid gap-1 sm:grid-cols-2">
+            {PROPOSITION_TYPES.map((value) => (
+              <label
+                key={value}
+                className="flex min-w-0 items-start gap-2 text-sm text-slate-800"
+              >
+                <input
+                  type="checkbox"
+                  checked={types.includes(value)}
+                  onChange={(event) =>
+                    setTypes((current) =>
+                      event.target.checked
+                        ? [...current, value]
+                        : current.filter((item) => item !== value),
+                    )
+                  }
+                  className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300"
+                />
+                <span className="min-w-0">
+                  {PROPOSITION_TYPE_LABEL[value]}
+                  {PROPOSITION_TYPE_NOTE[value] && (
+                    <span className="ml-1 text-xs text-amber-700">
+                      （{PROPOSITION_TYPE_NOTE[value]}）
+                    </span>
+                  )}
+                </span>
+              </label>
             ))}
-          </select>
+          </div>
         </div>
         <div className="space-y-1">
           <Label htmlFor="risk-level">風險等級</Label>
@@ -294,7 +316,7 @@ export function FactEditor({ fact }: { fact: CandidateFactRow }) {
             確認拆分
           </Button>
           <p className="text-xs text-slate-500">
-            拆分後會建立多筆待審核事實，原本這筆會標記為已拆分並保留紀錄。
+            拆分後會建立多筆待審核原子命題，原本這筆會標記為已拆分並保留紀錄。
           </p>
         </div>
       )}

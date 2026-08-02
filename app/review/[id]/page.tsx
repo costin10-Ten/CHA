@@ -63,7 +63,7 @@ export default async function ReviewDetailPage({
           href="/review"
           className="text-sm text-slate-600 hover:text-slate-900"
         >
-          ← 回候選事實清單
+          ← 回候選原子命題清單
         </Link>
       }
     >
@@ -111,7 +111,7 @@ export default async function ReviewDetailPage({
           <Card>
             <CardHeader>
               <CardTitle>原文片段</CardTitle>
-              <CardDescription>事實必須完全由這段文字支持。</CardDescription>
+              <CardDescription>原子命題必須完全由這段文字支持。</CardDescription>
             </CardHeader>
             <CardContent>
               <blockquote className="border-l-2 border-emerald-400 pl-3 text-sm text-slate-800">
@@ -128,7 +128,7 @@ export default async function ReviewDetailPage({
           <Card>
             <CardHeader>
               <CardTitle>前後文</CardTitle>
-              <CardDescription>用來判斷事實是否超出原文範圍。</CardDescription>
+              <CardDescription>用來判斷原子命題是否超出原文範圍。</CardDescription>
             </CardHeader>
             <CardContent>
               {context.length === 0 ? (
@@ -200,12 +200,12 @@ export default async function ReviewDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>相似的既有事實</CardTitle>
+              <CardTitle>相似的既有原子命題</CardTitle>
               <CardDescription>避免重複核定同一件事。</CardDescription>
             </CardHeader>
             <CardContent>
               {similar.length === 0 ? (
-                <p className="text-sm text-slate-500">沒有明顯相似的事實。</p>
+                <p className="text-sm text-slate-500">沒有明顯相似的原子命題。</p>
               ) : (
                 <ul className="space-y-2 text-sm">
                   {similar.map((item) => (

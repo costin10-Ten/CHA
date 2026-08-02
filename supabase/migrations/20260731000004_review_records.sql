@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 4：審核紀錄與候選事實的審核欄位
+-- Phase 4：審核紀錄與候選原子命題的審核欄位
 -- =============================================================================
 
 -- 1. 審核動作型別 ------------------------------------------------------------
@@ -30,7 +30,7 @@ alter table public.candidate_facts
   add column if not exists original_statement text;
 
 comment on column public.candidate_facts.parent_fact_id is
-  '拆分或合併的來源候選事實，用於追溯審核歷程。';
+  '拆分或合併的來源候選原子命題，用於追溯審核歷程。';
 comment on column public.candidate_facts.original_statement is
   '使用者修正前的原始敘述，修正後核定時保存。';
 
@@ -54,7 +54,7 @@ create table if not exists public.review_records (
 );
 
 comment on table public.review_records is
-  '每一次審核動作的完整紀錄：誰在什麼時候把哪一筆候選事實從什麼狀態改成什麼狀態、改了什麼。';
+  '每一次審核動作的完整紀錄：誰在什麼時候把哪一筆候選原子命題從什麼狀態改成什麼狀態、改了什麼。';
 
 create index if not exists review_records_owner_idx
   on public.review_records (owner_id, created_at desc);
@@ -92,8 +92,8 @@ create policy "review_records_delete_own"
   on public.review_records for delete to authenticated
   using ((select auth.uid()) = owner_id);
 
--- 5. 相似候選事實搜尋 ---------------------------------------------------------
--- 審核單筆事實時，用來提示「相似既有事實」，避免重複核定。
+-- 5. 相似候選原子命題搜尋 ---------------------------------------------------------
+-- 審核單筆原子命題時，用來提示「相似既有原子命題」，避免重複核定。
 create extension if not exists "pg_trgm" with schema extensions;
 
 create index if not exists candidate_facts_statement_trgm_idx

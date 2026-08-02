@@ -18,7 +18,7 @@ function fact(overrides: Partial<RawFact> = {}): RawFact {
     subject: "氫氟酸",
     predicate: "造成",
     object: "深層灼傷",
-    knowledge_type: "substance",
+    proposition_types: ["substance_property"],
     conditions: { ...EMPTY_CONDITIONS },
     source_quote: "氫氟酸接觸皮膚可能造成深層灼傷。",
     source_paragraph_id: "P-001",
@@ -70,7 +70,7 @@ describe("checkFactQuality 致命問題", () => {
     expect(result.flags).toContain(QUALITY_FLAGS.QUOTE_NOT_IN_SOURCE);
   });
 
-  it("合格事實沒有任何標記且滿分", () => {
+  it("合格原子命題沒有任何標記且滿分", () => {
     const result = checkFactQuality(fact(), { paragraphText: PARAGRAPH });
     expect(result.fatal).toBe(false);
     expect(result.flags).toEqual([]);
@@ -243,5 +243,72 @@ describe("isContradiction", () => {
 
   it("完全相同的敘述算重複而非矛盾", () => {
     expect(isContradiction("汞會累積於魚類。", "汞會累積於魚類。")).toBe(false);
+  });
+});
+
+/**
+ * 「醫學健康建議」依規定必須來自政府機關來源。
+ *
+ * 這裡只標記、不擋下：網域判斷是啟發式的，硬擋會誤傷上傳的部會 PDF。
+ * 帶標記的命題不符合批次核定條件，等於強制要有人單獨看過。
+ */
+describe("醫學健康建議的來源限制", () => {
+  const advice = fact({
+    statement: "皮膚接觸後應立即以大量清水沖洗並儘速就醫。",
+    source_quote: "皮膚接觸後應立即以大量清水沖洗並儘速就醫",
+    proposition_types: ["health_advice"],
+  });
+  const context = { paragraphText: advice.source_quote };
+
+  it("政府網域不標記", () => {
+    for (const url of [
+      "https://www.moenv.gov.tw/article",
+      "https://www.fda.gov.tw/TC/news.aspx",
+      "https://www.who.int/news-room/fact-sheets",
+      "https://food.ec.europa.eu/safety",
+    ]) {
+      const result = checkFactQuality(advice, { ...context, sourceUrl: url });
+      expect(result.flags, url).not.toContain("health_advice_source_not_gov");
+    }
+  });
+
+  it("非政府網域會標記", () => {
+    for (const url of [
+      "https://example.com/health",
+      "https://blog.example.tw/post",
+      "https://notgov.tw/a",
+      "",
+    ]) {
+      const result = checkFactQuality(advice, { ...context, sourceUrl: url });
+      expect(result.flags, url).toContain("health_advice_source_not_gov");
+    }
+  });
+
+  it("人已經確認是政府來源時，覆寫網址判斷", () => {
+    // 上傳的部會 PDF 沒有網址可看，只有人知道它是哪裡來的。
+    const result = checkFactQuality(advice, {
+      ...context,
+      sourceUrl: null,
+      sourceIsGovernment: true,
+    });
+    expect(result.flags).not.toContain("health_advice_source_not_gov");
+  });
+
+  it("不是醫學健康建議就不檢查來源", () => {
+    const result = checkFactQuality(
+      { ...advice, proposition_types: ["toxicology_mechanism"] },
+      { ...context, sourceUrl: "https://example.com/health" },
+    );
+    expect(result.flags).not.toContain("health_advice_source_not_gov");
+  });
+
+  it("標記只是標記，不是 fatal", () => {
+    const result = checkFactQuality(advice, {
+      ...context,
+      sourceUrl: "https://example.com/health",
+    });
+    expect(result.fatal).toBe(false);
+    // 但分數被扣，且帶標記者不符合批次核定條件。
+    expect(result.score).toBeLessThan(100);
   });
 });

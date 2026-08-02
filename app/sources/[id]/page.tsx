@@ -78,7 +78,7 @@ export default async function SourceDetailPage({
               {chunks.length === 0 ? (
                 <p className="text-sm text-slate-500">
                   還沒有段落。等背景工作完成後這裡會顯示帶編號的段落，
-                  之後每一筆事實都會指向其中一個編號。
+                  之後每一筆原子命題都會指向其中一個編號。
                 </p>
               ) : (
                 <ol className="space-y-3">
@@ -168,7 +168,7 @@ export default async function SourceDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>候選事實</CardTitle>
+              <CardTitle>候選原子命題</CardTitle>
               <CardDescription>解析完成後系統會自動排入抽取工作。</CardDescription>
             </CardHeader>
             <CardContent>
@@ -182,7 +182,7 @@ export default async function SourceDetailPage({
                 href={`/review?source=${source.id}`}
                 className="mt-3 inline-block text-sm text-blue-700 underline"
               >
-                前往審核這份文件的候選事實
+                前往審核這份文件的候選原子命題
               </Link>
             </CardContent>
           </Card>

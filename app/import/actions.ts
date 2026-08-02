@@ -16,7 +16,7 @@ import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import type {
   CandidateStatus,
   Json,
-  KnowledgeType,
+  PropositionType,
   ReviewActionType,
   RiskLevel,
 } from "@/lib/supabase/types";
@@ -26,8 +26,8 @@ import type {
  *
  * 寬進嚴審：
  * - 能自動補的欄位都補（驗證階段完成），補不了的只跳過那一筆
- * - 引句對不上原文的事實會退回「以整段為依據」並強制待審核，不會被核定
- * - 正式事實一律由候選事實經 promote_candidate_fact 產生，不直接插入
+ * - 引句對不上原文的原子命題會退回「以整段為依據」並強制待審核，不會被核定
+ * - 正式原子命題一律由候選原子命題經 promote_candidate_fact 產生，不直接插入
  * - 預設不信任檔案裡的審核狀態；要沿用人工核定結果必須明確勾選
  */
 
@@ -130,7 +130,7 @@ export async function importArticlePack(
     if (!validation.ok) {
       return {
         status: "error",
-        message: "檔案裡沒有任何可匯入的事實，沒有寫入任何資料。",
+        message: "檔案裡沒有任何可匯入的原子命題，沒有寫入任何資料。",
         issues: validation.issues,
       };
     }
@@ -186,8 +186,8 @@ export async function importArticlePack(
       created,
       problems,
       message: options.trustHumanReview
-        ? `已匯入 ${created.articles} 篇：${created.chunks} 段原文、${created.candidates} 筆候選事實、${created.knowledgeFacts} 筆正式事實。${fallbackNote}`
-        : `已匯入 ${created.articles} 篇：${created.chunks} 段原文、${created.candidates} 筆候選事實，全部為待審核，請到候選事實頁逐筆核定。`,
+        ? `已匯入 ${created.articles} 篇：${created.chunks} 段原文、${created.candidates} 筆候選原子命題、${created.knowledgeFacts} 筆正式原子命題。${fallbackNote}`
+        : `已匯入 ${created.articles} 篇：${created.chunks} 段原文、${created.candidates} 筆候選原子命題，全部為待審核，請到候選原子命題頁逐筆核定。`,
     };
   } catch (cause) {
     return {
@@ -348,7 +348,7 @@ async function importOne(
       subject: candidate.subject,
       predicate: candidate.predicate,
       object: candidate.object,
-      knowledge_type: candidate.knowledge_type as KnowledgeType,
+      proposition_types: candidate.proposition_types as PropositionType[],
       conditions: normalizeConditions(candidate.conditions),
       source_quote: candidate.source_quote,
       source_paragraph_id: candidate.source_paragraph_id,
@@ -376,7 +376,7 @@ async function importOne(
 
   if (candidateError || !createdCandidates) {
     problems.push(
-      `已跳過｜${source.title}：建立候選事實失敗（${candidateError?.message}）`,
+      `已跳過｜${source.title}：建立候選原子命題失敗（${candidateError?.message}）`,
     );
     return null;
   }
@@ -425,7 +425,7 @@ async function importOne(
 
       if (error || !factId) {
         problems.push(
-          `${source.title}／${fact.candidate_fact_id}：寫入正式事實失敗（${error?.message ?? "未知原因"}）`,
+          `${source.title}／${fact.candidate_fact_id}：寫入正式原子命題失敗（${error?.message ?? "未知原因"}）`,
         );
         continue;
       }

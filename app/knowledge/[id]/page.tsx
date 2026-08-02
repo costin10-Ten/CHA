@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { FactRevisionPanel } from "@/components/knowledge/knowledge-actions";
+import { TypeBadges } from "@/components/facts/type-badges";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -14,7 +15,6 @@ import {
 } from "@/components/ui/card";
 import {
   CONDITION_LABEL,
-  KNOWLEDGE_TYPE_LABEL,
   RISK_LEVEL_CLASS,
   RISK_LEVEL_LABEL,
 } from "@/lib/facts/labels";
@@ -28,7 +28,7 @@ import {
 import { getSource } from "@/lib/sources/queries";
 import { getCurrentUser } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "正式事實詳情" };
+export const metadata: Metadata = { title: "正式原子命題詳情" };
 export const dynamic = "force-dynamic";
 
 export default async function KnowledgeFactPage({
@@ -57,14 +57,14 @@ export default async function KnowledgeFactPage({
 
   return (
     <AppShell
-      title="正式事實"
+      title="正式原子命題"
       description={`v${fact.version}．${source?.title ?? "未知來源"}．段落 ${fact.source_paragraph_id}`}
       actions={
         <Link
           href="/knowledge"
           className="text-sm text-slate-600 hover:text-slate-900"
         >
-          ← 回正式事實
+          ← 回正式原子命題
         </Link>
       }
     >
@@ -76,9 +76,7 @@ export default async function KnowledgeFactPage({
                 <Badge className={RISK_LEVEL_CLASS[fact.risk_level]}>
                   {RISK_LEVEL_LABEL[fact.risk_level]}
                 </Badge>
-                <Badge className="bg-slate-100 text-slate-700">
-                  {KNOWLEDGE_TYPE_LABEL[fact.knowledge_type]}
-                </Badge>
+                <TypeBadges types={fact.proposition_types} />
                 <span className="text-xs text-slate-500">狀態：{fact.status}</span>
               </div>
               <CardDescription>
@@ -153,7 +151,7 @@ export default async function KnowledgeFactPage({
           <Card>
             <CardHeader>
               <CardTitle>原文片段</CardTitle>
-              <CardDescription>正式事實必須能回到這裡。</CardDescription>
+              <CardDescription>正式原子命題必須能回到這裡。</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <blockquote className="border-l-2 border-emerald-400 pl-3 text-sm text-slate-800">
@@ -240,7 +238,7 @@ export default async function KnowledgeFactPage({
               </dl>
               {embeddings.active === 0 && (
                 <p className="mt-2 text-xs text-amber-700">
-                  尚未產生向量。到正式事實清單按「補齊缺少的向量」，
+                  尚未產生向量。到正式原子命題清單按「補齊缺少的向量」，
                   或等待排程工作執行。
                 </p>
               )}

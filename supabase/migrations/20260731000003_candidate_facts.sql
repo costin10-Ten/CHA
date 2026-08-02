@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 3：候選事實、提示詞版本與模型呼叫紀錄
+-- Phase 3：候選原子命題、提示詞版本與模型呼叫紀錄
 -- =============================================================================
 
 -- 1. 列舉型別 ---------------------------------------------------------------
@@ -38,7 +38,7 @@ create table if not exists public.prompt_versions (
 );
 
 comment on table public.prompt_versions is
-  '提示詞版本。同一名稱的提示詞內容有變動就是新版本，供追溯每筆事實由哪一版產生。';
+  '提示詞版本。同一名稱的提示詞內容有變動就是新版本，供追溯每筆原子命題由哪一版產生。';
 
 -- 3. model_runs -------------------------------------------------------------
 create table if not exists public.model_runs (
@@ -100,7 +100,7 @@ create table if not exists public.candidate_facts (
 );
 
 comment on table public.candidate_facts is
-  'AI 拆出的候選事實。必須附原文片段與段落編號；未經人工核定不得成為正式事實。';
+  'AI 拆出的候選原子命題。必須附原文片段與段落編號；未經人工核定不得成為正式原子命題。';
 comment on column public.candidate_facts.quality_flags is
   '自動品質檢查標記，例如 multi_proposition、condition_lost、certainty_escalated。';
 

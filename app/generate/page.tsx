@@ -58,7 +58,7 @@ export default async function GeneratePage({
   return (
     <AppShell
       title="風險溝通素材"
-      description="用核定事實產製 FAQ、短文、腳本與圖卡文字。所有產出預設為草稿，且必須通過逐句驗證才能定稿。"
+      description="用核定原子命題產製 FAQ、短文、腳本與圖卡文字。所有產出預設為草稿，且必須通過逐句驗證才能定稿。"
     >
       <div className="space-y-6">
         {loadError && (
@@ -84,7 +84,7 @@ export default async function GeneratePage({
           <CardHeader>
             <CardTitle>產生新素材</CardTitle>
             <CardDescription>
-              系統會先以主題做混合搜尋取出核定事實，再依體裁撰稿。
+              系統會先以主題做混合搜尋取出核定原子命題，再依體裁撰稿。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -131,9 +131,9 @@ export default async function GeneratePage({
             {drafts.length === 0 ? (
               <p className="text-sm text-slate-500">
                 還沒有素材。先在上面選一個體裁並輸入主題。
-                若提示找不到核定事實，請先到
+                若提示找不到核定原子命題，請先到
                 <Link href="/review" className="mx-1 underline">
-                  候選事實
+                  候選原子命題
                 </Link>
                 核定幾筆。
               </p>
@@ -181,7 +181,7 @@ export default async function GeneratePage({
                         紅 {draft.unsupported_count}
                       </span>
                       <span className="text-slate-500">
-                        使用 {draft.knowledge_fact_ids.length} 筆核定事實
+                        使用 {draft.knowledge_fact_ids.length} 筆核定原子命題
                       </span>
                     </p>
                   </li>

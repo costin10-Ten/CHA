@@ -13,6 +13,7 @@ import {
   type ReviewResult,
 } from "@/app/review/actions";
 import { FeedbackButton } from "@/components/review/feedback-button";
+import { TypeBadges } from "@/components/facts/type-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +22,6 @@ import {
   CANDIDATE_STATUS_CLASS,
   CANDIDATE_STATUS_LABEL,
   CONDITION_LABEL,
-  KNOWLEDGE_TYPE_LABEL,
   RISK_LEVEL_CLASS,
   RISK_LEVEL_LABEL,
   qualityFlagLabel,
@@ -57,11 +57,11 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
   }
 
   /**
-   * 全選只作用於目前畫面上「還沒做決定」的候選事實
+   * 全選只作用於目前畫面上「還沒做決定」的候選原子命題
    * （已套用篩選與筆數上限）。
    *
    * 刻意不包含已核定與已駁回：全選加批次核定曾經把清單裡
-   * 已駁回的事實一起寫進正式事實庫。
+   * 已駁回的原子命題一起寫進正式原子命題庫。
    */
   function toggleAll(checked: boolean) {
     setSelected(
@@ -104,7 +104,7 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
             <input
               ref={selectAllRef}
               type="checkbox"
-              aria-label="全選本頁待審核與待確認的候選事實"
+              aria-label="全選本頁待審核與待確認的候選原子命題"
               checked={allSelected}
               onChange={(event) => toggleAll(event.target.checked)}
               disabled={pending || reviewableFacts.length === 0}
@@ -185,20 +185,20 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
           )}
 
           <p className="w-full text-xs text-slate-500">
-            批次操作只作用於待審核與待確認的事實；已核定或已駁回的要改判，
+            批次操作只作用於待審核與待確認的原子命題；已核定或已駁回的要改判，
             請用該筆下方的按鈕。「可批次核定」再多一層條件：低風險且沒有任何品質標記。
           </p>
 
           {mergeOpen && (
             <div className="w-full space-y-2 rounded-md border border-slate-200 p-3">
               <label className="block text-sm font-medium text-slate-800">
-                合併後的事實敘述
+                合併後的原子命題敘述
               </label>
               <Textarea
                 rows={3}
                 value={mergeStatement}
                 onChange={(event) => setMergeStatement(event.target.value)}
-                placeholder="輸入合併後的單一敘述。原本的候選事實會標記為已合併並保留紀錄。"
+                placeholder="輸入合併後的單一敘述。原本的候選原子命題會標記為已合併並保留紀錄。"
               />
               <Button
                 size="sm"
@@ -229,7 +229,7 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
                     title={
                       isBatchReviewable(fact.status)
                         ? undefined
-                        : "已做過決定的事實不能批次操作，請用下方按鈕單筆處理"
+                        : "已做過決定的原子命題不能批次操作，請用下方按鈕單筆處理"
                     }
                     className="h-4 w-4 rounded border-slate-300 disabled:opacity-40"
                   />
@@ -239,9 +239,7 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
                   <Badge className={RISK_LEVEL_CLASS[fact.risk_level]}>
                     {RISK_LEVEL_LABEL[fact.risk_level]}
                   </Badge>
-                  <Badge className="bg-slate-100 text-slate-700">
-                    {KNOWLEDGE_TYPE_LABEL[fact.knowledge_type]}
-                  </Badge>
+                  <TypeBadges types={fact.proposition_types} />
                   <span className="font-mono text-xs text-slate-500">
                     {fact.source_paragraph_id}
                   </span>
@@ -297,7 +295,7 @@ export function ReviewList({ facts }: { facts: CandidateFactRow[] }) {
                     disabled={pending || !canApplyAction(fact.status, "approve")}
                     title={
                       fact.status === "rejected"
-                        ? "已駁回的事實要先「退回待審核」才能核定"
+                        ? "已駁回的原子命題要先「退回待審核」才能核定"
                         : undefined
                     }
                     onClick={() => run(() => approveCandidate(fact.id), false)}

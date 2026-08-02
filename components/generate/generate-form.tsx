@@ -108,7 +108,7 @@ export function GenerateForm({ types }: { types: DraftTypeOption[] }) {
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending || topic.trim().length < 2}>
-          {pending ? "檢索核定事實並產製中…" : "產生草稿"}
+          {pending ? "檢索核定原子命題並產製中…" : "產生草稿"}
         </Button>
         {selected && (
           <span className="text-xs text-slate-500">
@@ -118,8 +118,8 @@ export function GenerateForm({ types }: { types: DraftTypeOption[] }) {
       </div>
 
       <p className="text-xs text-slate-500">
-        產製只會使用檢索到的核定事實，產出後立刻逐句驗證；
-        只要有一句沒有事實支持就會標記為阻擋，不能定稿。
+        產製只會使用檢索到的核定原子命題，產出後立刻逐句驗證；
+        只要有一句沒有原子命題支持就會標記為阻擋，不能定稿。
       </p>
 
       {result.status === "error" && (

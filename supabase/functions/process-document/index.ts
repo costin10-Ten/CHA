@@ -304,10 +304,10 @@ async function processParseJob(job: {
     })
     .eq("id", source.id);
 
-  // 解析完成後接著排入候選事實抽取（Phase 3）。
+  // 解析完成後接著排入候選原子命題抽取（Phase 3）。
   //
   // 這不是第一版時只抽新增與修改的段落（工作單第 16 節第 4 點）：
-  // 未變動的段落已經有候選事實，重抽只會製造重複並多花 API 費用。
+  // 未變動的段落已經有候選原子命題，重抽只會製造重複並多花 API 費用。
   const isFirstVersion = previousBlocks.length === 0;
   const affected = [...diff.added, ...diff.changed];
 
@@ -325,7 +325,7 @@ async function processParseJob(job: {
         },
   });
   if (chainError) {
-    throw new Error(`建立事實抽取工作失敗：${chainError.message}`);
+    throw new Error(`建立原子命題抽取工作失敗：${chainError.message}`);
   }
 
   return {

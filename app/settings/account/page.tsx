@@ -68,8 +68,8 @@ export default async function AccountSettingsPage() {
             <dl className="grid gap-3 sm:grid-cols-2">
               <Row label="來源文件">{stats.sources ?? "—"}</Row>
               <Row label="原文段落">{stats.chunks ?? "—"}</Row>
-              <Row label="候選事實">{stats.candidates ?? "—"}</Row>
-              <Row label="正式事實">{stats.knowledgeFacts ?? "—"}</Row>
+              <Row label="候選原子命題">{stats.candidates ?? "—"}</Row>
+              <Row label="正式原子命題">{stats.knowledgeFacts ?? "—"}</Row>
               <Row label="現行向量">{stats.activeEmbeddings ?? "—"}</Row>
               <Row label="素材草稿">{stats.drafts ?? "—"}</Row>
             </dl>
@@ -82,7 +82,7 @@ export default async function AccountSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-slate-700">
             <p>
-              內容匯出（正式事實、對照表、單篇文件、待選事實包）在
+              內容匯出（正式原子命題、對照表、單篇文件、待選原子命題包）在
               <Link href="/export" className="mx-1 underline">
                 匯出
               </Link>

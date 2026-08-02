@@ -25,7 +25,7 @@ export default async function VerifyPage() {
   return (
     <AppShell
       title="逐句驗證"
-      description="每一句回答都要對得上核定事實。只要有一句無證據支持，整份回答就不會產生發布稿。"
+      description="每一句回答都要對得上核定原子命題。只要有一句無證據支持，整份回答就不會產生發布稿。"
     >
       <div className="space-y-4">
         {loadError && (

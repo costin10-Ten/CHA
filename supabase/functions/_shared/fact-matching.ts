@@ -2,16 +2,16 @@ import { normalizeForCompare, quoteExistsInParagraph } from "./quality.ts";
 import { coverage } from "./verification.ts";
 
 /**
- * 把事實包裡的事實對應到「系統自己解析出來的原文段落」。
+ * 把原子命題包裡的原子命題對應到「系統自己解析出來的原文段落」。
  *
- * 為什麼需要這個：事實包裡的段落編號是整理者自己編的，
+ * 為什麼需要這個：原子命題包裡的段落編號是整理者自己編的，
  * 與解析器產生的 P-001… 不保證一致；引句也可能抓得不精準。
  * 與其要求整理者手工對齊，不如由系統用內容去找。
  *
  * 比對順序（先確定的、再推測的）：
  *   1. 引句直接出現在某一段 → 最可靠，引句照用
  *   2. 敘述與某一段的內容重疊度夠高 → 在該段內找出最貼近的句子當引句
- *   3. 事實包給的段落編號剛好存在，且內容重疊度不算太低 → 用它
+ *   3. 原子命題包給的段落編號剛好存在，且內容重疊度不算太低 → 用它
  *   4. 都不成立 → 不對應，交由呼叫端跳過並回報
  *
  * 只有第 1 種算「引句已驗證」；其餘都會標記為需人工確認，
@@ -26,9 +26,9 @@ export interface MatchParagraph {
 export interface MatchInput {
   ref: string;
   statement: string;
-  /** 事實包裡的引句，可能是佔位符或空白。 */
+  /** 原子命題包裡的引句，可能是佔位符或空白。 */
   quote?: string | null;
-  /** 事實包裡的段落編號，只當作提示。 */
+  /** 原子命題包裡的段落編號，只當作提示。 */
   paragraphIdHint?: string | null;
 }
 
@@ -73,7 +73,7 @@ export function splitParagraphSentences(text: string): string[] {
 }
 
 /**
- * 在段落中找出最貼近這句事實的原文片段。
+ * 在段落中找出最貼近這句原子命題的原文片段。
  *
  * 回傳的一定是段落裡真實存在的連續文字——
  * 系統可以「找出」引句，但絕不「編寫」引句。
@@ -93,7 +93,7 @@ export function locateQuote(statement: string, paragraph: string): string {
   const best = scored[0];
   if (!best || best.score === 0) return paragraph;
 
-  // 相鄰且分數接近的句子一起帶出來，避免把跨句的事實切一半。
+  // 相鄰且分數接近的句子一起帶出來，避免把跨句的原子命題切一半。
   const neighbours = scored.filter(
     (item) =>
       Math.abs(item.index - best.index) === 1 && item.score >= best.score * 0.8,

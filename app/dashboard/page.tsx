@@ -71,7 +71,7 @@ export default async function DashboardPage() {
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <StatTile label="文件總數" value={stats.sources} href="/sources" />
-          <StatTile label="候選事實" value={stats.candidates} href="/review" />
+          <StatTile label="候選原子命題" value={stats.candidates} href="/review" />
           <StatTile
             label="待審核"
             value={stats.pendingReview}
@@ -79,12 +79,12 @@ export default async function DashboardPage() {
             highlight={(stats.pendingReview ?? 0) > 0}
           />
           <StatTile
-            label="核定事實"
+            label="核定原子命題"
             value={stats.knowledgeFacts}
             href="/knowledge"
           />
           <StatTile
-            label="高風險事實"
+            label="高風險原子命題"
             value={stats.highRisk}
             href="/knowledge?risk=high"
           />

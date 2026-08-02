@@ -7,7 +7,7 @@ import { importCandidatePack, type ImportResult } from "@/app/export/actions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-/** 把外部 LLM 校正過的待選事實包貼回來。結果一律進入待審核。 */
+/** 把外部 LLM 校正過的待選原子命題包貼回來。結果一律進入待審核。 */
 export function PackImport() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();

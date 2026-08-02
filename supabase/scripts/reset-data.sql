@@ -4,7 +4,7 @@
 -- 用法：Supabase Dashboard → SQL Editor → 貼上 → 把下面的 email 換成你的登入
 -- 信箱 → Run。
 --
--- 會刪除：來源文件、文件版本、段落、候選事實、審核紀錄、正式事實、事實版本、
+-- 會刪除：來源文件、文件版本、段落、候選原子命題、審核紀錄、正式原子命題、原子命題版本、
 --         實體、關聯、向量索引、問答紀錄、素材草稿、抽取回報、工作佇列、模型呼叫紀錄
 -- 不會刪除：auth.users（你的帳號）、profiles、prompt_versions（提示詞版本）
 --
@@ -46,7 +46,7 @@ begin
   delete from public.processing_jobs where owner_id = v_owner;
   delete from public.model_runs where owner_id = v_owner;
 
-  raise notice '已清空 %：來源 % 筆、候選事實 % 筆、正式事實 % 筆。',
+  raise notice '已清空 %：來源 % 筆、候選原子命題 % 筆、正式原子命題 % 筆。',
     v_email, v_sources, v_candidates, v_facts;
 end
 $$;

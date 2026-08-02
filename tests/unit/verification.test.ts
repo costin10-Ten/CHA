@@ -79,21 +79,21 @@ describe("verifySentence 綠燈", () => {
     expect(result.verdict).toBe("supported");
   });
 
-  it("資料不足的說明不算事實主張", () => {
-    const result = verifySentence("現有核定事實不足以回答這個問題。", FACTS);
+  it("資料不足的說明不算原子命題主張", () => {
+    const result = verifySentence("現有核定原子命題不足以回答這個問題。", FACTS);
     expect(result.verdict).toBe("supported");
-    expect(result.reasons[0]).toContain("不是事實陳述");
+    expect(result.reasons[0]).toContain("不是原子命題陳述");
   });
 });
 
 describe("verifySentence 紅燈", () => {
-  it("完全找不到支持的事實", () => {
+  it("完全找不到支持的原子命題", () => {
     const result = verifySentence("颱風假由地方政府各自宣布。", FACTS);
     expect(result.verdict).toBe("unsupported");
     expect(result.reasons.join()).toContain("找不到");
   });
 
-  it("數字與核定事實不符", () => {
+  it("數字與核定原子命題不符", () => {
     const result = verifySentence(
       "孕婦每週攝取大型魚類不應超過 5 份。[K-0002]",
       FACTS,
@@ -102,7 +102,7 @@ describe("verifySentence 紅燈", () => {
     expect(result.reasons.join()).toContain("數字");
   });
 
-  it("否定語氣與事實相反", () => {
+  it("否定語氣與原子命題相反", () => {
     const result = verifySentence(
       "甲基汞不會經由食物鏈累積於大型魚類。[K-0001]",
       FACTS,
@@ -127,7 +127,7 @@ describe("verifySentence 紅燈", () => {
 });
 
 describe("verifySentence 黃燈", () => {
-  it("事實有不確定語氣但回答寫成確定", () => {
+  it("原子命題有不確定語氣但回答寫成確定", () => {
     const result = verifySentence(
       "長期攝取甲基汞會影響胎兒神經發育。[K-0003]",
       FACTS,
@@ -136,7 +136,7 @@ describe("verifySentence 黃燈", () => {
     expect(result.reasons.join()).toContain("不確定語氣");
   });
 
-  it("事實有適用條件但回答沒帶出來", () => {
+  it("原子命題有適用條件但回答沒帶出來", () => {
     const result = verifySentence("每週攝取大型魚類不應超過 2 份。[K-0002]", [
       {
         ...FACTS[1],

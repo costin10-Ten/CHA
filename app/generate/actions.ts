@@ -29,7 +29,7 @@ import type { Json } from "@/lib/supabase/types";
 /**
  * 風險溝通素材產製（工作單第 15 節）。
  *
- * 與問答同一條規則：只用核定事實、產出一律是草稿、
+ * 與問答同一條規則：只用核定原子命題、產出一律是草稿、
  * 產生後立刻逐句驗證，有紅色句子就標記為 blocked。
  */
 
@@ -58,7 +58,7 @@ export interface GenerateInput {
   topic: string;
   audience?: string;
   tone?: string;
-  /** 指定要使用的正式事實；未指定時以主題做混合搜尋。 */
+  /** 指定要使用的正式原子命題；未指定時以主題做混合搜尋。 */
   factIds?: string[];
 }
 
@@ -81,7 +81,7 @@ export async function generateDraft(input: GenerateInput): Promise<GenerateResul
 
     const supabase = await createClient();
 
-    // 1. 取得可用的核定事實
+    // 1. 取得可用的核定原子命題
     const rows =
       input.factIds && input.factIds.length > 0
         ? ((
@@ -96,7 +96,7 @@ export async function generateDraft(input: GenerateInput): Promise<GenerateResul
     if (rows.length === 0) {
       return {
         status: "error",
-        message: "找不到相關的核定事實。請先核定事實，或換一個主題。",
+        message: "找不到相關的核定原子命題。請先核定原子命題，或換一個主題。",
       };
     }
 
@@ -204,7 +204,7 @@ export async function generateDraft(input: GenerateInput): Promise<GenerateResul
       draftId: draft.id,
       message: summary.publishable
         ? `已產生${DRAFT_SPECS[draftType].label}草稿，逐句驗證通過。`
-        : `已產生${DRAFT_SPECS[draftType].label}草稿，但有 ${summary.unsupported} 句沒有事實支持，已標記為阻擋。`,
+        : `已產生${DRAFT_SPECS[draftType].label}草稿，但有 ${summary.unsupported} 句沒有原子命題支持，已標記為阻擋。`,
     };
   } catch (cause) {
     return {
@@ -274,7 +274,7 @@ export async function updateDraftBody(
       draftId,
       message: summary.publishable
         ? "已儲存並重新驗證，內容可發布。"
-        : `已儲存，但仍有 ${summary.unsupported} 句沒有事實支持。`,
+        : `已儲存，但仍有 ${summary.unsupported} 句沒有原子命題支持。`,
     };
   } catch (cause) {
     return {
@@ -298,7 +298,7 @@ export async function finalizeDraft(draftId: string): Promise<GenerateResult> {
     if (!draft.publishable) {
       return {
         status: "error",
-        message: "仍有沒有事實支持的句子，無法定稿。請先修正紅色句子。",
+        message: "仍有沒有原子命題支持的句子，無法定稿。請先修正紅色句子。",
       };
     }
 

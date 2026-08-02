@@ -34,19 +34,19 @@ export default async function ExportPage({
   return (
     <AppShell
       title="匯出與備份"
-      description="匯出正式事實、事實與來源對照表、單篇文件，以及要丟給其他 LLM 校正的待選事實包。"
+      description="匯出正式原子命題、原子命題與來源對照表、單篇文件，以及要丟給其他 LLM 校正的待選原子命題包。"
     >
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>正式事實</CardTitle>
+            <CardTitle>正式原子命題</CardTitle>
             <CardDescription>
               只包含現行版本（status = active）。每筆都附原文片段與段落編號。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <DownloadRow
-              label="全部正式事實"
+              label="全部正式原子命題"
               hrefs={{
                 JSON: `/api/export?kind=facts&format=json${sourceQuery}`,
                 CSV: `/api/export?kind=facts&format=csv${sourceQuery}`,
@@ -54,7 +54,7 @@ export default async function ExportPage({
               }}
             />
             <DownloadRow
-              label="事實與來源對照表"
+              label="原子命題與來源對照表"
               hrefs={{
                 JSON: `/api/export?kind=mapping&format=json${sourceQuery}`,
                 CSV: `/api/export?kind=mapping&format=csv${sourceQuery}`,
@@ -99,14 +99,14 @@ export default async function ExportPage({
         {params.source && (
           <Card>
             <CardHeader>
-              <CardTitle>單篇文件與其事實</CardTitle>
+              <CardTitle>單篇文件與其原子命題</CardTitle>
               <CardDescription>
-                包含這份文件現行版本的全部段落，以及由它產生的正式事實。
+                包含這份文件現行版本的全部段落，以及由它產生的正式原子命題。
               </CardDescription>
             </CardHeader>
             <CardContent>
               <DownloadRow
-                label="文件 + 事實"
+                label="文件 + 原子命題"
                 hrefs={{
                   JSON: `/api/export?kind=document&format=json&source=${params.source}`,
                   Markdown: `/api/export?kind=document&format=markdown&source=${params.source}`,
@@ -119,14 +119,14 @@ export default async function ExportPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>待選事實包（給其他 LLM 校正）</CardTitle>
+            <CardTitle>待選原子命題包（給其他 LLM 校正）</CardTitle>
             <CardDescription>
-              匯出待審核的候選事實。包內自帶欄位說明與校正目標，接手的模型不需要本專案脈絡也能正確處理。
+              匯出待審核的候選原子命題。包內自帶欄位說明與校正目標，接手的模型不需要本專案脈絡也能正確處理。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <DownloadRow
-              label="待審核候選事實包"
+              label="待審核候選原子命題包"
               hrefs={{
                 JSON: `/api/export?kind=candidates&format=json${sourceQuery}`,
               }}

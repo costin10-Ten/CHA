@@ -11,10 +11,10 @@ import {
 import { DEMO_ARTICLES } from "@/lib/demo/articles";
 
 /**
- * 事實 ↔ 原文段落的比對。
+ * 原子命題 ↔ 原文段落的比對。
  *
- * 這是「原文另外上傳」這條路徑的核心：事實包不必自帶原文，
- * 系統用內容找出每一筆事實屬於哪一段，並從段落裡定位出引句。
+ * 這是「原文另外上傳」這條路徑的核心：原子命題包不必自帶原文，
+ * 系統用內容找出每一筆原子命題屬於哪一段，並從段落裡定位出引句。
  * 系統可以「找出」引句，但絕不「編寫」引句——測試會檢查回傳的引句
  * 一定是原文裡真實存在的文字。
  */
@@ -229,7 +229,7 @@ describe("以示範資料量測準確率", () => {
         text: paragraph.text,
       }));
 
-      // 模擬「事實包只有敘述、沒有引句」的情況。
+      // 模擬「原子命題包只有敘述、沒有引句」的情況。
       const facts = article.candidates.map((candidate) => ({
         ref: candidate.ref,
         statement: candidate.statement,
@@ -243,12 +243,12 @@ describe("以示範資料量測準確率", () => {
         return result.paragraphId !== null && result.paragraphId !== truth;
       });
 
-      // 寧可回報「找不到」也不要把事實掛到錯的段落上。
+      // 寧可回報「找不到」也不要把原子命題掛到錯的段落上。
       expect(
         wrong.map((item) => `${item.ref} → ${item.paragraphId}`).join("、"),
       ).toBe("");
 
-      // 未經扭曲的事實（核定與待審核）都要對得上。
+      // 未經扭曲的原子命題（核定與待審核）都要對得上。
       const genuine = results.filter((_, index) =>
         ["approved", "pending"].includes(article.candidates[index].status),
       );

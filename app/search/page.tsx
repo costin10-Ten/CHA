@@ -3,6 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { PROPOSITION_TYPE_LABEL } from "@/lib/facts/labels";
+import { TypeBadges } from "@/components/facts/type-badges";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -11,28 +13,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  KNOWLEDGE_TYPE_LABEL,
-  RISK_LEVEL_CLASS,
-  RISK_LEVEL_LABEL,
-} from "@/lib/facts/labels";
+import { RISK_LEVEL_CLASS, RISK_LEVEL_LABEL } from "@/lib/facts/labels";
 import { listEntities } from "@/lib/knowledge/queries";
 import { searchKnowledgeFacts } from "@/lib/retrieval/search";
 import { listSourceOptions } from "@/lib/facts/queries";
 import { getCurrentUser } from "@/lib/supabase/server";
-import type { KnowledgeType, RiskLevel } from "@/lib/supabase/types";
+import {
+  PROPOSITION_TYPES,
+  type PropositionType,
+  type RiskLevel,
+} from "@/lib/supabase/types";
 
 export const metadata: Metadata = { title: "搜尋" };
 export const dynamic = "force-dynamic";
 
-const TYPES: KnowledgeType[] = [
-  "substance",
-  "concept",
-  "policy",
-  "event",
-  "topic",
-  "other",
-];
+const TYPES = PROPOSITION_TYPES;
 const RISKS: RiskLevel[] = ["low", "medium", "high"];
 
 type SearchParams = {
@@ -62,8 +57,8 @@ export default async function SearchPage({
     searchKnowledgeFacts({
       query,
       sourceId: params.source || undefined,
-      knowledgeType: (TYPES as string[]).includes(params.type ?? "")
-        ? (params.type as KnowledgeType)
+      propositionType: (TYPES as string[]).includes(params.type ?? "")
+        ? (params.type as PropositionType)
         : undefined,
       riskLevel: (RISKS as string[]).includes(params.risk ?? "")
         ? (params.risk as RiskLevel)
@@ -82,7 +77,7 @@ export default async function SearchPage({
   return (
     <AppShell
       title="搜尋"
-      description="關鍵字、PostgreSQL 全文、三元組相似度與向量四路並用，只搜尋現行的核定事實。"
+      description="關鍵字、PostgreSQL 全文、三元組相似度與向量四路並用，只搜尋現行的核定原子命題。"
     >
       <div className="space-y-6">
         <Card>
@@ -111,11 +106,11 @@ export default async function SearchPage({
                   ))}
                 </Select>
 
-                <Select name="type" label="知識類型" value={params.type}>
+                <Select name="type" label="命題分類" value={params.type}>
                   <option value="">全部</option>
                   {TYPES.map((value) => (
                     <option key={value} value={value}>
-                      {KNOWLEDGE_TYPE_LABEL[value]}
+                      {PROPOSITION_TYPE_LABEL[value]}
                     </option>
                   ))}
                 </Select>
@@ -183,7 +178,7 @@ export default async function SearchPage({
         )}
 
         <p className="text-sm text-slate-600">
-          找到 {results.length} 筆現行核定事實
+          找到 {results.length} 筆現行核定原子命題
           {useVector ? "（混合搜尋）" : "（純關鍵字）"}
         </p>
 
@@ -191,7 +186,7 @@ export default async function SearchPage({
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm text-slate-500">
-                沒有符合的事實。可能是還沒有核定任何事實，或關鍵字太特殊。
+                沒有符合的原子命題。可能是還沒有核定任何原子命題，或關鍵字太特殊。
               </p>
             </CardContent>
           </Card>
@@ -205,9 +200,7 @@ export default async function SearchPage({
                       <Badge className={RISK_LEVEL_CLASS[row.risk_level]}>
                         {RISK_LEVEL_LABEL[row.risk_level]}
                       </Badge>
-                      <Badge className="bg-slate-100 text-slate-700">
-                        {KNOWLEDGE_TYPE_LABEL[row.knowledge_type]}
-                      </Badge>
+                      <TypeBadges types={row.proposition_types} />
                       <span className="text-xs text-slate-500">v{row.version}</span>
                       <span className="ml-auto flex gap-3 text-xs text-slate-500">
                         <span>關鍵字 {row.keyword_rank.toFixed(2)}</span>

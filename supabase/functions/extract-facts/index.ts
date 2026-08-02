@@ -1,4 +1,4 @@
-// Supabase Edge Function：候選事實抽取 worker
+// Supabase Edge Function：候選原子命題抽取 worker
 //
 // 流程：
 //   claim_processing_jobs('extract_facts')
@@ -88,10 +88,15 @@ async function processExtractionJob(job: {
 
   const { data: source, error: sourceError } = await admin
     .from("sources")
-    .select("id, title, owner_id")
+    .select("id, title, owner_id, origin_url")
     .eq("id", job.source_id)
     .eq("owner_id", job.owner_id)
-    .single<{ id: string; title: string; owner_id: string }>();
+    .single<{
+      id: string;
+      title: string;
+      owner_id: string;
+      origin_url: string | null;
+    }>();
 
   if (sourceError || !source) {
     throw new Error(`找不到來源文件：${sourceError?.message ?? job.source_id}`);
@@ -136,7 +141,7 @@ async function processExtractionJob(job: {
   const { data: promptVersionId } = await admin.rpc("upsert_prompt_version", {
     p_owner: job.owner_id,
     p_name: EXTRACTION_PROMPT_NAME,
-    p_purpose: "候選事實抽取",
+    p_purpose: "候選原子命題抽取",
     p_template: EXTRACTION_SYSTEM_PROMPT,
     p_checksum: checksum,
   });
@@ -223,6 +228,8 @@ async function processExtractionJob(job: {
       const quality = checkFactQuality(fact, {
         paragraphText: chunk.text,
         previousStatements: acceptedStatements,
+        // 「醫學健康建議」須為政府機關來源，靠這個網址判斷。
+        sourceUrl: source.origin_url,
       });
 
       // 無來源片段或片段不在原文者不得進入核定流程。
@@ -244,7 +251,7 @@ async function processExtractionJob(job: {
         subject: fact.subject,
         predicate: fact.predicate,
         object: fact.object,
-        knowledge_type: fact.knowledge_type,
+        proposition_types: fact.proposition_types,
         conditions: fact.conditions,
         source_quote: fact.source_quote,
         source_paragraph_id: fact.source_paragraph_id,
@@ -269,7 +276,7 @@ async function processExtractionJob(job: {
         })
         .select("id");
 
-      if (error) throw new Error(`寫入候選事實失敗：${error.message}`);
+      if (error) throw new Error(`寫入候選原子命題失敗：${error.message}`);
       inserted += insertedRows?.length ?? 0;
     }
 

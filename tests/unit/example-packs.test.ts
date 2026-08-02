@@ -24,7 +24,7 @@ describe("最小範例 fact-pack-minimal.json", () => {
 
   it("單獨匯入會被擋下：這個格式一定要搭配原文", () => {
     // 範例檔自己就寫著這件事，這裡確認系統真的是這樣處理，
-    // 而不是默默匯入一批沒有原文可對照的事實。
+    // 而不是默默匯入一批沒有原文可對照的原子命題。
     const result = validateArticlePack(minimal);
     expect(result.ok).toBe(false);
     expect(
@@ -32,9 +32,9 @@ describe("最小範例 fact-pack-minimal.json", () => {
     ).toBe(true);
   });
 
-  it("搭配原文上傳時，三句事實都能對到正確的段落", () => {
-    // 模擬 /import 的「原文 + 事實包」路徑：原文由系統解析成段落，
-    // 事實只給敘述，段落與引句由 matchFacts 比對出來。
+  it("搭配原文上傳時，三句原子命題都能對到正確的段落", () => {
+    // 模擬 /import 的「原文 + 原子命題包」路徑：原文由系統解析成段落，
+    // 原子命題只給敘述，段落與引句由 matchFacts 比對出來。
     const source = loadExample("fact-pack-full.json") as {
       document_chunks: { paragraph_id: string; text: string }[];
     };
@@ -87,7 +87,7 @@ describe("完整範例 fact-pack-full.json", () => {
     }
   });
 
-  it("示範的駁回事實被略過，不會進資料庫", () => {
+  it("示範的駁回原子命題被略過，不會進資料庫", () => {
     expect(result.articles[0].droppedRejected).toEqual(["C005"]);
     expect(result.summary.rejected).toBe(1);
     expect(result.articles[0].candidates.map((candidate) => candidate.ref)).toEqual(
@@ -100,11 +100,35 @@ describe("完整範例 fact-pack-full.json", () => {
       result.articles[0].candidates.map((candidate) => [candidate.ref, candidate]),
     );
 
-    expect(byRef.get("C001")?.knowledge_type).toBe("policy");
+    expect(byRef.get("C001")?.proposition_types).toEqual([
+      "domestic_policy",
+      "agency_topic",
+    ]);
     expect(byRef.get("C001")?.risk_level).toBe("low");
     expect(byRef.get("C001")?.status).toBe("approved");
     expect(byRef.get("C003")?.risk_level).toBe("high");
     expect(byRef.get("C003")?.status).toBe("pending");
+  });
+
+  it("分類可複選，中文寫法一樣認得", () => {
+    const byRef = new Map(
+      result.articles[0].candidates.map((candidate) => [candidate.ref, candidate]),
+    );
+
+    // C003 掛兩類：毒理機制與物質性質——九類本來就會重疊。
+    expect(byRef.get("C003")?.proposition_types).toEqual([
+      "toxicology_mechanism",
+      "substance_property",
+    ]);
+    // C004 用中文寫，正規化成英文識別碼。
+    expect(byRef.get("C004")?.proposition_types).toEqual([
+      "toxicology_mechanism",
+      "substance_property",
+    ]);
+    // 沒有任何分類被判為無法辨識。
+    expect(result.issues.filter((issue) => issue.message.includes("分類"))).toEqual(
+      [],
+    );
   });
 
   it("刪節號串接的引句可以對上原文", () => {
@@ -114,7 +138,7 @@ describe("完整範例 fact-pack-full.json", () => {
     expect(byRef.get("C004")?.quote_fallback).toBe(false);
   });
 
-  it("只有核定的事實會被寫成正式事實", () => {
+  it("只有核定的原子命題會被寫成正式原子命題", () => {
     const refs = result.articles[0].knowledgeFacts.map(
       (fact) => fact.candidate_fact_id,
     );

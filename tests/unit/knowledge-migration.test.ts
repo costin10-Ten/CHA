@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * 這些是工作單第 11、12 節的硬性規則，寫成測試避免日後改壞：
- * - 修改事實時舊版標為 superseded、只停用該筆向量
+ * - 修改原子命題時舊版標為 superseded、只停用該筆向量
  * - 不得重建全部向量
  * - 只有現行向量參與索引
  */
@@ -22,8 +22,8 @@ function readMigrations(): string {
 
 const sql = readMigrations();
 
-describe("正式事實版本規則", () => {
-  it("修改事實會把舊版標為 superseded", () => {
+describe("正式原子命題版本規則", () => {
+  it("修改原子命題會把舊版標為 superseded", () => {
     expect(sql).toMatch(/set status = 'superseded', superseded_by = v_new_id/);
   });
 
@@ -37,7 +37,7 @@ describe("正式事實版本規則", () => {
 });
 
 describe("向量增量更新規則", () => {
-  it("修改事實時只停用該筆事實的向量", () => {
+  it("修改原子命題時只停用該筆原子命題的向量", () => {
     expect(sql).toMatch(
       /update public\.embedding_records\s+set is_active = false\s+where knowledge_fact_id = v_old\.id and is_active/,
     );
@@ -65,13 +65,13 @@ describe("向量增量更新規則", () => {
   });
 });
 
-describe("正式事實的來源約束", () => {
-  it("沒有原文片段的候選事實不得寫入正式事實庫", () => {
-    expect(sql).toContain("缺少原文片段的事實不得寫入正式事實庫");
+describe("正式原子命題的來源約束", () => {
+  it("沒有原文片段的候選原子命題不得寫入正式原子命題庫", () => {
+    expect(sql).toContain("缺少原文片段的原子命題不得寫入正式原子命題庫");
   });
 
-  it("只有已核定的候選事實可以寫入", () => {
-    expect(sql).toContain("只有已核定的候選事實可以寫入正式事實庫");
+  it("只有已核定的候選原子命題可以寫入", () => {
+    expect(sql).toContain("只有已核定的候選原子命題可以寫入正式原子命題庫");
   });
 
   it("source_quote 與 source_paragraph_id 都是必填", () => {
@@ -94,7 +94,7 @@ describe("混合搜尋的安全限制", () => {
     expect(search).toContain("f.owner_id = (select auth.uid())");
   });
 
-  it("只搜尋現行事實", () => {
+  it("只搜尋現行原子命題", () => {
     expect(search).toContain("f.status = 'active'");
   });
 
@@ -112,7 +112,7 @@ describe("混合搜尋的安全限制", () => {
   it("支援文件、類型、風險與實體篩選", () => {
     for (const filter of [
       "p_source_id is null or f.source_id = p_source_id",
-      "p_knowledge_type is null or f.knowledge_type = p_knowledge_type",
+      "p_proposition_type is null",
       "p_risk_level is null or f.risk_level = p_risk_level",
       "p_entity_id is null",
     ]) {

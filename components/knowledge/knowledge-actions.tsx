@@ -50,7 +50,7 @@ function ResultMessage({ result }: { result: KnowledgeResult }) {
   );
 }
 
-/** 清單頁的操作列：批次寫入正式事實、補齊向量。 */
+/** 清單頁的操作列：批次寫入正式原子命題、補齊向量。 */
 export function KnowledgeToolbar({ pendingCount }: { pendingCount: number }) {
   const { pending, result, run } = useRunner();
 
@@ -76,7 +76,7 @@ export function KnowledgeToolbar({ pendingCount }: { pendingCount: number }) {
   );
 }
 
-/** 單筆正式事實的修改與停用。 */
+/** 單筆正式原子命題的修改與停用。 */
 export function FactRevisionPanel({ fact }: { fact: KnowledgeFactRow }) {
   const { pending, result, run } = useRunner();
   const [statement, setStatement] = useState(fact.statement);
@@ -87,7 +87,7 @@ export function FactRevisionPanel({ fact }: { fact: KnowledgeFactRow }) {
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <Label htmlFor="fact-statement">事實敘述</Label>
+        <Label htmlFor="fact-statement">原子命題敘述</Label>
         <Textarea
           id="fact-statement"
           rows={3}
@@ -97,7 +97,7 @@ export function FactRevisionPanel({ fact }: { fact: KnowledgeFactRow }) {
         />
         <p className="text-xs text-slate-500">
           儲存後會建立新版本，舊版標記為已取代並保留；
-          只有這一筆的向量會重做，其他事實的索引不受影響。
+          只有這一筆的向量會重做，其他原子命題的索引不受影響。
         </p>
       </div>
 

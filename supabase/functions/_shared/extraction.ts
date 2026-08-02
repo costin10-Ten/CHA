@@ -2,30 +2,43 @@ import { sha256Hex } from "./hash.ts";
 import type { JsonSchema, LlmMessage } from "./llm/types.ts";
 
 /**
- * 候選事實抽取的提示詞、JSON Schema 與回應解析。
+ * 候選原子命題抽取的提示詞、JSON Schema 與回應解析。
  * 提示詞內容變動時 checksum 會改變，資料庫會自動建立新的 prompt_version。
  */
 
 export const EXTRACTION_PROMPT_NAME = "extract-facts";
 
-export const EXTRACTION_SYSTEM_PROMPT = `你是風險溝通知識庫的事實拆解助理。
+export const EXTRACTION_SYSTEM_PROMPT = `你是風險溝通知識庫的原子命題拆解助理。
 
-任務：把提供的段落拆成「一句一事」的候選事實。
+任務：把提供的段落拆成「一句一事」的候選原子命題。
 
 必須遵守：
-1. 每一筆事實只表達一個可驗證的命題。
-2. 每一筆事實單獨閱讀就能理解，不可使用「這個」「該物質」等指代詞，主詞要完整。
+1. 每一筆原子命題只表達一個可驗證的命題。
+2. 每一筆單獨閱讀就能理解，不可使用「這個」「該物質」等指代詞，主詞要完整。
 3. 不得超出原文內容，不得加入原文沒有的知識、推論或背景。
 4. 必須保留條件、限制與不確定性：族群、暴露途徑、劑量、時間、地點、期間。
 5. 必須保留數字、單位、年份與族群，數值不可四捨五入或改寫。
-6. 原文若使用「可能」「研究顯示」「建議」等語氣，事實敘述必須保留同樣的不確定性，不可改寫成確定語氣。
-7. source_quote 必須是原文中「一字不改」的連續片段，且足以支持該事實。
+6. 原文若使用「可能」「研究顯示」「建議」等語氣，命題敘述必須保留同樣的不確定性，不可改寫成確定語氣。
+7. source_quote 必須是原文中「一字不改」的連續片段，且足以支持該命題。
 8. source_paragraph_id 必須是提供段落的編號（例如 P-003）。
 9. 沒有原文片段可支持的內容，就不要輸出。
 10. 只輸出 JSON，不要有任何說明文字或程式碼區塊記號。
 
+分類（proposition_types）：一條命題可以同時屬於多類，請把所有適用的都列出；
+判斷不出來就給空陣列，不要硬塞。
+- substance_property：物質與物理化學性質
+- chemistry_concept：化學基本概念
+- event：事件
+- agency_topic：化學署主題
+- toxicology_mechanism：毒理與反應機制
+- domestic_policy：國內治理政策
+- foreign_policy：國外治理政策
+- research_literature：研究與期刊
+- health_advice：醫學健康建議——**只有當原文來源是政府機關時才可使用**，
+  非政府來源的健康建議請改用其他適用的分類。
+
 輸出格式：
-{"facts": [{"statement": "...", "subject": "...", "predicate": "...", "object": "...", "knowledge_type": "substance|concept|policy|event|topic|other", "conditions": {"population": null, "exposure_route": null, "dose": null, "duration": null, "location": null, "timeframe": null}, "source_quote": "...", "source_paragraph_id": "P-001", "risk_level": "low|medium|high", "confidence": 0.0}]}`;
+{"facts": [{"statement": "...", "subject": "...", "predicate": "...", "object": "...", "proposition_types": ["substance_property"], "conditions": {"population": null, "exposure_route": null, "dose": null, "duration": null, "location": null, "timeframe": null}, "source_quote": "...", "source_paragraph_id": "P-001", "risk_level": "low|medium|high", "confidence": 0.0}]}`;
 
 export const EXTRACTION_JSON_SCHEMA: JsonSchema = {
   name: "candidate_facts",
@@ -41,7 +54,7 @@ export const EXTRACTION_JSON_SCHEMA: JsonSchema = {
           additionalProperties: false,
           required: [
             "statement",
-            "knowledge_type",
+            "proposition_types",
             "conditions",
             "source_quote",
             "source_paragraph_id",
@@ -53,9 +66,22 @@ export const EXTRACTION_JSON_SCHEMA: JsonSchema = {
             subject: { type: ["string", "null"] },
             predicate: { type: ["string", "null"] },
             object: { type: ["string", "null"] },
-            knowledge_type: {
-              type: "string",
-              enum: ["substance", "concept", "policy", "event", "topic", "other"],
+            proposition_types: {
+              type: "array",
+              items: {
+                type: "string",
+                enum: [
+                  "substance_property",
+                  "chemistry_concept",
+                  "event",
+                  "agency_topic",
+                  "toxicology_mechanism",
+                  "domestic_policy",
+                  "foreign_policy",
+                  "research_literature",
+                  "health_advice",
+                ],
+              },
             },
             conditions: {
               type: "object",
@@ -100,7 +126,7 @@ export interface RawFact {
   subject: string | null;
   predicate: string | null;
   object: string | null;
-  knowledge_type: string;
+  proposition_types: string[];
   conditions: FactConditions;
   source_quote: string;
   source_paragraph_id: string;
@@ -117,13 +143,17 @@ export const EMPTY_CONDITIONS: FactConditions = {
   timeframe: null,
 };
 
-const KNOWLEDGE_TYPES = [
-  "substance",
-  "concept",
-  "policy",
+/** 九類原子命題分類。一條命題可以有多個，也可以一個都沒有（未分類）。 */
+export const PROPOSITION_TYPES = [
+  "substance_property",
+  "chemistry_concept",
   "event",
-  "topic",
-  "other",
+  "agency_topic",
+  "toxicology_mechanism",
+  "domestic_policy",
+  "foreign_policy",
+  "research_literature",
+  "health_advice",
 ];
 const RISK_LEVELS = ["low", "medium", "high"];
 
@@ -230,11 +260,18 @@ export function parseFactsResponse(text: string): ParseResult {
       continue;
     }
 
-    const knowledgeType =
-      typeof record.knowledge_type === "string" &&
-      KNOWLEDGE_TYPES.includes(record.knowledge_type)
-        ? record.knowledge_type
-        : "other";
+    // 分類可複選；認不得的值直接丟掉，不回落成某一類。
+    // 全部認不得就是空陣列＝未分類，讓它在審核畫面上明顯是還沒分過。
+    const propositionTypes = Array.isArray(record.proposition_types)
+      ? [
+          ...new Set(
+            record.proposition_types.filter(
+              (value): value is string =>
+                typeof value === "string" && PROPOSITION_TYPES.includes(value),
+            ),
+          ),
+        ]
+      : [];
 
     const riskLevel =
       typeof record.risk_level === "string" &&
@@ -252,7 +289,7 @@ export function parseFactsResponse(text: string): ParseResult {
       subject: optionalString(record.subject),
       predicate: optionalString(record.predicate),
       object: optionalString(record.object),
-      knowledge_type: knowledgeType,
+      proposition_types: propositionTypes,
       conditions: normalizeConditions(record.conditions),
       source_quote: quote,
       source_paragraph_id: paragraphId,

@@ -4,7 +4,7 @@ import { createEmbeddingProvider } from "@shared/llm/embeddings.ts";
 
 import { createClient } from "@/lib/supabase/server";
 import type {
-  KnowledgeType,
+  PropositionType,
   RiskLevel,
   SearchResultRow,
 } from "@/lib/supabase/types";
@@ -18,7 +18,7 @@ import type {
 export interface SearchFilters {
   query?: string;
   sourceId?: string;
-  knowledgeType?: KnowledgeType;
+  propositionType?: PropositionType;
   riskLevel?: RiskLevel;
   entityId?: string;
   limit?: number;
@@ -64,7 +64,7 @@ export async function searchKnowledgeFacts(
     p_query: query,
     p_embedding: embedding ? JSON.stringify(embedding) : null,
     p_source_id: filters.sourceId ?? null,
-    p_knowledge_type: filters.knowledgeType ?? null,
+    p_proposition_type: filters.propositionType ?? null,
     p_risk_level: filters.riskLevel ?? null,
     p_entity_id: filters.entityId ?? null,
     p_limit: filters.limit ?? 20,
@@ -96,8 +96,9 @@ async function keywordOnlySearch(
 
   if (query) request = request.ilike("statement", `%${query}%`);
   if (filters.sourceId) request = request.eq("source_id", filters.sourceId);
-  if (filters.knowledgeType) {
-    request = request.eq("knowledge_type", filters.knowledgeType);
+  if (filters.propositionType) {
+    // 分類是陣列，篩選是「包含這一類」。
+    request = request.contains("proposition_types", [filters.propositionType]);
   }
   if (filters.riskLevel) request = request.eq("risk_level", filters.riskLevel);
 
@@ -111,7 +112,7 @@ async function keywordOnlySearch(
     predicate: fact.predicate,
     object: fact.object,
     conditions: fact.conditions,
-    knowledge_type: fact.knowledge_type,
+    proposition_types: fact.proposition_types,
     risk_level: fact.risk_level,
     version: fact.version,
     source_id: fact.source_id,

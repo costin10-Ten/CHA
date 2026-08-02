@@ -107,7 +107,7 @@ create table if not exists public.document_chunks (
   unique (source_version_id, paragraph_id)
 );
 
-comment on table public.document_chunks is '解析後的段落。paragraph_id（P-001…）是事實回溯原文的定位依據。';
+comment on table public.document_chunks is '解析後的段落。paragraph_id（P-001…）是原子命題回溯原文的定位依據。';
 
 create index if not exists document_chunks_version_idx
   on public.document_chunks (source_version_id, position);

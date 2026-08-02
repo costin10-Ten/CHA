@@ -117,13 +117,14 @@ export function ArticlePackImport() {
             <p className="font-medium">
               {check.ok
                 ? `可以匯入：${check.titles.join("、") || "未命名文章"}`
-                : "檔案裡沒有任何可匯入的事實"}
+                : "檔案裡沒有任何可匯入的原子命題"}
             </p>
             <p className="mt-1 text-xs">
               {check.summary.articles} 篇．{check.summary.chunks} 段原文．
-              {check.summary.candidates} 筆事實（已核定 {check.summary.approved}、
-              待修正 {check.summary.needsFix}、已駁回 {check.summary.rejected}）．
-              {check.summary.knowledgeFacts} 筆正式事實．{check.summary.reviews}{" "}
+              {check.summary.candidates} 筆原子命題（已核定 {check.summary.approved}
+              、 待修正 {check.summary.needsFix}、已駁回 {check.summary.rejected}
+              ）．
+              {check.summary.knowledgeFacts} 筆正式原子命題．{check.summary.reviews}{" "}
               筆審核紀錄
             </p>
             {check.summary.quoteFallbacks > 0 && (
@@ -148,7 +149,7 @@ export function ArticlePackImport() {
                   沿用檔案中的人工核定結果
                 </span>
                 <span className="mt-1 block text-xs text-slate-600">
-                  勾選後，已核定的候選事實會直接寫入正式事實庫；不勾選則全部以
+                  勾選後，已核定的候選原子命題會直接寫入正式原子命題庫；不勾選則全部以
                   「待審核」匯入，由你在系統裡逐筆核定。
                   {check.humanReview === "completed" &&
                     "（這個檔案標示人工審核已完成，已自動勾選）"}

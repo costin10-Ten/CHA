@@ -1,18 +1,18 @@
 /**
- * 待選事實包：匯出給其他 LLM 交叉校正，再把結果回填。
+ * 待選原子命題包：匯出給其他 LLM 交叉校正，再把結果回填。
  *
  * 匯出包必須自帶說明，因為接手的模型沒有本專案的脈絡：
  *   - 每個欄位的意義與允許值，哪些欄位不可修改
  *   - 校正目標（不聳動、部會權責正確、科學正確性）
  *   - 回填格式與驗證規則
  *
- * 回填的內容一律重新跑品質檢查並進入待審核，不會直接變成核定事實。
+ * 回填的內容一律重新跑品質檢查並進入待審核，不會直接變成核定原子命題。
  */
 
 export const PACK_VERSION = 1;
 export const PACK_KIND = "candidate-fact-pack";
 
-/** 這些欄位屬於來源事實，任何模型都不得修改。 */
+/** 這些欄位屬於來源原子命題，任何模型都不得修改。 */
 export const IMMUTABLE_FIELDS = [
   "id",
   "source_quote",
@@ -29,7 +29,7 @@ export interface PackFact {
   subject: string | null;
   predicate: string | null;
   object: string | null;
-  knowledge_type: string;
+  proposition_types: string[];
   risk_level: string;
   conditions: Record<string, string | null>;
   source_quote: string;
@@ -51,26 +51,45 @@ export interface FieldDoc {
 
 export const FIELD_DOCS: Record<string, FieldDoc> = {
   id: {
-    說明: "候選事實的唯一識別碼。回填時必須原樣帶回，用來比對是哪一筆。",
+    說明: "候選原子命題的唯一識別碼。回填時必須原樣帶回，用來比對是哪一筆。",
     可否修改: "不可修改",
     格式: "UUID",
   },
   statement: {
     說明:
-      "單一事實的完整敘述。一句只講一件事，主詞必須完整（不可用「它」「該物質」開頭），" +
+      "單一原子命題的完整敘述。一句只講一件事，主詞必須完整（不可用「它」「該物質」開頭），" +
       "且內容必須能在 source_quote 中找到依據。",
     可否修改: "可修改",
   },
-  subject: { 說明: "事實的主體，例如物質、族群或機關名稱。", 可否修改: "可修改" },
-  predicate: {
-    說明: "事實的關係或動作，例如「可能導致」「規定」。",
+  subject: {
+    說明: "原子命題的主體，例如物質、族群或機關名稱。",
     可否修改: "可修改",
   },
-  object: { 說明: "事實的客體，例如健康影響、限值或對象。", 可否修改: "可修改" },
-  knowledge_type: {
-    說明: "知識類型。",
+  predicate: {
+    說明: "原子命題的關係或動作，例如「可能導致」「規定」。",
     可否修改: "可修改",
-    允許值: ["substance", "concept", "policy", "event", "topic", "other"],
+  },
+  object: {
+    說明: "原子命題的客體，例如健康影響、限值或對象。",
+    可否修改: "可修改",
+  },
+  proposition_types: {
+    說明:
+      "原子命題的分類，**可複選**。九類同時涵蓋知識內容、事件類型與治理層級，" +
+      "彼此本來就會重疊，適用幾類就填幾類；判斷不出來請給空陣列，不要硬塞。" +
+      "health_advice（醫學健康建議）依規定只能用於政府機關來源。",
+    可否修改: "可修改",
+    允許值: [
+      "substance_property（物質與物理化學性質）",
+      "chemistry_concept（化學基本概念）",
+      "event（事件）",
+      "agency_topic（化學署主題）",
+      "toxicology_mechanism（毒理與反應機制）",
+      "domestic_policy（國內治理政策）",
+      "foreign_policy（國外治理政策）",
+      "research_literature（研究與期刊）",
+      "health_advice（醫學健康建議，須為政府機關來源）",
+    ],
   },
   risk_level: {
     說明: "風險等級。只反映敘述本身的風險溝通敏感度，不是危害程度評估。",
@@ -79,14 +98,14 @@ export const FIELD_DOCS: Record<string, FieldDoc> = {
   },
   conditions: {
     說明:
-      "事實的適用條件。原文有寫就必須保留，原文沒寫就填 null，不可自行推測。" +
+      "原子命題的適用條件。原文有寫就必須保留，原文沒寫就填 null，不可自行推測。" +
       "鍵固定為 population（族群）、exposure_route（暴露途徑）、dose（劑量）、" +
       "duration（持續時間）、location（地點）、timeframe（時間範圍）。",
     可否修改: "可修改",
     格式: "物件，值為字串或 null",
   },
   source_quote: {
-    說明: "事實所依據的原文片段。這是判斷事實是否超出原文的唯一依據，絕對不可修改或翻譯。",
+    說明: "原子命題所依據的原文片段。這是判斷原子命題是否超出原文的唯一依據，絕對不可修改或翻譯。",
     可否修改: "不可修改",
   },
   source_paragraph_id: {
@@ -100,7 +119,7 @@ export const FIELD_DOCS: Record<string, FieldDoc> = {
     可否修改: "不可修改",
   },
   quality_flags: {
-    說明: "本系統自動品質檢查標記，說明這筆事實目前被懷疑的問題，供你優先處理。",
+    說明: "本系統自動品質檢查標記，說明這筆原子命題目前被懷疑的問題，供你優先處理。",
     可否修改: "不可修改",
   },
   quality_score: {
@@ -137,7 +156,7 @@ export const CORRECTION_GOALS: CorrectionGoal[] = [
     目標: "部會權責正確",
     說明:
       "涉及主管機關時，權責歸屬必須正確。不確定就在 statement 中標記為「待確認」，" +
-      "或把機關名稱移除只描述事實，不得猜測。",
+      "或把機關名稱移除只描述原子命題，不得猜測。",
     檢查項目: [
       "食品標示、食品添加物、食品衛生標準：衛生福利部食品藥物管理署",
       "農產品產地、農藥殘留與動物用藥管理：農業部",
@@ -167,20 +186,20 @@ export interface ReturnFormatDoc {
 
 export const RETURN_FORMAT: ReturnFormatDoc = {
   說明:
-    "把修改後的結果存成 JSON 檔回傳。只需要包含你有修改或有意見的事實，" +
+    "把修改後的結果存成 JSON 檔回傳。只需要包含你有修改或有意見的原子命題，" +
     "沒有問題的可以不放。整包會重新跑品質檢查，並以「待審核」狀態進入系統，" +
-    "不會直接成為正式事實。",
+    "不會直接成為正式原子命題。",
   範例: {
     pack_version: PACK_VERSION,
     kind: PACK_KIND,
     facts: [
       {
         id: "貼上原本的 id",
-        statement: "修正後的單一事實敘述",
+        statement: "修正後的單一原子命題敘述",
         subject: "主體",
         predicate: "關係",
         object: "客體",
-        knowledge_type: "substance",
+        proposition_types: ["substance_property", "toxicology_mechanism"],
         risk_level: "medium",
         conditions: {
           population: "孕婦",
@@ -201,7 +220,7 @@ export const RETURN_FORMAT: ReturnFormatDoc = {
     "statement 必須能在 source_quote 中找到依據，找不到的會被系統擋下",
     "verdict 可填 ok（無需修改）、revised（已修正）、reject（建議刪除）、uncertain（需人工確認）",
     "correction_reason 請具體說明依據哪一個校正目標，不要只寫「潤飾」",
-    "不得新增匯出包以外的事實",
+    "不得新增匯出包以外的原子命題",
   ],
 };
 
@@ -219,7 +238,7 @@ export interface CandidatePack {
 }
 
 const TASK_BRIEF =
-  "以下是從文件中自動拆出的「候選事實」，尚未經人工核定。" +
+  "以下是從文件中自動拆出的「候選原子命題」，尚未經人工核定。" +
   "請逐筆檢查每一句是否忠實反映 source_quote，並依照「校正目標」修正。" +
   "你只能依據 source_quote 與 paragraph_text 判斷，不得使用你自己的知識補充內容。" +
   "無法從原文判斷的，請填 verdict = uncertain 並說明原因，不要猜測。";
@@ -227,7 +246,7 @@ const TASK_BRIEF =
 export function buildCandidatePack(
   facts: PackFact[],
   options: { scope: string; generatedAt?: string } = {
-    scope: "全部待審核候選事實",
+    scope: "全部待審核候選原子命題",
   },
 ): CandidatePack {
   return {
@@ -252,7 +271,7 @@ export interface ReturnedFact {
   subject?: string | null;
   predicate?: string | null;
   object?: string | null;
-  knowledge_type?: string;
+  proposition_types?: string[];
   risk_level?: string;
   conditions?: Record<string, string | null>;
   source_quote?: string;
@@ -267,13 +286,16 @@ export interface ParsedPack {
 }
 
 const VERDICTS: ReturnedVerdict[] = ["ok", "revised", "reject", "uncertain"];
-const KNOWLEDGE_TYPES = [
-  "substance",
-  "concept",
-  "policy",
+const PROPOSITION_TYPES = [
+  "substance_property",
+  "chemistry_concept",
   "event",
-  "topic",
-  "other",
+  "agency_topic",
+  "toxicology_mechanism",
+  "domestic_policy",
+  "foreign_policy",
+  "research_literature",
+  "health_advice",
 ];
 const RISK_LEVELS = ["low", "medium", "high"];
 
@@ -323,7 +345,7 @@ export function parseCandidatePack(input: unknown): ParsedPack {
 
     const id = asString(row.id)?.trim();
     if (!id) {
-      errors.push(`${label}：缺少 id，無法對應回原本的候選事實`);
+      errors.push(`${label}：缺少 id，無法對應回原本的候選原子命題`);
       return;
     }
     if (seen.has(id)) {
@@ -347,13 +369,21 @@ export function parseCandidatePack(input: unknown): ParsedPack {
       if (key in row) fact[key] = asString(row[key]);
     }
 
-    if ("knowledge_type" in row) {
-      const value = asString(row.knowledge_type);
-      if (value && !KNOWLEDGE_TYPES.includes(value)) {
-        errors.push(`${label}：knowledge_type「${value}」不是允許值`);
+    if ("proposition_types" in row) {
+      const raw = row.proposition_types;
+      if (!Array.isArray(raw)) {
+        errors.push(`${label}：proposition_types 必須是陣列`);
         return;
       }
-      if (value) fact.knowledge_type = value;
+      const values = raw.map((item) => asString(item)).filter(Boolean) as string[];
+      const invalid = values.filter((value) => !PROPOSITION_TYPES.includes(value));
+      if (invalid.length > 0) {
+        errors.push(
+          `${label}：proposition_types「${invalid.join("、")}」不是允許值`,
+        );
+        return;
+      }
+      fact.proposition_types = [...new Set(values)];
     }
 
     if ("risk_level" in row) {

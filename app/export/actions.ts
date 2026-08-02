@@ -15,15 +15,15 @@ import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import type {
   CandidateFactRow,
   Json,
-  KnowledgeType,
+  PropositionType,
   RiskLevel,
 } from "@/lib/supabase/types";
 
 /**
- * 匯入待選事實包的回填結果。
+ * 匯入待選原子命題包的回填結果。
  *
  * 三條不可退讓的規則：
- * 1. 回填不得核定任何事實，狀態一律維持「待審核」。
+ * 1. 回填不得核定任何原子命題，狀態一律維持「待審核」。
  * 2. 回填內容一樣要跑 checkFactQuality，不能繞過品質檢查。
  * 3. 不可修改的來源欄位若被動過，整筆拒絕。
  */
@@ -80,7 +80,7 @@ export async function importCandidatePack(json: string): Promise<ImportResult> {
         message:
           parsed.errors.length > 0
             ? `回填內容無法使用：${parsed.errors[0]}`
-            : "回填內容沒有任何事實",
+            : "回填內容沒有任何原子命題",
       };
     }
 
@@ -92,7 +92,7 @@ export async function importCandidatePack(json: string): Promise<ImportResult> {
       .select("*")
       .in("id", ids);
 
-    if (loadError) throw new Error(`讀取候選事實失敗：${loadError.message}`);
+    if (loadError) throw new Error(`讀取候選原子命題失敗：${loadError.message}`);
 
     const originalById = new Map((originals ?? []).map((row) => [row.id, row]));
     const problems = [...parsed.errors];
@@ -105,7 +105,7 @@ export async function importCandidatePack(json: string): Promise<ImportResult> {
       const original = originalById.get(returned.id);
       if (!original) {
         problems.push(
-          `${returned.id}：找不到對應的候選事實（可能不屬於你或已刪除）`,
+          `${returned.id}：找不到對應的候選原子命題（可能不屬於你或已刪除）`,
         );
         skipped += 1;
         continue;
@@ -160,7 +160,7 @@ export async function importCandidatePack(json: string): Promise<ImportResult> {
         subject: returned.subject ?? original.subject,
         predicate: returned.predicate ?? original.predicate,
         object: returned.object ?? original.object,
-        knowledge_type: returned.knowledge_type ?? original.knowledge_type,
+        proposition_types: returned.proposition_types ?? original.proposition_types,
         conditions,
         source_quote: original.source_quote,
         source_paragraph_id: original.source_paragraph_id,
@@ -187,7 +187,7 @@ export async function importCandidatePack(json: string): Promise<ImportResult> {
           subject: candidate.subject,
           predicate: candidate.predicate,
           object: candidate.object,
-          knowledge_type: candidate.knowledge_type as KnowledgeType,
+          proposition_types: candidate.proposition_types as PropositionType[],
           risk_level: candidate.risk_level as RiskLevel,
           conditions,
           quality_flags: quality.flags,

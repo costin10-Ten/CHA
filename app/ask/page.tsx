@@ -43,7 +43,7 @@ export default async function AskPage({
   return (
     <AppShell
       title="AI 問答"
-      description="回答只能使用核定事實。每一段都標註知識編號，可回溯到原文段落。"
+      description="回答只能使用核定原子命題。每一段都標註知識編號，可回溯到原文段落。"
     >
       <div className="space-y-6">
         {loadError && (
@@ -62,7 +62,7 @@ export default async function AskPage({
           <CardHeader>
             <CardTitle>提問</CardTitle>
             <CardDescription>
-              系統會先用混合搜尋取出相關的核定事實組成證據包，再交給模型作答。
+              系統會先用混合搜尋取出相關的核定原子命題組成證據包，再交給模型作答。
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -77,7 +77,8 @@ export default async function AskPage({
                 <CardTitle>{latest.question}</CardTitle>
                 <CardDescription>
                   {formatDateTime(latest.created_at)}．{latest.provider ?? "—"}／
-                  {latest.model ?? "—"}． 使用 {latest.evidence_count} 筆核定事實
+                  {latest.model ?? "—"}． 使用 {latest.evidence_count}{" "}
+                  筆核定原子命題
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -135,7 +136,9 @@ export default async function AskPage({
               </CardHeader>
               <CardContent>
                 {evidence.length === 0 ? (
-                  <p className="text-sm text-slate-500">沒有找到相關的核定事實。</p>
+                  <p className="text-sm text-slate-500">
+                    沒有找到相關的核定原子命題。
+                  </p>
                 ) : (
                   <ul className="space-y-3">
                     {evidence.map((item) => (
