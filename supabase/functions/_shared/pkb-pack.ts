@@ -221,6 +221,35 @@ function normalizeTags(...sources: unknown[]): string[] {
   return tags;
 }
 
+/**
+ * 這份檔案看起來是 CHA 的文章包嗎？
+ *
+ * 兩套系統的匯入頁長得很像，丟錯頁面時只會看到
+ * 「找不到任何原子知識」，看不出是走錯門。
+ * 只認 CHA 獨有的段落結構，避免把兩邊都能用的檔案誤導過去。
+ */
+function looksLikeArticlePack(root: Record<string, unknown>): boolean {
+  if (asArray(pick(root, "document_chunks", "chunks", "paragraphs")).length > 0) {
+    return true;
+  }
+
+  const facts = asArray(pick(root, "facts", "candidate_facts", "candidates"));
+  return facts.some((item) => {
+    const row = asRecord(item);
+    if (!row) return false;
+    return (
+      "paragraph_id" in row ||
+      "source_paragraph_id" in row ||
+      "paragraph_text" in row ||
+      "段落" in row
+    );
+  });
+}
+
+const WRONG_PAGE_HINT =
+  "這看起來是風險溝通系統的文章包（帶有段落原文或段落編號）。" +
+  "那一套走的是 /import，會逐字比對引句與原文。";
+
 // --- 主流程 ----------------------------------------------------------------
 
 export function validatePkbPack(input: unknown): PkbValidation {
@@ -295,7 +324,9 @@ export function validatePkbPack(input: unknown): PkbValidation {
       level: "error",
       where: "檔案",
       message: "找不到任何原子知識",
-      hint: "清單欄位可以叫 items、facts、原子知識、知識…；每一筆至少要有 statement。",
+      hint: looksLikeArticlePack(root)
+        ? WRONG_PAGE_HINT
+        : "清單欄位可以叫 items、facts、原子知識、知識…；每一筆至少要有 statement。",
     });
     return {
       ok: false,

@@ -868,3 +868,44 @@ describe("別名對上時不發警告", () => {
     ).toBe(false);
   });
 });
+
+/**
+ * 反方向的指路：PKB 的原子知識包被丟進 CHA 的匯入頁。
+ * 實際發生過——兩個匯入頁長得太像，錯誤訊息又只說「沒有任何原子命題」。
+ */
+describe("丟錯匯入頁時要指路", () => {
+  it("PKB 的知識包丟進來時，提示改去 /pkb/import", () => {
+    const result = validateArticlePack({
+      source: { title: "化學物質登錄制度簡介", source_type: "國內法規" },
+      items: [
+        {
+          statement: "化學物質登錄制度由環境部化學物質管理署主管。",
+          source_type: "國內法規",
+          source_label: "化學物質登錄辦法",
+        },
+      ],
+    });
+
+    expect(result.ok).toBe(false);
+    const hint = result.issues.find((issue) => issue.hint)?.hint ?? "";
+    expect(hint).toContain("/pkb/import");
+    expect(hint).toContain("個人原子知識庫");
+  });
+
+  it("有段落原文就是 CHA 的包，不會被誤導去別的頁", () => {
+    const result = validateArticlePack({
+      source: { title: "有原文" },
+      document_chunks: [{ paragraph_id: "P-004", text: PARAGRAPH }],
+      items: [{ statement: "一句話。", source_label: "某來源" }],
+    });
+
+    const hints = result.issues.map((issue) => issue.hint ?? "").join(" ");
+    expect(hints).not.toContain("/pkb/import");
+  });
+
+  it("普通的空檔案給一般提示，不亂指路", () => {
+    const result = validateArticlePack({ source: { title: "空的" } });
+    const hints = result.issues.map((issue) => issue.hint ?? "").join(" ");
+    expect(hints).not.toContain("/pkb/import");
+  });
+});

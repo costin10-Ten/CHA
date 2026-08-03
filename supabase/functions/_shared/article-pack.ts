@@ -462,6 +462,38 @@ function normalizeParagraphId(raw: unknown): string | null {
   return value;
 }
 
+/**
+ * 這份檔案看起來是「個人原子知識庫」的包嗎？
+ *
+ * 兩個系統的匯入頁長得很像，檔案丟錯頁面時只會看到
+ * 「沒有任何可匯入的原子命題」，完全看不出是走錯門。
+ * 判斷依據是只有 PKB 才有的欄位，寧可漏判也不要誤導。
+ */
+function looksLikePersonalPack(raw: Record<string, unknown>): boolean {
+  const items = asArray(pick(raw, "items"));
+  if (items.length === 0) return false;
+
+  // 有段落原文就是 CHA 的包，不要誤判。
+  if (asArray(pick(raw, "document_chunks", "chunks", "paragraphs")).length > 0) {
+    return false;
+  }
+
+  return items.some((item) => {
+    const row = asRecord(item);
+    if (!row) return false;
+    return (
+      "source_label" in row ||
+      "source_type" in row ||
+      "來源名稱" in row ||
+      "來源分類" in row
+    );
+  });
+}
+
+const WRONG_PAGE_HINT =
+  "這看起來是「個人原子知識庫」的原子知識包（有 items 與 source_label／source_type，但沒有段落原文）。" +
+  "那一套走的是 /pkb/import，不比對原文，只要求標註來源。";
+
 // --- 主流程 ----------------------------------------------------------------
 
 const NO_SOURCE_HINT =
@@ -655,6 +687,9 @@ function normalizeArticle(
       level: "error",
       where: `${label}.candidate_facts`,
       message: "沒有任何原子命題，這一篇整篇跳過",
+      hint: looksLikePersonalPack(raw)
+        ? WRONG_PAGE_HINT
+        : "清單欄位可以叫 facts、candidate_facts、原子命題…；每一筆至少要有 statement。",
     });
     return null;
   }

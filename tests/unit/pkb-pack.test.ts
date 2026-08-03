@@ -284,3 +284,26 @@ describe("其他寬鬆處理", () => {
     expect(result.issues[0].message).toContain("找不到任何原子知識");
   });
 });
+
+/**
+ * 兩個匯入頁長得很像，檔案丟錯地方時只會看到「找不到任何原子知識」，
+ * 完全看不出是走錯門。實際發生過一次：PKB 的驗證包被丟進 /import。
+ */
+describe("丟錯匯入頁時要指路", () => {
+  it("CHA 的文章包丟進來時，提示改去 /import", () => {
+    const result = validatePkbPack({
+      source: { title: "某篇文章", source_type: "url" },
+      document_chunks: [{ paragraph_id: "P-001", text: "一段原文。" }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues[0].hint).toContain("/import");
+    expect(result.issues[0].hint).toContain("段落原文");
+  });
+
+  it("普通的空檔案給一般提示，不亂指路", () => {
+    const result = validatePkbPack({ source: { title: "只有來源" } });
+    expect(result.issues[0].hint).toContain("items");
+    expect(result.issues[0].hint).not.toContain("/import");
+  });
+});
