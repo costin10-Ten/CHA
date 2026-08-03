@@ -607,8 +607,12 @@ Secrets and variables → Actions 建立三個 Repository Secret：
 | `SUPABASE_PROJECT_ID`   | 專案 ref，即 `https://<ref>.supabase.co` 的 `<ref>`                                               |
 | `SUPABASE_DB_PASSWORD`  | 建立專案時設定的資料庫密碼（忘記可在 Project Settings → Database → Reset database password 重設） |
 
-設定後，只要 `supabase/migrations/` 有變動並推上分支就會自動套用；
+設定後，只要 `supabase/migrations/` 有變動並**推上 `main`** 就會自動套用；
 也可在 Actions → Supabase Migrations → Run workflow 手動執行。
+
+**只從 `main` 觸發**，因為 Vercel 的 production 也只部署 `main`——結構與程式
+必須一起上線。功能分支上的 migration 不會提前套用；要在 Preview 驗證新結構時，
+用 Run workflow 手動跑。
 
 首次套用（workflow 尚未進入 main 之前）可改用 Supabase Dashboard →
 SQL Editor → New query，貼上 `supabase/migrations/` 內的 SQL 執行，效果相同。
@@ -630,9 +634,22 @@ fix/*       修正
 - `.github/workflows/ci.yml`：push 與 PR 時執行 `npm ci` → lint → format check →
   typecheck → unit tests → build → Playwright smoke test。使用 placeholder
   Supabase 變數與 `LLM_PROVIDER=mock`，不會呼叫付費 API。
-- `.github/workflows/db-migrate.yml`：`supabase/migrations/` 或
-  `supabase/functions/` 有變動時，自動執行 `supabase db push` 與
-  `supabase functions deploy`。
+- `.github/workflows/db-migrate.yml`：**推上 `main`** 且 `supabase/migrations/`
+  或 `supabase/functions/` 有變動時，執行 `supabase db push` 與
+  `supabase functions deploy`。也可手動觸發。
+
+### 改資料庫結構的規矩
+
+migration 與 app 都只從 `main` 上線，但同一次 push 裡兩者不會同時生效
+（Supabase 幾秒，Vercel 要重建），所以**破壞性變更一律拆兩步**：
+
+| 變更             | 做法                                                                          |
+| ---------------- | ----------------------------------------------------------------------------- |
+| 新增資料表／欄位 | 直接寫。舊版程式碼碰不到新東西，不會壞                                        |
+| 刪除／改名欄位   | 先加新欄位並讓程式同時支援新舊兩者 → 合併上線 → 下一個 migration 才移除舊欄位 |
+
+一次做完的話，會有一段時間資料庫已經沒有那個欄位、線上程式還在寫它，
+所有相關操作都會失敗。
 
 ## 設計取捨
 

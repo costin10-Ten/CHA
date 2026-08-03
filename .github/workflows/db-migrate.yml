@@ -3,7 +3,7 @@ name: Supabase Migrations
 # 讓 migration 完全在網頁上完成：不需要在本機安裝 Supabase CLI 或 clone repo。
 #
 # 觸發時機：
-#   1. push 到 main 或開發分支且 supabase/migrations/ 有變動
+#   1. push 到 main 且 supabase/migrations/ 或 supabase/functions/ 有變動
 #   2. 在 GitHub → Actions → Supabase Migrations → Run workflow 手動執行
 #
 # 需要三個 Repository Secret（Settings → Secrets and variables → Actions）：
@@ -11,12 +11,23 @@ name: Supabase Migrations
 #   SUPABASE_PROJECT_ID    專案 ref，即 https://<ref>.supabase.co 的 <ref>
 #   SUPABASE_DB_PASSWORD   建立專案時設定的資料庫密碼
 #
-# 註：本專案為單人、單一 Supabase 專案，開發分支也允許套用 migration，
-# 這樣 Vercel Preview 才有對應的資料表可驗證。
+# 只從 main 觸發，理由是 Vercel 的 production 也只部署 main：
+# 結構與程式必須一起上線。
+#
+# 曾經開放 claude/** 觸發，結果 migration 先套用、app 還是舊版，
+# 一個把欄位改名的 migration 讓線上所有匯入都失敗
+# （欄位沒了，舊程式還在寫它），而且要看 GitHub Actions 才查得出原因。
+#
+# 因此改結構時的規矩是：
+#   加法式（新增資料表／欄位）→ 直接寫，合併後才生效，不會影響舊版
+#   破壞式（drop／rename 欄位）→ 拆兩步：先加新欄位並讓程式同時支援兩者，
+#                                 合併上線後，下一個 migration 才移除舊欄位
+#
+# 要在 Preview 上驗證新結構時，用 workflow_dispatch 手動跑。
 
 on:
   push:
-    branches: [main, develop, "claude/**", "feature/**"]
+    branches: [main]
     paths:
       - "supabase/migrations/**"
       - "supabase/functions/**"

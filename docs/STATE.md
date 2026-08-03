@@ -40,19 +40,20 @@ lint / format / typecheck / build 全綠。
 
 ## 二、踩過的坑（會再發生的）
 
-### migration 與 app 的部署脫節 ⚠️ 未解決
+### migration 與 app 的部署脫節 ✅ 已處理
 
-`db-migrate.yml` 的觸發分支含 `claude/**`，但 Vercel 只部署 `main`。
+`db-migrate.yml` 原本的觸發分支含 `claude/**`，但 Vercel 只部署 `main`。
 推功能分支時 migration 先上線、app 還是舊的，**production 會壞掉**。
 
 實際發生過一次：`20260731000011` 把 `knowledge_type` 欄位刪掉之後，
-線上還在寫這個欄位，所有匯入都失敗。
+線上還在寫這個欄位，所有匯入都失敗，而且錯誤原因當時還被吞掉。
 
-**兩個選項，還沒決定**：
+**處理方式**：觸發分支改成只有 `main`（`tests/unit/workflow-guards.test.ts`
+會擋住改回去）。要在 Preview 驗證新結構時用 `workflow_dispatch` 手動跑。
 
-1. 把 `db-migrate.yml` 的 `branches` 改成只有 `main`
-2. 維持現狀，但破壞性 migration（drop／rename 欄位）必須拆成
-   「先加新欄位 → 合併 → 才移除舊欄位」兩步
+即使兩者都從 `main` 上線，生效時間仍有落差（Supabase 幾秒、Vercel 要重建），
+所以**破壞性變更一律拆兩步**：先加新欄位並讓程式同時支援新舊 → 合併上線
+→ 下一個 migration 才移除舊欄位。加法式變更（新增資料表／欄位）可以一次做完。
 
 ### Vercel 環境變數的 scope
 
