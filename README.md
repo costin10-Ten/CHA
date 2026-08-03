@@ -171,12 +171,16 @@ supabase/
     scheduled-update/    排程更新 worker
   seed.sql          本機示範資料
   config.toml       Supabase CLI 設定
+data/
+  environmental-hormone/  已整理好、待匯入的原子命題包
 docs/
+  STATE.md          專案現況存檔（交接用）
   ARCHITECTURE.md   資料結構、關係圖與功能總覽
   ARTICLE-PACK.md   文章包匯入格式
   BACKUP.md         備份與還原操作
   DEPLOY.md         部署設定與上線檢查清單
   BACKLOG.md        使用者提出的需求追蹤
+  NEW-PROJECT-個人原子知識庫.md  新專案的需求與設計草案
 tests/
   unit/             Vitest
   e2e/              Playwright
