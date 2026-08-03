@@ -140,3 +140,105 @@ describe("pkb_items 的去重刻意是部分索引", () => {
     );
   });
 });
+
+/**
+ * plpgsql 的 `returns table (...)` 會把回傳欄位名變成函式內的變數。
+ *
+ * 一旦函式裡有同名的資料表欄位被裸寫（沒有加限定詞），Postgres 就無法決定
+ * 指的是哪一個，回報 column reference "x" is ambiguous。
+ *
+ * 實際發生過：pkb_insert_items 宣告 `returns table (id uuid, status ...)`，
+ * 而 `on conflict (...) where status <> 'trashed'` 裡的 status 撞名，
+ * 匯入整個失敗。修法是拿掉多餘的回傳欄位（改成 returns setof uuid），
+ * 讓衝突不可能發生，而不是靠限定詞或 #variable_conflict 繞過。
+ */
+/**
+ * plpgsql 的 `returns table (...)` 會把回傳欄位名變成函式內的變數。
+ *
+ * 一旦函式裡有同名的資料表欄位被裸寫（沒有加限定詞），Postgres 就無法決定
+ * 指的是哪一個，回報 column reference "x" is ambiguous。
+ *
+ * 實際發生過：pkb_insert_items 宣告 `returns table (id uuid, status ...)`，
+ * 而 `on conflict (...) where status <> 'trashed'` 裡的 status 撞名，
+ * 匯入整個失敗。修法是拿掉多餘的回傳欄位（改成 returns setof uuid），
+ * 讓衝突不可能發生，而不是靠限定詞或 #variable_conflict 繞過。
+ */
+
+interface FunctionDef {
+  name: string;
+  returns: string;
+  columns: string[];
+  body: string;
+}
+
+/**
+ * 取出每個函式**目前有效的**定義。
+ *
+ * migration 是累積的歷史，同一個函式可能被改過好幾次；
+ * 檢查應該只看最後一版，否則被修好的舊定義會永遠讓測試紅。
+ */
+function effectiveFunctions(): FunctionDef[] {
+  const files = readdirSync(MIGRATIONS)
+    .filter((name) => name.endsWith(".sql"))
+    .sort();
+
+  const latest = new Map<string, FunctionDef>();
+
+  for (const file of files) {
+    const sql = readFileSync(join(MIGRATIONS, file), "utf8");
+    for (const chunk of sql.split(/create (?:or replace )?function /i).slice(1)) {
+      const name = /^([\w.]+)/.exec(chunk)?.[1];
+      if (!name) continue;
+
+      const head = chunk.split("$$")[0] ?? "";
+      const body = chunk.split("$$")[1] ?? "";
+      const returns = /returns ([\s\S]*?)\s*language/i.exec(head)?.[1] ?? "";
+      const table = /returns table \(([\s\S]*?)\)\s*language/i.exec(head)?.[1];
+
+      latest.set(name, {
+        name,
+        returns: returns.replace(/\s+/g, " ").trim(),
+        // 逐個欄位取第一個字，不能靠行首——簽章寫成一行時只會抓到第一個。
+        columns: (table ?? "")
+          .split(",")
+          .map((entry) => /^\s*(\w+)/.exec(entry)?.[1] ?? "")
+          .filter(Boolean),
+        body,
+      });
+    }
+  }
+
+  return [...latest.values()];
+}
+
+describe("plpgsql 的回傳欄位名不可與 on conflict 裡的欄位撞名", () => {
+  const functions = effectiveFunctions();
+  const withTable = functions.filter((fn) => fn.columns.length > 0);
+
+  it("解析得到函式與其回傳欄位（測試本身沒有失效）", () => {
+    expect(withTable.length).toBeGreaterThan(0);
+
+    const search = withTable.find((fn) => fn.name === "public.pkb_search");
+    // 欄位擷取要抓到全部，不是只有第一個。
+    expect(search?.columns).toContain("id");
+    expect(search?.columns).toContain("source_label");
+    expect(search?.columns).toContain("combined_score");
+  });
+
+  it.each(withTable)("$name", ({ columns, body }) => {
+    for (const clause of body.matchAll(/on conflict[^\n]*where ([^\n]*)/gi)) {
+      for (const column of columns) {
+        expect(
+          new RegExp(`\\b${column}\\b`).test(clause[1]),
+          `on conflict 的條件用到了與回傳欄位同名的 ${column}，會 ambiguous`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("pkb_insert_items 目前回傳 setof uuid，沒有具名回傳欄位", () => {
+    const fn = functions.find((item) => item.name === "public.pkb_insert_items");
+    expect(fn?.returns).toBe("setof uuid");
+    expect(fn?.columns).toEqual([]);
+  });
+});

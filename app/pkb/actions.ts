@@ -130,16 +130,17 @@ export async function importPkbPack(
 
     if (insertError) throw new Error(`寫入失敗：${insertError.message}`);
 
-    const created = inserted ?? [];
-    const duplicates = rows.length - created.length;
+    // 函式一律寫成待同意，所以只回傳 id。
+    const createdIds = inserted ?? [];
+    const duplicates = rows.length - createdIds.length;
 
-    if (created.length > 0) {
+    if (createdIds.length > 0) {
       await supabase.from("pkb_review_log").insert(
-        created.map((row) => ({
+        createdIds.map((id) => ({
           owner_id: user.id,
-          item_id: row.id,
+          item_id: id,
           action: "import" as const,
-          to_status: row.status,
+          to_status: "draft" as const,
           note: options.filename ?? null,
         })),
       );
@@ -148,14 +149,11 @@ export async function importPkbPack(
     // 勾了「沿用檔案的同意結果」時，走與手動同意完全相同的路徑，
     // 圖譜、審核歷程都會一起產生。
     let approved = 0;
-    if (approveHashes.size > 0 && created.length > 0) {
+    if (approveHashes.size > 0 && createdIds.length > 0) {
       const { data: pending } = await supabase
         .from("pkb_items")
         .select("id, statement_hash")
-        .in(
-          "id",
-          created.map((row) => row.id),
-        );
+        .in("id", createdIds);
 
       for (const item of pending ?? []) {
         if (!approveHashes.has(item.statement_hash)) continue;
@@ -182,7 +180,7 @@ export async function importPkbPack(
 
     return {
       status: "success",
-      message: `已匯入 ${created.length} 筆原子知識${
+      message: `已匯入 ${createdIds.length} 筆原子知識${
         notes.length > 0 ? `（${notes.join("、")}）` : ""
       }。`,
       issues: validation.issues,

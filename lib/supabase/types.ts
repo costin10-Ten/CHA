@@ -853,7 +853,8 @@ export type Database = {
     Functions: {
       pkb_insert_items: {
         Args: { p_items: Json };
-        Returns: { id: string; status: PkbStatus }[];
+        /** 一律寫成 draft，所以只回傳 id。 */
+        Returns: string[];
       };
       pkb_approve_item: {
         Args: { p_item_id: string; p_note?: string | null };
