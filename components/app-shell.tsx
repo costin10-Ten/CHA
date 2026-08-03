@@ -41,6 +41,16 @@ const NAV_GROUPS: { label: string; items: { href: string; label: string }[] }[] 
       { href: "/settings/models", label: "設定" },
     ],
   },
+  {
+    label: "個人原子知識庫",
+    items: [
+      { href: "/pkb", label: "知識庫" },
+      { href: "/pkb/import", label: "匯入" },
+      { href: "/pkb/search", label: "搜尋" },
+      { href: "/pkb/export", label: "匯出給 LLM" },
+      { href: "/pkb/trash", label: "垃圾桶" },
+    ],
+  },
 ];
 
 /** 登入後頁面的共用外框：導覽列 + 內容區。 */

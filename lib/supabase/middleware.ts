@@ -20,6 +20,7 @@ const PROTECTED_PREFIXES = [
   "/import",
   "/history",
   "/settings",
+  "/pkb",
 ];
 // 注意：/api/export 不放在這裡。API 由 Route Handler 自行回 401，
 // 走 middleware 會導向登入頁的 HTML，對下載請求沒有意義。

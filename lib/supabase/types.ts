@@ -488,12 +488,189 @@ export type SimilarCandidate = {
   similarity: number;
 };
 
+// --- 個人原子知識庫（PKB）----------------------------------------------------
+// 與 CHA 共用同一個 Supabase 專案，資料表加 pkb_ 前綴區隔。
+// 規則刻意不同：這一版不比對原文，只要求標註來源。
+
+export type PkbSourceType =
+  | "popular_science"
+  | "domestic_law"
+  | "own_duty"
+  | "moenv_news"
+  | "foreign_regulation"
+  | "foreign_news"
+  | "ministry_priority"
+  | "mock_question"
+  | "formal_idea"
+  | "other";
+
+export const PKB_SOURCE_TYPES: PkbSourceType[] = [
+  "popular_science",
+  "domestic_law",
+  "own_duty",
+  "moenv_news",
+  "foreign_regulation",
+  "foreign_news",
+  "ministry_priority",
+  "mock_question",
+  "formal_idea",
+  "other",
+];
+
+export type PkbStatus = "draft" | "active" | "trashed";
+export type PkbAction = "import" | "approve" | "edit" | "trash" | "restore";
+
+export type PkbItemRow = {
+  id: string;
+  owner_id: string;
+  import_batch_id: string | null;
+  statement: string;
+  source_type: PkbSourceType;
+  source_label: string;
+  source_url: string | null;
+  source_note: string | null;
+  is_self_authored: boolean;
+  subject: string | null;
+  predicate: string | null;
+  object: string | null;
+  tags: string[];
+  status: PkbStatus;
+  approved_at: string | null;
+  trashed_at: string | null;
+  trash_reason: string | null;
+  statement_hash: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PkbImportBatchRow = {
+  id: string;
+  owner_id: string;
+  filename: string | null;
+  item_count: number;
+  skipped_count: number;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PkbReviewLogRow = {
+  id: string;
+  owner_id: string;
+  item_id: string | null;
+  action: PkbAction;
+  from_status: PkbStatus | null;
+  to_status: PkbStatus | null;
+  note: string | null;
+  changes: Json;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PkbEntityRow = {
+  id: string;
+  owner_id: string;
+  name: string;
+  normalized_name: string;
+  item_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PkbRelationRow = {
+  id: string;
+  owner_id: string;
+  subject_entity_id: string;
+  object_entity_id: string | null;
+  predicate: string;
+  item_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PkbEmbeddingRow = {
+  id: string;
+  owner_id: string;
+  item_id: string;
+  embedding: string | null;
+  embedding_model: string;
+  content_hash: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PkbSearchResultRow = {
+  id: string;
+  statement: string;
+  source_type: PkbSourceType;
+  source_label: string;
+  source_url: string | null;
+  is_self_authored: boolean;
+  tags: string[];
+  subject: string | null;
+  predicate: string | null;
+  object: string | null;
+  keyword_rank: number;
+  vector_similarity: number;
+  combined_score: number;
+};
+
 type Insertable<T, Required extends keyof T> = Partial<Omit<T, Required>> &
   Pick<T, Required>;
 
 export type Database = {
   public: {
     Tables: {
+      pkb_items: {
+        Row: PkbItemRow;
+        Insert: Insertable<
+          PkbItemRow,
+          | "owner_id"
+          | "statement"
+          | "source_type"
+          | "source_label"
+          | "statement_hash"
+        >;
+        Update: Partial<PkbItemRow>;
+        Relationships: [];
+      };
+      pkb_import_batches: {
+        Row: PkbImportBatchRow;
+        Insert: Insertable<PkbImportBatchRow, "owner_id">;
+        Update: Partial<PkbImportBatchRow>;
+        Relationships: [];
+      };
+      pkb_review_log: {
+        Row: PkbReviewLogRow;
+        Insert: Insertable<PkbReviewLogRow, "owner_id" | "action">;
+        Update: Partial<PkbReviewLogRow>;
+        Relationships: [];
+      };
+      pkb_entities: {
+        Row: PkbEntityRow;
+        Insert: Insertable<PkbEntityRow, "owner_id" | "name" | "normalized_name">;
+        Update: Partial<PkbEntityRow>;
+        Relationships: [];
+      };
+      pkb_relations: {
+        Row: PkbRelationRow;
+        Insert: Insertable<
+          PkbRelationRow,
+          "owner_id" | "subject_entity_id" | "predicate"
+        >;
+        Update: Partial<PkbRelationRow>;
+        Relationships: [];
+      };
+      pkb_embeddings: {
+        Row: PkbEmbeddingRow;
+        Insert: Insertable<
+          PkbEmbeddingRow,
+          "owner_id" | "item_id" | "embedding_model" | "content_hash"
+        >;
+        Update: Partial<PkbEmbeddingRow>;
+        Relationships: [];
+      };
       profiles: {
         Row: ProfileRow;
         Insert: Insertable<ProfileRow, "owner_id">;
@@ -674,6 +851,29 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      pkb_approve_item: {
+        Args: { p_item_id: string; p_note?: string | null };
+        Returns: string;
+      };
+      pkb_trash_item: {
+        Args: { p_item_id: string; p_reason?: string | null };
+        Returns: undefined;
+      };
+      pkb_restore_item: {
+        Args: { p_item_id: string };
+        Returns: undefined;
+      };
+      pkb_search: {
+        Args: {
+          p_query?: string;
+          p_embedding?: string | null;
+          p_source_type?: PkbSourceType | null;
+          p_tag?: string | null;
+          p_limit?: number;
+          p_min_score?: number;
+        };
+        Returns: PkbSearchResultRow[];
+      };
       claim_processing_jobs: {
         Args: {
           p_job_types: JobType[];
@@ -776,6 +976,9 @@ export type Database = {
       job_type: JobType;
       job_status: JobStatus;
       proposition_type: PropositionType;
+      pkb_source_type: PkbSourceType;
+      pkb_status: PkbStatus;
+      pkb_action: PkbAction;
       risk_level: RiskLevel;
       candidate_status: CandidateStatus;
       review_action: ReviewActionType;
