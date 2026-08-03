@@ -851,6 +851,10 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      pkb_insert_items: {
+        Args: { p_items: Json };
+        Returns: { id: string; status: PkbStatus }[];
+      };
       pkb_approve_item: {
         Args: { p_item_id: string; p_note?: string | null };
         Returns: string;

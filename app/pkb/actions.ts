@@ -8,7 +8,7 @@ import { validatePkbPack, type PkbIssue } from "@shared/pkb-pack.ts";
 import { normalizeForCompare } from "@shared/quality.ts";
 
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
-import type { PkbSourceType } from "@/lib/supabase/types";
+import type { Json, PkbSourceType } from "@/lib/supabase/types";
 
 /**
  * 個人原子知識庫的寫入動作。
@@ -88,10 +88,10 @@ export async function importPkbPack(
       throw new Error(`建立匯入批次失敗：${batchError?.message}`);
     }
 
-    const now = new Date().toISOString();
+    // owner_id 與狀態由資料庫函式決定：一律先寫成待同意，
+    // 要直接生效的在下面走 pkb_approve_item，圖譜與審核歷程才會一起產生。
     const rows = await Promise.all(
       validation.items.map(async (item) => ({
-        owner_id: user.id,
         import_batch_id: batch.id,
         statement: item.statement,
         source_type: item.source_type as PkbSourceType,
@@ -103,25 +103,30 @@ export async function importPkbPack(
         predicate: item.predicate,
         object: item.object,
         tags: item.tags,
-        // 檔案標示已同意，且使用者勾了「沿用」才直接生效。
-        status:
-          options.trustPackApproval && item.approved_in_pack
-            ? ("active" as const)
-            : ("draft" as const),
-        approved_at:
-          options.trustPackApproval && item.approved_in_pack ? now : null,
         statement_hash: await sha256Hex(normalizeForCompare(item.statement)),
       })),
     );
 
-    // 已經收過的同一句話會撞上唯一索引，忽略即可——重複匯入是常態。
-    const { data: inserted, error: insertError } = await supabase
-      .from("pkb_items")
-      .upsert(rows, {
-        onConflict: "owner_id,statement_hash",
-        ignoreDuplicates: true,
-      })
-      .select("id, status, subject, predicate, object");
+    // 哪些在檔案裡標示已同意——用敘述雜湊對回去，因為函式只回傳寫入的列。
+    const approveHashes = new Set(
+      options.trustPackApproval
+        ? await Promise.all(
+            validation.items
+              .filter((item) => item.approved_in_pack)
+              .map((item) => sha256Hex(normalizeForCompare(item.statement))),
+          )
+        : [],
+    );
+
+    // 已經收過的同一句話直接略過——重複匯入是常態。
+    //
+    // 走資料庫函式而不是 PostgREST 的 upsert：去重索引是部分唯一索引
+    // （垃圾桶裡的不算重複，才能丟掉之後重新匯入），而 upsert 的
+    // on_conflict 帶不了索引的 where 條件，Postgres 會推斷不出用哪個索引。
+    const { data: inserted, error: insertError } = await supabase.rpc(
+      "pkb_insert_items",
+      { p_items: rows as unknown as Json },
+    );
 
     if (insertError) throw new Error(`寫入失敗：${insertError.message}`);
 
@@ -140,19 +145,32 @@ export async function importPkbPack(
       );
     }
 
-    // 匯入時就同意的，補建圖譜與向量工作。
-    for (const row of created) {
-      if (row.status === "active") {
-        await supabase.rpc("pkb_approve_item", {
-          p_item_id: row.id,
+    // 勾了「沿用檔案的同意結果」時，走與手動同意完全相同的路徑，
+    // 圖譜、審核歷程都會一起產生。
+    let approved = 0;
+    if (approveHashes.size > 0 && created.length > 0) {
+      const { data: pending } = await supabase
+        .from("pkb_items")
+        .select("id, statement_hash")
+        .in(
+          "id",
+          created.map((row) => row.id),
+        );
+
+      for (const item of pending ?? []) {
+        if (!approveHashes.has(item.statement_hash)) continue;
+        const { error } = await supabase.rpc("pkb_approve_item", {
+          p_item_id: item.id,
           p_note: "匯入時沿用檔案的同意結果",
         });
+        if (!error) approved += 1;
       }
     }
 
     revalidatePkb();
 
     const notes = [
+      approved > 0 ? `其中 ${approved} 筆沿用檔案的同意結果` : "",
       duplicates > 0 ? `${duplicates} 筆已經收過，略過` : "",
       validation.summary.rejected > 0
         ? `${validation.summary.rejected} 筆標示駁回，未匯入`
