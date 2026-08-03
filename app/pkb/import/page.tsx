@@ -4,41 +4,26 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { PkbPackImport } from "@/components/pkb/pack-import";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { PKB_SOURCE_TYPES } from "@/lib/supabase/types";
 import { PKB_SOURCE_TYPE_LABEL } from "@shared/pkb-pack.ts";
 
+import fullExample from "@/public/examples/pkb-full.json";
+import minimalExample from "@/public/examples/pkb-minimal.json";
+
 export const metadata: Metadata = { title: "匯入原子知識" };
 export const dynamic = "force-dynamic";
 
-const MINIMAL = `{
-  "source": { "title": "環境荷爾蒙怎麼讓我內分泌失調的？" },
-  "items": [
-    { "statement": "一句一事的原子知識。", "source_type": "科普文章" }
-  ]
-}`;
-
-const FULL = `{
-  "source": {
-    "title": "化學物質登錄辦法",
-    "url": "https://cha.gov.tw/law",
-    "source_type": "國內法規"
-  },
-  "items": [
-    {
-      "ref": "K001",
-      "statement": "化學物質登錄制度由環境部化學物質管理署主管。",
-      "source_type": "國內法規",
-      "source_note": "第 3 條",
-      "subject": "化學物質登錄制度",
-      "predicate": "主管機關",
-      "object": "環境部化學物質管理署",
-      "tags": ["登錄", "權責"],
-      "status": "同意"
-    }
-  ]
-}`;
+// 直接顯示可下載的那兩個檔案，畫面上的範例與下載到的內容就不可能對不起來。
+const MINIMAL = JSON.stringify(minimalExample, null, 2);
+const FULL = JSON.stringify(fullExample, null, 2);
 
 export default async function PkbImportPage() {
   const user = await getCurrentUser();
@@ -67,8 +52,14 @@ export default async function PkbImportPage() {
               </li>
             </ul>
             <p className="text-xs text-slate-500">
-              這一版**不比對原文**，來源名稱是唯一能說明「這句話從哪來」的欄位，
-              所以是硬性要求。其餘欄位都可省略。
+              這一版<strong>不比對原文</strong>，來源名稱是唯一能說明
+              「這句話從哪來」的欄位，所以是硬性要求。其餘欄位都可省略。
+            </p>
+            <p className="text-xs text-slate-500">
+              <strong>
+                底線開頭的欄位（<code>_說明</code>、<code>_註</code>…） 系統一律忽略
+              </strong>
+              ，可以拿來寫給人看的註解，留在檔案裡不影響匯入。
             </p>
             <p className="text-xs text-slate-500">
               標示駁回的項目不會匯入；已經收過的同一句話會自動略過。 CHA
@@ -112,8 +103,28 @@ export default async function PkbImportPage() {
         <Card>
           <CardHeader>
             <CardTitle>格式範例</CardTitle>
+            <CardDescription>
+              下面顯示的就是可下載檔案的完整內容，兩者永遠一致。
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <a
+                href="/examples/pkb-minimal.json"
+                download="原子知識包範例-最小.json"
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                下載最小範例
+              </a>
+              <a
+                href="/examples/pkb-full.json"
+                download="原子知識包範例-完整.json"
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                下載完整範例
+              </a>
+            </div>
+
             <div>
               <p className="mb-2 text-sm font-medium text-slate-800">
                 最小可用格式

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { validateArticlePack } from "@shared/article-pack.ts";
+import { validatePkbPack } from "@shared/pkb-pack.ts";
 import { matchFacts } from "@shared/fact-matching.ts";
 
 /**
@@ -143,5 +144,85 @@ describe("完整範例 fact-pack-full.json", () => {
       (fact) => fact.candidate_fact_id,
     );
     expect(refs).toEqual(["C001", "C002"]);
+  });
+});
+
+/**
+ * 個人原子知識庫的範例。
+ *
+ * 這兩個檔案同時是 /pkb/import 頁面上顯示的程式碼區塊與下載按鈕的內容，
+ * 所以它們必須真的匯得進去——照著範例寫卻匯不進來是最糟的狀況。
+ */
+describe("PKB 最小範例 pkb-minimal.json", () => {
+  const result = validatePkbPack(loadExample("pkb-minimal.json"));
+
+  it("通過驗證，兩筆都沿用整包的來源", () => {
+    expect(result.ok).toBe(true);
+    expect(result.items).toHaveLength(2);
+    for (const item of result.items) {
+      expect(item.source_label).toBe("環境荷爾蒙怎麼讓我內分泌失調的？");
+      expect(item.source_type).toBe("popular_science");
+    }
+  });
+
+  it("沒有任何錯誤或警告——最小範例不該讓人一開始就看到紅字", () => {
+    expect(result.issues).toEqual([]);
+  });
+
+  it("底線開頭的說明欄位不會變成資料", () => {
+    expect(result.items.some((item) => item.statement.startsWith("最小可用"))).toBe(
+      false,
+    );
+  });
+});
+
+describe("PKB 完整範例 pkb-full.json", () => {
+  const result = validatePkbPack(loadExample("pkb-full.json"));
+
+  it("五筆匯入、一筆駁回略過", () => {
+    expect(result.ok).toBe(true);
+    expect(result.summary.items).toBe(5);
+    expect(result.summary.rejected).toBe(1);
+    expect(result.summary.skipped).toBe(0);
+    expect(result.items.map((item) => item.ref)).toEqual([
+      "K001",
+      "K002",
+      "K003",
+      "K004",
+      "K006",
+    ]);
+  });
+
+  it("示範了整包沿用與逐筆覆寫兩種寫法", () => {
+    const byRef = new Map(result.items.map((item) => [item.ref, item]));
+    // 沿用整包
+    expect(byRef.get("K001")?.source_label).toBe("化學物質登錄辦法");
+    expect(byRef.get("K002")?.source_type).toBe("domestic_law");
+    // 逐筆覆寫
+    expect(byRef.get("K003")?.source_label).toBe("自己出的模擬題");
+    expect(byRef.get("K003")?.source_type).toBe("mock_question");
+  });
+
+  it("兩筆自製內容被標記", () => {
+    expect(result.summary.selfAuthored).toBe(2);
+  });
+
+  it("標示同意的那筆有被辨識出來，供勾選沿用時使用", () => {
+    const k006 = result.items.find((item) => item.ref === "K006");
+    expect(k006?.approved_in_pack).toBe(true);
+    expect(result.summary.approvedInPack).toBe(1);
+  });
+
+  it("K001 的圖譜欄位完整", () => {
+    const k001 = result.items.find((item) => item.ref === "K001");
+    expect(k001?.subject).toBe("化學物質登錄制度");
+    expect(k001?.predicate).toBe("主管機關");
+    expect(k001?.object).toBe("環境部化學物質管理署");
+  });
+
+  it("除了「略過駁回」之外沒有其他提醒", () => {
+    expect(result.issues.filter((issue) => issue.level === "error")).toEqual([]);
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].message).toContain("略過 1 筆");
   });
 });
