@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { validateArticlePack } from "@shared/article-pack.ts";
+import { validatePkbPack } from "@shared/pkb-pack.ts";
 
 /**
  * data/ 底下放的是實際要匯入的原子命題包。
@@ -116,5 +117,59 @@ describe("環境荷爾蒙：駁回紀錄", () => {
     const result = validateArticlePack(load("rejected.json"));
     expect(result.ok).toBe(false);
     expect(result.summary.candidates).toBe(0);
+  });
+});
+
+/**
+ * 個人原子知識庫的上線驗證包。
+ *
+ * 這一份是要真的匯進資料庫走完流程的，所以它自己得先是對的——
+ * 檔案裡寫的預期結果與驗證器的實際輸出必須一致，否則驗證會白做。
+ */
+describe("PKB 上線驗證包", () => {
+  const pack = JSON.parse(
+    readFileSync(join(process.cwd(), "data", "pkb-smoke-test.json"), "utf8"),
+  );
+  const result = validatePkbPack(pack);
+
+  it("四筆可匯入、一筆駁回被略過，與檔案裡寫的預期一致", () => {
+    expect(result.ok).toBe(true);
+    expect(result.summary.items).toBe(4);
+    expect(result.summary.rejected).toBe(1);
+    expect(result.summary.skipped).toBe(0);
+    expect(result.items.map((item) => item.ref)).toEqual([
+      "K001",
+      "K002",
+      "K003",
+      "K004",
+    ]);
+  });
+
+  it("整包的來源會被沒寫來源的那兩筆沿用", () => {
+    const byRef = new Map(result.items.map((item) => [item.ref, item]));
+    for (const ref of ["K001", "K002"]) {
+      expect(byRef.get(ref)?.source_label, ref).toBe("化學物質登錄制度簡介");
+      expect(byRef.get(ref)?.source_type, ref).toBe("domestic_law");
+    }
+  });
+
+  it("兩筆自製內容有被標記，兩筆外部來源沒有", () => {
+    const byRef = new Map(result.items.map((item) => [item.ref, item]));
+    expect(byRef.get("K003")?.is_self_authored).toBe(true);
+    expect(byRef.get("K004")?.is_self_authored).toBe(true);
+    expect(byRef.get("K001")?.is_self_authored).toBe(false);
+    expect(byRef.get("K002")?.is_self_authored).toBe(false);
+    expect(result.summary.selfAuthored).toBe(2);
+  });
+
+  it("K001 帶完整的主客關係，同意後才建得出圖譜", () => {
+    const k001 = result.items.find((item) => item.ref === "K001");
+    expect(k001?.subject).toBe("化學物質登錄制度");
+    expect(k001?.predicate).toBe("主管機關");
+    expect(k001?.object).toBe("環境部化學物質管理署");
+  });
+
+  it("沒有任何一筆被誤判需要跳過", () => {
+    expect(result.issues.filter((issue) => issue.level === "error")).toEqual([]);
   });
 });
